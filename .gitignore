@@ -8,6 +8,9 @@
 !/data
 !/src
 !/tests
+!/scripts
+!/release
+/release/IRLSAFETY+-*
 !.clang-format
 !.gersemirc
 !.gitignore
@@ -16,6 +19,7 @@
 !CMakePresets.json
 !LICENSE
 !README.md
+!THIRD_PARTY_NOTICES.md
 
 # Exclude lock files
 *.lock.json

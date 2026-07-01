@@ -1,0 +1,9 @@
+# IRLSAFETY+ Custom PII example list
+# Add one entry per line. Lines starting with # are ignored.
+# These keywords are ALWAYS blurred when Custom PII category is enabled.
+
+John Smith
+123 Main Street
+555-0100
+@my_stream_handle
+contact@example.com

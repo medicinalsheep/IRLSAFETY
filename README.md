@@ -1,146 +1,177 @@
 # IRLSAFETY+
 
-**IRLSAFETY+** is an OBS Studio plugin that blurs personally identifiable information (PII) in real time during live streams and recordings. The plugin runs as a video filter on any OBS source, detecting sensitive regions with YOLO/ONNX object detection and OCR, then compositing a blur over those areas before the frame reaches the output.
+**Real-time privacy protection for OBS Studio** — an overlay filter that detects and blurs PII in live streams (street signs, license plates, IDs, documents, screen text, faces, and your custom keywords).
 
-> **License note:** This plugin's source code is licensed under the [MIT License](LICENSE). OBS Studio and `libobs` are licensed under GPLv2. When you build, link, or distribute this plugin for use inside OBS, you must comply with OBS's GPL obligations in addition to this project's MIT terms.
+| | |
+|---|---|
+| **Version** | 0.0.0 (scaffold — UI wired, inference coming next) |
+| **Platform** | Windows 10/11 x64 |
+| **OBS** | 31.x (64-bit) |
+| **License** | MIT ([LICENSE](LICENSE)) — OBS/libobs is GPLv2 when running inside OBS |
 
-## Features (planned)
+---
 
-- Real-time PII blurring via an OBS video filter
-- YOLO object detection through ONNX Runtime
-- OCR pass for text-based PII (names, emails, phone numbers, IDs)
-- Configurable blur strength
-- Windows-first build targeting OBS 31.x
+## Quick Start for Streamers (3 steps)
+
+### Option A — Test package (easiest)
+
+1. Open `release\IRLSAFETY+-v0.0.0-win64\` (create it with `scripts\package-v0.0.bat` if missing)
+2. Double-click **`install-from-package.bat`**
+3. Restart OBS → right-click any source → **Filters** → **+** → **IRLSAFETY+ PII Blur**
+
+### Option B — Build from source
+
+```bat
+scripts\build-windows.bat
+scripts\install-to-obs.bat
+```
+
+Restart OBS and add the filter as above.
+
+---
+
+## Using the Filter in OBS
+
+1. Add **IRLSAFETY+ PII Blur** to any video source (camera, display capture, etc.)
+2. **Enable All Protection** — master on/off at the top
+3. Toggle categories:
+   - Street Signs
+   - License Plates
+   - Documents / IDs
+   - Faces
+   - Screen Text
+   - **Custom PII** (always blur your own list)
+4. **Custom PII List**
+   - Type entries directly (one per line): names, addresses, phone numbers, usernames
+   - Or browse to a `.txt` file (see `data/custom-pii.example.txt`)
+5. Tune **Confidence**, **Process Every N Frames** (performance), and **Blur Intensity**
+
+### v0.0.0 status
+
+The property UI and pipeline are fully wired. ONNX/YOLO detection, OCR matching, tracking, and real blur masks are **stubs** in this release — settings persist in your scene for when inference is enabled.
+
+---
+
+## Filter Properties Reference
+
+| Setting | Description |
+|---------|-------------|
+| Enable All Protection | Master toggle — off = passthrough |
+| Category toggles | Enable/disable detection classes |
+| Custom PII (inline) | Multiline keyword list |
+| Load PII from text file | Optional `.txt` file (one entry per line, `#` comments) |
+| Confidence Threshold | Detection sensitivity (0.1–0.95) |
+| Process Every N Frames | `1` = every frame; higher = better performance |
+| Blur Intensity | 1–32 strength |
+| Prefer GPU | Use ONNX/TensorRT GPU when available *(future)* |
+| Show Detection Preview | Debug overlay *(future)* |
+| Enable Debug Logging | Verbose OBS log output |
+| YOLO ONNX Model Path | Path to YOLOv8n ONNX model *(future)* |
+
+---
 
 ## Architecture
-
-The runtime pipeline processes each video frame inside the OBS filter callback:
 
 ```mermaid
 flowchart LR
     A[OBS Source Frame] --> B[IRLSAFETY+ Filter]
-    B --> C[Downscale / Normalize]
+    B --> C[Frame Skip Gate]
     C --> D[YOLO / ONNX Detection]
-    C --> E[OCR Text Regions]
-    D --> F[Merge PII Regions]
+    C --> E[OCR + Custom PII Match]
+    D --> F[Merge Regions + Tracking]
     E --> F
-    F --> G[Expand Masks]
-    G --> H[Blur Compositor]
-    H --> I[Return Frame to OBS]
+    F --> G[Blur / Pixelate]
+    G --> H[Output Frame]
 ```
 
-### Pipeline stages
+| Module | File | Role |
+|--------|------|------|
+| Filter UI | `src/pii-filter.c` | OBS properties, `filter_video`, `video_tick` |
+| Settings | `src/filter_settings.c` | Load/save toggles and thresholds |
+| Custom PII | `src/custom_pii.c` | Parse inline + file keyword lists |
+| Frame convert | `src/frame_convert.c` | Multi-planar YUV/RGB → pipeline view |
+| Detection | `src/detection/yolo_onnx.c` | YOLO via ONNX Runtime *(stub)* |
+| OCR | `src/ocr/ocr_engine.c` | Text + fuzzy/semantic PII *(stub)* |
+| Blur | `src/blur/blur_compositor.c` | Gaussian / pixelate *(stub)* |
+| Pipeline | `src/pipeline.c` | Orchestration + category gates |
 
-| Stage | Module | Responsibility |
-|-------|--------|----------------|
-| 1. Frame ingest | `src/pii-filter.c` | OBS `filter_video` / `video_tick` hooks receive CPU frame buffers |
-| 2. Object detection | `src/detection/yolo_onnx.c` | `detect_regions()` — planned ONNX Runtime inference with a YOLO ONNX model |
-| 3. OCR | `src/ocr/ocr_engine.c` | `ocr_regions()` — planned text extraction and PII classification |
-| 4. Mask merge | `src/pipeline.c` | Combines YOLO boxes with OCR text boxes into a unified region list |
-| 5. Blur | `src/blur/blur_compositor.c` | `apply_blur()` — planned Gaussian/pixelate compositing over masked regions |
+---
 
-Current scaffold ships stub implementations that register the filter and wire the pipeline without performing inference or blur.
+## Build from Source (Windows 10/11)
 
-## Windows build prerequisites
+### Prerequisites
 
-1. **Visual Studio 2022** with the "Desktop development with C++" workload
-2. **CMake 3.28+** ([cmake.org](https://cmake.org/download/))
-3. **OBS Studio 31.x development files** (`libobs`, headers, and CMake package config)
-4. *(Future)* ONNX Runtime, a YOLO ONNX model, and an OCR backend (Tesseract or ONNX-based OCR)
+1. **Visual Studio 2022** — "Desktop development with C++" workload
+2. **CMake 3.28+** (included with VS or from [cmake.org](https://cmake.org/download/))
+3. **OBS Studio 31.x** installed (for testing only — build auto-downloads OBS SDK via template)
 
-### Obtaining OBS development files
+### One-click build
 
-**Option A — Build OBS from source (recommended for development)**
-
-```powershell
-git clone --recursive https://github.com/obsproject/obs-studio.git
-cd obs-studio
-cmake --preset windows-x64
-cmake --build build_x64 --config RelWithDebInfo
-```
-
-After building, set `CMAKE_PREFIX_PATH` to the OBS build's `cmake` package directory (typically `build_x64`).
-
-**Option B — Use an installed OBS Studio**
-
-If you have OBS Studio installed with developer components, point CMake at the install prefix:
-
-```powershell
-$env:CMAKE_PREFIX_PATH = "C:\Program Files\obs-studio\cmake"
-```
-
-## Windows build instructions
-
-### Using CMake presets (recommended)
-
-From the project root:
-
-```powershell
+```bat
 cd C:\Users\White\Desktop\IRLSAFETY-obs
+scripts\build-windows.bat
+```
 
-# Configure (requires libobs on CMAKE_PREFIX_PATH)
+This configures with `windows-x64` preset, builds `RelWithDebInfo`, and runs unit tests.
+
+### Manual build
+
+```powershell
 cmake --preset windows-x64
-
-# Build
 cmake --build build_x64 --config RelWithDebInfo
-
-# Run stub unit tests (no OBS runtime required)
 ctest --test-dir build_x64 -C RelWithDebInfo --output-on-failure
 ```
 
-### Manual configure
+### Install into OBS
 
-```powershell
-cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
-  -DCMAKE_PREFIX_PATH="C:\path\to\obs-studio\build_x64"
-cmake --build build --config RelWithDebInfo
+```bat
+scripts\install-to-obs.bat
 ```
 
-### Output locations
+Copies to:
+- `%ProgramFiles%\obs-studio\obs-plugins\64bit\irlsafety-plus.dll`
+- `%ProgramFiles%\obs-studio\data\obs-plugins\irlsafety-plus\`
 
-| Artifact | Path |
-|----------|------|
-| Plugin DLL | `build_x64/rundir/RelWithDebInfo/irlsafety-plus.dll` |
-| Locale data | `build_x64/rundir/RelWithDebInfo/irlsafety-plus/` |
-| Install target | `%ProgramData%\obs-studio\plugins\irlsafety-plus\` |
+### Create v0.0 test package
 
-Copy the `rundir` output into your OBS plugins folder to test locally.
+```bat
+scripts\package-v0.0.bat
+```
 
-## Project layout
+Output: `release\IRLSAFETY+-v0.0.0-win64\` — zip and share for easy testing.
+
+---
+
+## Project Layout
 
 ```
 IRLSAFETY-obs/
-├── CMakeLists.txt          # Root CMake project
-├── CMakePresets.json       # Windows x64 preset (and others from template)
-├── buildspec.json          # Plugin metadata (name, version, OBS deps)
-├── cmake/                  # OBS template CMake helpers
-├── build-aux/              # Formatting and build utilities
-├── data/locale/            # OBS locale strings
-├── src/
-│   ├── plugin-main.c       # Module load / filter registration
-│   ├── pii-filter.c        # OBS video filter
-│   ├── pipeline.c          # Detection → OCR → blur orchestration
-│   ├── detection/          # YOLO/ONNX stub
-│   ├── ocr/                # OCR stub
-│   └── blur/               # Blur compositor stub
-└── tests/                  # Pipeline stub unit tests
+├── scripts/           build-windows.bat, install-to-obs.bat, package-v0.0.bat
+├── release/           INSTALL.txt + packaged builds
+├── src/               Plugin source
+├── data/locale/       OBS UI strings
+├── data/              custom-pii.example.txt
+├── tests/             Unit tests (pipeline + OBS entry points)
+├── cmake/             OBS template helpers
+├── LICENSE            MIT
+└── THIRD_PARTY_NOTICES.md
 ```
+
+---
+
+## Roadmap (post v0.0)
+
+- [ ] ONNX Runtime + YOLOv8n ONNX inference (GPU + CPU)
+- [ ] EasyOCR / Tesseract integration + custom keyword fuzzy match
+- [ ] Detection tracking across frames
+- [ ] Gaussian blur / pixelate compositing
+- [ ] Detection preview overlay
+- [ ] Audio PII muting (extensibility hook)
+
+---
 
 ## Attributions
 
-| Component | License | Source |
-|-----------|---------|--------|
-| OBS Plugin Template | GPLv2 | [obsproject/obs-plugintemplate](https://github.com/obsproject/obs-plugintemplate) |
-| OBS Studio / libobs | GPLv2 | [obsproject/obs-studio](https://github.com/obsproject/obs-studio) |
-| IRLSAFETY+ plugin source | MIT | This repository |
-| ONNX Runtime *(planned)* | MIT | [microsoft/onnxruntime](https://github.com/microsoft/onnxruntime) |
-| YOLO models *(planned)* | Model-specific | Ultralytics YOLOv8/v11 ONNX exports |
-| OCR backend *(planned)* | Apache 2.0 / MIT | Tesseract or ONNX-based OCR (TBD) |
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for full license table including OBS Studio, obs-plugintemplate, obs-detect, obs-ocr, Ultralytics YOLO, EasyOCR, ONNX Runtime, and Tesseract.
 
-## Roadmap
-
-- [ ] Integrate ONNX Runtime for YOLO inference
-- [ ] Add OCR engine with PII classification rules
-- [ ] Implement GPU-accelerated blur compositing
-- [ ] Filter properties UI (model path, sensitivity, blur type)
-- [ ] Performance profiling and frame-skip tuning for real-time use
+> **GPL note:** IRLSAFETY+ source is MIT, but linking/running inside OBS requires compliance with OBS's GPLv2 terms.

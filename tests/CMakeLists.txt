@@ -1,12 +1,16 @@
 set(_irlsafety_core_sources
     ../src/pipeline.c
+    ../src/filter_settings.c
+    ../src/custom_pii.c
     ../src/irlsafety_types.c
     ../src/detection/yolo_onnx.c
     ../src/ocr/ocr_engine.c
     ../src/blur/blur_compositor.c)
 
-add_executable(test_pipeline_stubs test_pipeline_stubs.c ${_irlsafety_core_sources})
-target_include_directories(test_pipeline_stubs PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../src")
+add_executable(test_pipeline_stubs test_pipeline_stubs.c mocks/obs-mock.c ${_irlsafety_core_sources})
+target_compile_definitions(test_pipeline_stubs PRIVATE IRLSAFETY_TEST_BUILD)
+target_include_directories(
+  test_pipeline_stubs PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/mocks" "${CMAKE_CURRENT_SOURCE_DIR}/../src")
 add_test(NAME pipeline_stubs COMMAND test_pipeline_stubs)
 
 set(_irlsafety_obs_test_sources

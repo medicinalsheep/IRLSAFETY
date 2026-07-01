@@ -16,6 +16,7 @@
 
 #include <obs-module.h>
 
+#include "filter_settings.h"
 #include "frame_convert.h"
 #include <pii-filter.h>
 
@@ -46,13 +47,13 @@ static int test_filter_defaults_and_properties(void)
 	obs_data_t *settings = obs_data_create();
 
 	info->get_defaults(settings);
-	TEST_ASSERT(obs_data_get_double(settings, "blur_strength") == 8.0);
+	TEST_ASSERT(obs_data_get_bool(settings, IRLSAFETY_SET_ENABLE_ALL) == true);
+	TEST_ASSERT(obs_data_get_double(settings, IRLSAFETY_SET_BLUR_STRENGTH) == 12.0);
+	TEST_ASSERT(obs_data_get_int(settings, IRLSAFETY_SET_FRAME_SKIP) == 1);
 
 	obs_properties_t *props = info->get_properties(NULL);
 	TEST_ASSERT(props != NULL);
-
-	info->get_properties(NULL);
-	TEST_ASSERT(strcmp(obs_mock_last_property_label(), "Blur Strength") == 0);
+	TEST_ASSERT(obs_mock_property_count() >= 10);
 
 	obs_data_release(settings);
 	return 0;

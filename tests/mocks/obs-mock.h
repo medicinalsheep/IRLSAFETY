@@ -44,6 +44,16 @@ enum obs_text_type {
 	OBS_TEXT_INFO,
 };
 
+enum obs_path_type {
+	OBS_PATH_FILE,
+	OBS_PATH_DIRECTORY,
+};
+
+enum obs_group_type {
+	OBS_GROUP_NORMAL,
+	OBS_GROUP_CHECKABLE,
+};
+
 typedef struct obs_data obs_data_t;
 typedef struct obs_properties obs_properties_t;
 typedef struct obs_source obs_source_t;
@@ -80,8 +90,8 @@ void obs_mock_reset(void);
 size_t obs_mock_registered_source_count(void);
 const struct obs_source_info *obs_mock_get_registered_source(size_t index);
 const char *obs_mock_last_property_label(void);
+size_t obs_mock_property_count(void);
 int obs_mock_module_load_calls(void);
-int obs_mock_filter_video_calls(void);
 
 void obs_register_source_s(const struct obs_source_info *info, size_t size);
 #define obs_register_source(info) obs_register_source_s(info, sizeof(struct obs_source_info))
@@ -92,12 +102,26 @@ void bfree(void *ptr);
 
 obs_data_t *obs_data_create(void);
 void obs_data_release(obs_data_t *data);
+bool obs_data_get_bool(obs_data_t *data, const char *name);
+void obs_data_set_default_bool(obs_data_t *data, const char *name, bool val);
+int obs_data_get_int(obs_data_t *data, const char *name);
+void obs_data_set_default_int(obs_data_t *data, const char *name, int val);
 double obs_data_get_double(obs_data_t *data, const char *name);
 void obs_data_set_default_double(obs_data_t *data, const char *name, double val);
+const char *obs_data_get_string(obs_data_t *data, const char *name);
+void obs_data_set_default_string(obs_data_t *data, const char *name, const char *val);
 
 obs_properties_t *obs_properties_create(void);
-void obs_properties_destroy(obs_properties_t *props);
+obs_properties_t *obs_properties_add_group(obs_properties_t *props, const char *name, const char *desc,
+					   enum obs_group_type type, obs_properties_t *group);
 obs_properties_t *obs_properties_add_text(obs_properties_t *props, const char *name, const char *desc,
 					    enum obs_text_type type);
+obs_properties_t *obs_properties_add_bool(obs_properties_t *props, const char *name, const char *desc);
 obs_properties_t *obs_properties_add_float(obs_properties_t *props, const char *name, const char *desc, double min,
 					   double max, double step);
+obs_properties_t *obs_properties_add_float_slider(obs_properties_t *props, const char *name, const char *desc,
+						  double min, double max, double step);
+obs_properties_t *obs_properties_add_int_slider(obs_properties_t *props, const char *name, const char *desc, int min,
+						  int max, int step);
+obs_properties_t *obs_properties_add_path(obs_properties_t *props, const char *name, const char *desc,
+					    enum obs_path_type type, const char *filter, const char *default_path);

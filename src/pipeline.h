@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include "custom_pii.h"
+#include "filter_settings.h"
 #include "irlsafety_types.h"
 
 #ifdef __cplusplus
@@ -16,9 +18,12 @@ typedef struct irlsafety_pipeline irlsafety_pipeline;
 irlsafety_pipeline *irlsafety_pipeline_create(const char *yolo_model_path);
 void irlsafety_pipeline_destroy(irlsafety_pipeline *pipeline);
 
-/* Run the full PII pipeline on a CPU frame view. */
+/* Reload custom PII keywords from current filter settings. */
+int irlsafety_pipeline_update_settings(irlsafety_pipeline *pipeline, const irlsafety_filter_settings *settings);
+
+/* Run the full PII pipeline on a CPU frame view (respects category toggles). */
 int irlsafety_pipeline_process_frame(irlsafety_pipeline *pipeline, irlsafety_frame_view *frame,
-				     float blur_strength);
+				     const irlsafety_filter_settings *settings);
 
 #ifdef __cplusplus
 }
