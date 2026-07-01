@@ -35,6 +35,14 @@ if(ENABLE_QT)
   )
 endif()
 
+set(_irlsafety_ocr_sources src/ocr/ocr_engine.c src/ocr/pii_match.c src/ocr/ocr_frame_util.c)
+
+if(OS_WINDOWS)
+  list(APPEND _irlsafety_ocr_sources src/ocr/ocr_windows.cpp)
+else()
+  list(APPEND _irlsafety_ocr_sources src/ocr/ocr_stub.c)
+endif()
+
 target_sources(
   ${CMAKE_PROJECT_NAME}
   PRIVATE src/plugin-main.c
@@ -45,11 +53,17 @@ target_sources(
           src/frame_convert.c
           src/irlsafety_types.c
           src/detection/yolo_onnx.c
-          src/ocr/ocr_engine.c
           src/blur/blur_compositor.c
+          ${_irlsafety_ocr_sources}
 )
 
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+
+if(OS_WINDOWS)
+  set_source_files_properties(src/ocr/ocr_windows.cpp PROPERTIES LANGUAGE CXX)
+  target_compile_features(${CMAKE_PROJECT_NAME} PRIVATE cxx_std_20)
+  target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE windowsapp)
+endif()
 
 set_target_properties_plugin(${CMAKE_PROJECT_NAME} PROPERTIES OUTPUT_NAME ${_name})
 

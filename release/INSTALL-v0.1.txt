@@ -1,0 +1,36 @@
+IRLSAFETY+ v0.1.0 — Windows Test Package
+========================================
+
+QUICK INSTALL (OBS already installed)
+------------------------------------
+1. Double-click: install-from-package.bat
+2. Restart OBS Studio
+3. Right-click any video source → Filters → + → "IRLSAFETY+ PII Blur"
+
+TEST CUSTOM PII BLUR (v0.1)
+---------------------------
+1. Open filter properties
+2. Ensure "Enable All Protection" and "Custom PII" are ON
+3. In "Custom PII (one per line)" enter your name, e.g.:
+     John Smith
+4. Hold an ID or paper with that name in front of your webcam
+5. Increase "Blur Intensity" if needed (default 12)
+6. Tip: set "Process Every N Frames" to 2–3 if CPU usage is high
+
+v0.1 CAPABILITIES
+-----------------
+- Windows OCR reads on-screen / camera text
+- Case-insensitive match against your custom PII list
+- Real box blur applied to matched text regions
+- All category toggles preserved (YOLO object classes still stubbed)
+
+REQUIREMENTS
+------------
+- Windows 10/11 x64 with OCR language pack installed
+- OBS Studio 31.x (64-bit)
+
+UNINSTALL
+---------
+Delete:
+  %ProgramFiles%\obs-studio\obs-plugins\64bit\irlsafety-plus.dll
+  %ProgramFiles%\obs-studio\data\obs-plugins\irlsafety-plus\

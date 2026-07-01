@@ -5,6 +5,9 @@ set(_irlsafety_core_sources
     ../src/irlsafety_types.c
     ../src/detection/yolo_onnx.c
     ../src/ocr/ocr_engine.c
+    ../src/ocr/pii_match.c
+    ../src/ocr/ocr_frame_util.c
+    ../src/ocr/ocr_stub.c
     ../src/blur/blur_compositor.c)
 
 add_executable(test_pipeline_stubs test_pipeline_stubs.c mocks/obs-mock.c ${_irlsafety_core_sources})

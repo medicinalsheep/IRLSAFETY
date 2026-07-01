@@ -4,7 +4,7 @@
 
 | | |
 |---|---|
-| **Version** | 0.0.0 (scaffold — UI wired, inference coming next) |
+| **Version** | 0.1.0 — Custom PII OCR + blur working on Windows |
 | **Platform** | Windows 10/11 x64 |
 | **OBS** | 31.x (64-bit) |
 | **License** | MIT ([LICENSE](LICENSE)) — OBS/libobs is GPLv2 when running inside OBS |
@@ -13,9 +13,13 @@
 
 ## Quick Start for Streamers (3 steps)
 
-### Option A — Test package (easiest)
+### Option A — v0.1 test package (easiest)
 
-1. Open `release\IRLSAFETY+-v0.0.0-win64\` (create it with `scripts\package-v0.0.bat` if missing)
+```bat
+scripts\package-v0.1.bat
+```
+
+1. Open `release\IRLSAFETY+-v0.1.0-win64\`
 2. Double-click **`install-from-package.bat`**
 3. Restart OBS → right-click any source → **Filters** → **+** → **IRLSAFETY+ PII Blur**
 
@@ -26,74 +30,74 @@ scripts\build-windows.bat
 scripts\install-to-obs.bat
 ```
 
-Restart OBS and add the filter as above.
+---
+
+## v0.1 — Custom PII blur (working now)
+
+**Goal:** Add your name in settings, show an ID or paper with that name on camera, and see it blurred in real time.
+
+1. Add the **IRLSAFETY+ PII Blur** filter to your webcam (or any source)
+2. Turn on **Enable All Protection** and **Custom PII**
+3. In **Custom PII (one per line)**, enter your name:
+   ```
+   John Smith
+   ```
+   Or browse to a `.txt` file (`data/custom-pii.example.txt` is a template)
+4. Point your camera at text containing that name
+5. Matched text is blurred using **Windows OCR** + **case-insensitive** keyword matching
+
+**Tips:**
+- Increase **Blur Intensity** (default 12) for stronger obfuscation
+- Set **Process Every N Frames** to `2` or `3` if CPU usage is high
+- Enable **Enable Debug Logging** to see match counts in the OBS log
+
+### What works in v0.1
+
+| Feature | Status |
+|---------|--------|
+| Custom PII list (inline + file) | **Working** |
+| Windows OCR text detection | **Working** |
+| Case-insensitive PII match | **Working** |
+| Box blur on matched regions | **Working** |
+| Master + category toggles | **Working** |
+| Screen Text (all OCR text) | **Working** (basic — blurs all detected text) |
+| Street Signs / Plates / Docs / Faces | Stub (awaiting YOLO/ONNX) |
+| Detection tracking | Planned |
+| GPU ONNX inference | Planned |
 
 ---
 
 ## Using the Filter in OBS
 
-1. Add **IRLSAFETY+ PII Blur** to any video source (camera, display capture, etc.)
-2. **Enable All Protection** — master on/off at the top
-3. Toggle categories:
-   - Street Signs
-   - License Plates
-   - Documents / IDs
-   - Faces
-   - Screen Text
-   - **Custom PII** (always blur your own list)
-4. **Custom PII List**
-   - Type entries directly (one per line): names, addresses, phone numbers, usernames
-   - Or browse to a `.txt` file (see `data/custom-pii.example.txt`)
-5. Tune **Confidence**, **Process Every N Frames** (performance), and **Blur Intensity**
-
-### v0.0.0 status
-
-The property UI and pipeline are fully wired. ONNX/YOLO detection, OCR matching, tracking, and real blur masks are **stubs** in this release — settings persist in your scene for when inference is enabled.
+1. **Enable All Protection** — master on/off
+2. **Protection Categories** — toggle each class independently
+3. **Custom PII List** — names, addresses, usernames (one per line)
+4. **Detection & Blur** — confidence, frame skip, blur intensity
+5. **Advanced** — GPU preference, debug logging, ONNX model path
 
 ---
 
-## Filter Properties Reference
-
-| Setting | Description |
-|---------|-------------|
-| Enable All Protection | Master toggle — off = passthrough |
-| Category toggles | Enable/disable detection classes |
-| Custom PII (inline) | Multiline keyword list |
-| Load PII from text file | Optional `.txt` file (one entry per line, `#` comments) |
-| Confidence Threshold | Detection sensitivity (0.1–0.95) |
-| Process Every N Frames | `1` = every frame; higher = better performance |
-| Blur Intensity | 1–32 strength |
-| Prefer GPU | Use ONNX/TensorRT GPU when available *(future)* |
-| Show Detection Preview | Debug overlay *(future)* |
-| Enable Debug Logging | Verbose OBS log output |
-| YOLO ONNX Model Path | Path to YOLOv8n ONNX model *(future)* |
-
----
-
-## Architecture
+## Architecture (v0.1)
 
 ```mermaid
 flowchart LR
-    A[OBS Source Frame] --> B[IRLSAFETY+ Filter]
-    B --> C[Frame Skip Gate]
-    C --> D[YOLO / ONNX Detection]
-    C --> E[OCR + Custom PII Match]
-    D --> F[Merge Regions + Tracking]
-    E --> F
-    F --> G[Blur / Pixelate]
-    G --> H[Output Frame]
+    A[OBS Frame] --> B[Frame Skip]
+    B --> C[Windows OCR]
+    C --> D[Custom PII Match]
+    D --> E[Box Blur Regions]
+    E --> F[Output Frame]
+    B --> G[YOLO Stub]
+    G --> E
 ```
 
 | Module | File | Role |
 |--------|------|------|
-| Filter UI | `src/pii-filter.c` | OBS properties, `filter_video`, `video_tick` |
-| Settings | `src/filter_settings.c` | Load/save toggles and thresholds |
-| Custom PII | `src/custom_pii.c` | Parse inline + file keyword lists |
-| Frame convert | `src/frame_convert.c` | Multi-planar YUV/RGB → pipeline view |
-| Detection | `src/detection/yolo_onnx.c` | YOLO via ONNX Runtime *(stub)* |
-| OCR | `src/ocr/ocr_engine.c` | Text + fuzzy/semantic PII *(stub)* |
-| Blur | `src/blur/blur_compositor.c` | Gaussian / pixelate *(stub)* |
-| Pipeline | `src/pipeline.c` | Orchestration + category gates |
+| Filter UI | `src/pii-filter.c` | OBS properties + `filter_video` |
+| OCR | `src/ocr/ocr_windows.cpp` | Windows.Media.Ocr word boxes |
+| PII match | `src/ocr/pii_match.c` | Case-insensitive keyword match |
+| Blur | `src/blur/blur_compositor.c` | In-place box blur (BGRA / I420) |
+| Custom PII | `src/custom_pii.c` | Parse inline + file lists |
+| Pipeline | `src/pipeline.c` | Category gates + orchestration |
 
 ---
 
@@ -101,44 +105,17 @@ flowchart LR
 
 ### Prerequisites
 
-1. **Visual Studio 2022** — "Desktop development with C++" workload
-2. **CMake 3.28+** (included with VS or from [cmake.org](https://cmake.org/download/))
-3. **OBS Studio 31.x** installed (for testing only — build auto-downloads OBS SDK via template)
+- Visual Studio 2022 with **Desktop development with C++**
+- CMake 3.28+ (bundled with VS)
+- OBS Studio 31.x installed (for testing)
 
-### One-click build
-
-```bat
-cd C:\Users\White\Desktop\IRLSAFETY-obs
-scripts\build-windows.bat
-```
-
-This configures with `windows-x64` preset, builds `RelWithDebInfo`, and runs unit tests.
-
-### Manual build
-
-```powershell
-cmake --preset windows-x64
-cmake --build build_x64 --config RelWithDebInfo
-ctest --test-dir build_x64 -C RelWithDebInfo --output-on-failure
-```
-
-### Install into OBS
+### Commands
 
 ```bat
-scripts\install-to-obs.bat
+scripts\build-windows.bat          REM configure + build + test
+scripts\install-to-obs.bat         REM install to Program Files\obs-studio
+scripts\package-v0.1.bat           REM create release\IRLSAFETY+-v0.1.0-win64\
 ```
-
-Copies to:
-- `%ProgramFiles%\obs-studio\obs-plugins\64bit\irlsafety-plus.dll`
-- `%ProgramFiles%\obs-studio\data\obs-plugins\irlsafety-plus\`
-
-### Create v0.0 test package
-
-```bat
-scripts\package-v0.0.bat
-```
-
-Output: `release\IRLSAFETY+-v0.0.0-win64\` — zip and share for easy testing.
 
 ---
 
@@ -146,32 +123,27 @@ Output: `release\IRLSAFETY+-v0.0.0-win64\` — zip and share for easy testing.
 
 ```
 IRLSAFETY-obs/
-├── scripts/           build-windows.bat, install-to-obs.bat, package-v0.0.bat
-├── release/           INSTALL.txt + packaged builds
-├── src/               Plugin source
-├── data/locale/       OBS UI strings
-├── data/              custom-pii.example.txt
-├── tests/             Unit tests (pipeline + OBS entry points)
-├── cmake/             OBS template helpers
-├── LICENSE            MIT
-└── THIRD_PARTY_NOTICES.md
+├── scripts/              build, install, package batch files
+├── release/              INSTALL notes + packaged builds
+├── src/ocr/              Windows OCR, PII matching, frame conversion
+├── src/blur/             Box blur compositor
+├── data/custom-pii.example.txt
+└── tests/                Unit tests (match, blur, OBS entry points)
 ```
 
 ---
 
-## Roadmap (post v0.0)
+## Roadmap
 
-- [ ] ONNX Runtime + YOLOv8n ONNX inference (GPU + CPU)
-- [ ] EasyOCR / Tesseract integration + custom keyword fuzzy match
+- [x] Custom PII OCR + blur (v0.1)
+- [ ] YOLOv8n ONNX for signs, plates, documents, faces
+- [ ] ONNX Runtime GPU path
 - [ ] Detection tracking across frames
-- [ ] Gaussian blur / pixelate compositing
 - [ ] Detection preview overlay
-- [ ] Audio PII muting (extensibility hook)
+- [ ] Audio PII muting
 
 ---
 
 ## Attributions
 
-See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for full license table including OBS Studio, obs-plugintemplate, obs-detect, obs-ocr, Ultralytics YOLO, EasyOCR, ONNX Runtime, and Tesseract.
-
-> **GPL note:** IRLSAFETY+ source is MIT, but linking/running inside OBS requires compliance with OBS's GPLv2 terms.
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) — OBS Studio, obs-plugintemplate, obs-detect, obs-ocr, Ultralytics YOLO, EasyOCR, ONNX Runtime, Windows OCR API.
