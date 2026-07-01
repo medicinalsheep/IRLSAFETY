@@ -40,6 +40,8 @@ target_sources(
   PRIVATE src/plugin-main.c
           src/pii-filter.c
           src/pipeline.c
+          src/frame_convert.c
+          src/irlsafety_types.c
           src/detection/yolo_onnx.c
           src/ocr/ocr_engine.c
           src/blur/blur_compositor.c

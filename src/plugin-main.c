@@ -9,7 +9,9 @@
 #include "pii-filter.h"
 
 OBS_DECLARE_MODULE()
+#ifndef IRLSAFETY_TEST_BUILD
 OBS_MODULE_USE_DEFAULT_LOCALE(PLUGIN_NAME, "en-US")
+#endif
 
 bool obs_module_load(void)
 {

@@ -8,62 +8,93 @@
 #include "ocr/ocr_engine.h"
 #include "pipeline.h"
 
-#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 
-static void test_detect_regions_returns_empty(void)
+#define TEST_ASSERT(cond)                                                                          \
+	do {                                                                                       \
+		if (!(cond)) {                                                                     \
+			fprintf(stderr, "FAIL: %s (%s:%d)\n", #cond, __FILE__, __LINE__);          \
+			return 1;                                                                  \
+		}                                                                                  \
+	} while (0)
+
+static irlsafety_frame_view make_test_frame(uint8_t *buffer)
+{
+	irlsafety_frame_view frame = {0};
+	frame.planes[0] = buffer;
+	frame.linesize[0] = 4;
+	frame.width = 4;
+	frame.height = 4;
+	frame.format = IRLSAFETY_FORMAT_BGRA;
+	frame.plane_count = 1;
+	return frame;
+}
+
+static int test_detect_regions_returns_empty(void)
 {
 	yolo_onnx_context *ctx = yolo_onnx_create("models/yolo.onnx");
 	irlsafety_region_list regions = {.count = 99};
 	irlsafety_frame_view frame = {0};
+	frame.plane_count = 0;
 
-	assert(ctx != NULL);
-	assert(detect_regions(ctx, &frame, &regions) == 0);
-	assert(regions.count == 0);
+	TEST_ASSERT(ctx != NULL);
+	TEST_ASSERT(detect_regions(ctx, &frame, &regions) == 0);
+	TEST_ASSERT(regions.count == 0);
 	yolo_onnx_destroy(ctx);
+	return 0;
 }
 
-static void test_ocr_regions_returns_empty(void)
+static int test_ocr_regions_returns_empty(void)
 {
 	ocr_engine_context *ctx = ocr_engine_create();
 	irlsafety_region_list regions = {.count = 99};
 	irlsafety_frame_view frame = {0};
+	frame.plane_count = 0;
 
-	assert(ctx != NULL);
-	assert(ocr_regions(ctx, &frame, NULL, &regions) == 0);
-	assert(regions.count == 0);
+	TEST_ASSERT(ctx != NULL);
+	TEST_ASSERT(ocr_regions(ctx, &frame, NULL, &regions) == 0);
+	TEST_ASSERT(regions.count == 0);
 	ocr_engine_destroy(ctx);
+	return 0;
 }
 
-static void test_apply_blur_noop(void)
+static int test_apply_blur_accepts_mutable_planes(void)
 {
 	blur_compositor_context *ctx = blur_compositor_create();
 	uint8_t buffer[16] = {0};
-	irlsafety_frame_view frame = {.data = buffer, .width = 4, .height = 4, .linesize = 4};
+	irlsafety_frame_view frame = make_test_frame(buffer);
 
-	assert(ctx != NULL);
-	assert(apply_blur(ctx, &frame, NULL, 8.0f) == 0);
+	TEST_ASSERT(ctx != NULL);
+	frame.planes[0][0] = 42;
+	TEST_ASSERT(apply_blur(ctx, &frame, NULL, 8.0f) == 0);
+	TEST_ASSERT(frame.planes[0][0] == 42);
 	blur_compositor_destroy(ctx);
+	return 0;
 }
 
-static void test_pipeline_process_frame(void)
+static int test_pipeline_process_frame(void)
 {
 	irlsafety_pipeline *pipeline = irlsafety_pipeline_create(NULL);
 	uint8_t buffer[16] = {0};
-	irlsafety_frame_view frame = {.data = buffer, .width = 4, .height = 4, .linesize = 4};
+	irlsafety_frame_view frame = make_test_frame(buffer);
 
-	assert(pipeline != NULL);
-	assert(irlsafety_pipeline_process_frame(pipeline, &frame, 8.0f) == 0);
+	TEST_ASSERT(pipeline != NULL);
+	TEST_ASSERT(irlsafety_pipeline_process_frame(pipeline, &frame, 8.0f) == 0);
 	irlsafety_pipeline_destroy(pipeline);
+	return 0;
 }
 
 int main(void)
 {
-	test_detect_regions_returns_empty();
-	test_ocr_regions_returns_empty();
-	test_apply_blur_noop();
-	test_pipeline_process_frame();
+	if (test_detect_regions_returns_empty() != 0)
+		return 1;
+	if (test_ocr_regions_returns_empty() != 0)
+		return 1;
+	if (test_apply_blur_accepts_mutable_planes() != 0)
+		return 1;
+	if (test_pipeline_process_frame() != 0)
+		return 1;
 	printf("IRLSAFETY+ pipeline stub tests passed.\n");
 	return 0;
 }

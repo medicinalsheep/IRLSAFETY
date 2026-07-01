@@ -5,7 +5,11 @@
 
 #pragma once
 
+#ifdef IRLSAFETY_TEST_BUILD
+#include "obs-mock.h"
+#else
 #include <obs-module.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
