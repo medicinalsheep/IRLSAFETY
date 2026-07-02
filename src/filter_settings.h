@@ -21,6 +21,7 @@ extern "C" {
 #define IRLSAFETY_SET_CAT_DOCUMENTS "cat_documents"
 #define IRLSAFETY_SET_CAT_FACES "cat_faces"
 #define IRLSAFETY_SET_CAT_SCREEN_TEXT "cat_screen_text"
+#define IRLSAFETY_SET_CAT_SENSITIVE_PATTERNS "cat_sensitive_patterns"
 #define IRLSAFETY_SET_CAT_CUSTOM_PII "cat_custom_pii"
 #define IRLSAFETY_SET_CONFIDENCE "confidence_threshold"
 #define IRLSAFETY_SET_FRAME_SKIP "frame_skip"
@@ -28,6 +29,7 @@ extern "C" {
 #define IRLSAFETY_SET_BLUR_STRENGTH "blur_strength"
 #define IRLSAFETY_SET_CENSOR_MODE "censor_mode"
 #define IRLSAFETY_SET_CENSOR_COLOR "censor_color"
+#define IRLSAFETY_SET_CENSOR_OVERLAY "censor_overlay_file"
 #define IRLSAFETY_SET_TEST_EFFECT "test_effect"
 #define IRLSAFETY_SET_SHOW_PREVIEW "show_preview"
 #define IRLSAFETY_SET_ENABLE_LOGGING "enable_logging"
@@ -52,6 +54,7 @@ typedef enum irlsafety_censor_mode {
 	IRLSAFETY_CENSOR_BOX = 1,
 	IRLSAFETY_CENSOR_ELLIPSE = 2,
 	IRLSAFETY_CENSOR_CLOUD = 3,
+	IRLSAFETY_CENSOR_OVERLAY = 4,
 } irlsafety_censor_mode;
 
 typedef struct irlsafety_filter_settings {
@@ -61,6 +64,7 @@ typedef struct irlsafety_filter_settings {
 	bool cat_documents;
 	bool cat_faces;
 	bool cat_screen_text;
+	bool cat_sensitive_patterns;
 	bool cat_custom_pii;
 	float confidence_threshold;
 	int frame_skip;
@@ -68,6 +72,7 @@ typedef struct irlsafety_filter_settings {
 	float blur_strength;
 	irlsafety_censor_mode censor_mode;
 	uint32_t censor_color;
+	char censor_overlay_file[1024];
 	bool test_effect;
 	bool show_preview;
 	bool enable_logging;

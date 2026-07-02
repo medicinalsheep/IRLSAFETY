@@ -4,7 +4,7 @@
 
 | | |
 |---|---|
-| **Version** | 0.6.0 |
+| **Version** | 0.6.2 |
 | **Platform** | Windows 10/11 x64 |
 | **OBS** | 31.x / 32.x (64-bit) |
 | **License** | MIT ([LICENSE](LICENSE)) |
@@ -14,7 +14,7 @@
 ## Private tester install (GitHub Release)
 
 1. Open [Releases](https://github.com/medicinalsheep/IRLSAFETY/releases) on this repo
-2. Download **`IRLSAFETY+-v0.5.3-win64.zip`** from the latest release
+2. Download **`IRLSAFETY+-v0.6.2-win64.zip`** from the latest release
 3. Extract the folder
 4. Right-click **`install-from-package.bat`** → **Run as administrator**
 5. Restart OBS
@@ -27,7 +27,7 @@ scripts\build-windows.bat
 scripts\package-v0.1.bat
 ```
 
-Package output: `release\IRLSAFETY+-v0.5.3-win64\`
+Package output: `release\IRLSAFETY+-v0.6.2-win64\`
 
 ---
 

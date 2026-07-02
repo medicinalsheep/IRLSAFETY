@@ -1,0 +1,18 @@
+# IRLSAFETY+ YOLO class roadmap — use exact names in LabelImg
+#
+# Phase 1 (v0.6 release — irlsafety-detect.onnx shipping now)
+license_plate
+street_sign
+
+# Phase 2 (v0.8 — train when you have 50+ labeled shipping frames)
+shipping_label
+
+# Phase 3 (v0.9 — payment surfaces + identity documents)
+payment_card
+id_document
+
+# Phase 4 (optional)
+face
+
+# Legacy aliases (reserved in code — map to Phase 3+ when retraining)
+document

@@ -1,0 +1,58 @@
+IRLSAFETY+ — Virtual Camera (Protected Output) — PLANNED
+==========================================================
+
+WHY VIRTUAL CAMERA?
+-------------------
+OBS filters only protect video inside OBS. Many apps never see that path:
+
+  Discord screen share    picks a window or display — not your OBS filter
+  Zoom / Meet             same
+  Browser tabs            same
+  Twitch / Kick           usually via OBS (filter works if OBS is the encoder)
+
+Virtual Camera is the universal bridge:
+  Any app that can pick a webcam can pick "IRLSAFETY+ Protected Camera"
+  and receive already-censored video.
+
+PRIVACY
+-------
+- Processing stays on your machine.
+- Virtual cam output is a local DirectShow/Media Foundation device.
+- No account, no cloud relay, no third-party OCR.
+
+HOW IT WILL WORK (roadmap)
+--------------------------
+1. IRLSAFETY core pipeline runs on your chosen source (display, cam, or composite).
+2. Censored frames feed a virtual camera driver (Windows first).
+3. You select "IRLSAFETY+ Virtual Camera" in Discord, Zoom, Chrome, etc.
+
+Planned user flow:
+  OBS / Standalone tray app -> Start Protected Virtual Camera
+  Other apps -> Video settings -> Camera -> IRLSAFETY+ Virtual Camera
+
+PHASE PLAN
+----------
+  v0.7  libirlsafety core extracted (shared by OBS plugin + future apps)
+  v0.8  Windows virtual camera module (OBS Tools menu + standalone option)
+  v0.9  Spout / NDI optional outputs for pro streaming stacks
+  v1.0  Standalone "IRLSAFETY Desktop" — protect desktop without OBS running
+
+WHAT YOU CAN DO TODAY
+---------------------
+- OBS / Streamlabs: add IRLSAFETY+ filter on each source you stream/record.
+- Discord (games): use OBS Virtual Camera (OBS built-in) WITH filters on sources
+  inside OBS before starting Virtual Cam — not as seamless as our dedicated device,
+  but works until IRLSAFETY vcam ships.
+
+LIMITATIONS (until vcam ships)
+------------------------------
+- No automatic protection inside arbitrary apps without OBS or our vcam.
+- Discord window-share does not pass through OBS filters.
+- Audio delay / sync: hybrid stream delay affects video; audio sync is manual in OBS.
+
+STATUS
+------
+Virtual camera: NOT YET SHIPPED — planning + driver integration in progress.
+Watch Control dock and release notes for "Start Protected Virtual Camera".
+
+See PLATFORMS.txt for per-app guidance.

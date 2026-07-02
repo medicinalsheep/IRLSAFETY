@@ -79,18 +79,18 @@ CAMERA / GOPRO TIPS
 - OCR Detail = Maximum for small on-screen text
 - Lower camera resolution in OBS if you see lag (1080p30 recommended)
 
-LICENSE PLATES & STREET SIGNS (v0.3 ONNX)
------------------------------------------
-1. Run scripts\download-detection-model.ps1 (or place your own YOLOv8 ONNX)
-2. Copy model to OBS data folder:
-     data\obs-plugins\irlsafety-plus\models\irlsafety-detect.onnx
-3. Enable License Plates and/or Street Signs categories
-4. Confidence Threshold = 0.45 (raise if too many false positives)
-5. Prefer GPU = ON (uses DirectML on Windows)
-6. Debug log should show: IRLSAFETY+: Object detection — N region(s)
+LICENSE PLATES & STREET SIGNS (v0.6.1+)
+---------------------------------------
+v0.6.1 packages include a trained YOLOv8n model (US license plates + street signs).
 
-For production use, train/export a plate+sign model (see data\models\README.txt).
-The download script ships a YOLOv8n smoke-test model only.
+1. Enable License Plates and/or Street Signs categories
+2. Confidence Threshold = 0.45 (raise if too many false positives)
+3. Prefer GPU = ON (uses DirectML on Windows)
+4. Debug log should show: IRLSAFETY+: Object detection — N region(s)
+
+To replace the bundled model, copy your own ONNX to:
+  data\obs-plugins\irlsafety-plus\models\irlsafety-detect.onnx
+See data\models\TRAINING.txt for local training.
 
 WHAT WORKS IN v0.3
 ------------------
@@ -102,8 +102,8 @@ WHAT WORKS IN v0.3
 
 STILL IN PROGRESS
 -----------------
-- Bundled production plate/sign weights (bring your own ONNX for now)
-- Document / face model tuning
+- Document / face model tuning (classes 2–3 not in v0.6.1 detector)
+- Child OCR backend (optional build; Windows OCR is default)
 
 UNINSTALL
 ---------

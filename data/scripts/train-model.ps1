@@ -1,6 +1,7 @@
 # IRLSAFETY+ — full US plate/sign training pipeline (local only).
 param(
     [string]$PluginRoot = "",
+    [string]$TrainingDir = "",
     [switch]$Bootstrap,
     [int]$Epochs = 80,
     [switch]$SkipBootstrap
@@ -12,7 +13,15 @@ if (-not $PluginRoot) {
     $PluginRoot = Split-Path $PSScriptRoot -Parent
 }
 
-$TrainingDir = Join-Path $env:APPDATA "obs-studio\plugin_config\irlsafety-plus\training"
+if (-not $TrainingDir) {
+    if ($env:IRLSAFETY_TRAINING_ROOT) {
+        $TrainingDir = $env:IRLSAFETY_TRAINING_ROOT
+    } elseif (Test-Path "Z:\irlsafety-training") {
+        $TrainingDir = "Z:\irlsafety-training"
+    } else {
+        $TrainingDir = Join-Path $env:APPDATA "obs-studio\plugin_config\irlsafety-plus\training"
+    }
+}
 $ModelsDir = Join-Path $PluginRoot "models"
 $SetupPs1 = Join-Path $PSScriptRoot "setup-training.ps1"
 $FetchPs1 = Join-Path $PSScriptRoot "fetch-us-bootstrap.ps1"
@@ -20,6 +29,7 @@ $PreparePy = Join-Path $PluginRoot "training\prepare_dataset.py"
 $TrainPy = Join-Path $PluginRoot "training\train_irlsafety.py"
 
 Write-Host "=== IRLSAFETY+ Train US Detection Model ===" -ForegroundColor Cyan
+Write-Host "Workspace: $TrainingDir" -ForegroundColor Yellow
 Write-Host ""
 
 & $SetupPs1 -PluginRoot $PluginRoot

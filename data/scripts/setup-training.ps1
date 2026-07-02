@@ -1,6 +1,7 @@
 # IRLSAFETY+ — LOCAL-ONLY training setup. No cloud. No data upload.
 param(
-    [string]$PluginRoot = ""
+    [string]$PluginRoot = "",
+    [string]$TrainingDir = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -9,7 +10,15 @@ if (-not $PluginRoot) {
     $PluginRoot = Split-Path $PSScriptRoot -Parent
 }
 
-$TrainingDir = Join-Path $env:APPDATA "obs-studio\plugin_config\irlsafety-plus\training"
+if (-not $TrainingDir) {
+    if ($env:IRLSAFETY_TRAINING_ROOT) {
+        $TrainingDir = $env:IRLSAFETY_TRAINING_ROOT
+    } elseif (Test-Path "Z:\irlsafety-training") {
+        $TrainingDir = "Z:\irlsafety-training"
+    } else {
+        $TrainingDir = Join-Path $env:APPDATA "obs-studio\plugin_config\irlsafety-plus\training"
+    }
+}
 $RepoTraining = Join-Path (Split-Path $PluginRoot -Parent) "training"
 if (Test-Path (Join-Path (Split-Path $PluginRoot -Parent) "CMakeLists.txt")) {
     $RepoTraining = Join-Path (Split-Path $PluginRoot -Parent) "training"

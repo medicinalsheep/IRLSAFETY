@@ -5,6 +5,7 @@
 
 #include "gpu_frame.h"
 
+#include "blur/overlay_image.h"
 #include "ocr/ocr_frame_util.h"
 
 #include <obs-module.h>
@@ -30,6 +31,8 @@ struct irlsafety_gpu_frame {
 	enum gs_color_format format;
 	enum gs_color_space color_space;
 	bool captured;
+	gs_texture_t *overlay_tex;
+	char overlay_tex_key[1024];
 };
 
 static uint32_t filter_pixel_width(obs_source_t *filter)
@@ -315,6 +318,8 @@ void irlsafety_gpu_frame_destroy(irlsafety_gpu_frame *gpu)
 		gs_stagesurface_destroy(gpu->stage);
 	if (gpu->ocr_stage)
 		gs_stagesurface_destroy(gpu->ocr_stage);
+	if (gpu->overlay_tex)
+		gs_texture_destroy(gpu->overlay_tex);
 	if (gpu->output)
 		gs_texture_destroy(gpu->output);
 	free(gpu->cpu_buffer);
@@ -427,8 +432,32 @@ bool irlsafety_gpu_frame_draw_captured(irlsafety_gpu_frame *gpu)
 	return true;
 }
 
-void irlsafety_gpu_frame_draw_overlays(struct obs_source *filter, const irlsafety_region_list *regions,
-				       const irlsafety_filter_settings *settings)
+static gs_texture_t *ensure_gpu_overlay_texture(irlsafety_gpu_frame *gpu, const irlsafety_overlay_image *overlay,
+						const char *cache_key)
+{
+	if (!gpu || !overlay || !overlay->rgba || overlay->width == 0 || overlay->height == 0)
+		return NULL;
+
+	if (gpu->overlay_tex && strcmp(gpu->overlay_tex_key, cache_key) == 0)
+		return gpu->overlay_tex;
+
+	if (gpu->overlay_tex) {
+		gs_texture_destroy(gpu->overlay_tex);
+		gpu->overlay_tex = NULL;
+	}
+
+	gpu->overlay_tex =
+		gs_texture_create(overlay->width, overlay->height, GS_RGBA, 1, (const uint8_t **)&overlay->rgba, 0);
+	if (!gpu->overlay_tex)
+		return NULL;
+
+	strncpy(gpu->overlay_tex_key, cache_key, sizeof(gpu->overlay_tex_key) - 1);
+	gpu->overlay_tex_key[sizeof(gpu->overlay_tex_key) - 1] = '\0';
+	return gpu->overlay_tex;
+}
+
+void irlsafety_gpu_frame_draw_overlays(irlsafety_gpu_frame *gpu, struct obs_source *filter,
+				       const irlsafety_region_list *regions, const irlsafety_filter_settings *settings)
 {
 	gs_effect_t *solid;
 	gs_eparam_t *color_param;
@@ -444,6 +473,60 @@ void irlsafety_gpu_frame_draw_overlays(struct obs_source *filter, const irlsafet
 	if (settings->censor_mode == IRLSAFETY_CENSOR_BLUR)
 		return;
 
+	if (settings->censor_mode == IRLSAFETY_CENSOR_OVERLAY) {
+		char resolved[1024];
+		irlsafety_overlay_image *overlay;
+		gs_effect_t *effect;
+		gs_eparam_t *image_param;
+		gs_technique_t *draw_tech;
+		gs_texture_t *tex;
+
+		if (!gpu)
+			return;
+
+		irlsafety_overlay_resolve_path(settings->censor_overlay_file, resolved, sizeof(resolved));
+		overlay = irlsafety_overlay_acquire(settings->censor_overlay_file);
+		tex = ensure_gpu_overlay_texture(gpu, overlay, resolved);
+		if (!tex)
+			goto solid_fallback;
+
+		effect = obs_get_base_effect(OBS_EFFECT_DEFAULT);
+		image_param = gs_effect_get_param_by_name(effect, "image");
+		draw_tech = gs_effect_get_technique(effect, "Draw");
+		if (!effect || !image_param || !draw_tech)
+			goto solid_fallback;
+
+		gs_blend_state_push();
+		gs_blend_function(GS_BLEND_SRCALPHA, GS_BLEND_INVSRCALPHA);
+		gs_enable_framebuffer_srgb(true);
+		gs_effect_set_texture(image_param, tex);
+		gs_technique_begin(draw_tech);
+		gs_technique_begin_pass(draw_tech, 0);
+
+		for (size_t i = 0; i < regions->count; i++) {
+			const irlsafety_rect *rect = &regions->regions[i];
+
+			if (rect->width < 1.0f || rect->height < 1.0f)
+				continue;
+
+			gs_matrix_push();
+			gs_matrix_translate3f(rect->x, rect->y, 0.0f);
+			gs_draw_sprite(tex, 0, (uint32_t)rect->width, (uint32_t)rect->height);
+			gs_matrix_pop();
+			drawn++;
+		}
+
+		gs_technique_end_pass(draw_tech);
+		gs_technique_end(draw_tech);
+		gs_enable_framebuffer_srgb(previous);
+		gs_blend_state_pop();
+
+		if (settings->enable_logging && drawn > 0)
+			obs_log(LOG_INFO, "IRLSAFETY+: drew %zu GPU overlay image(s)", drawn);
+		return;
+	}
+
+solid_fallback:
 	solid = obs_get_base_effect(OBS_EFFECT_SOLID);
 	if (!solid)
 		return;
@@ -486,13 +569,14 @@ void irlsafety_gpu_frame_draw_overlays(struct obs_source *filter, const irlsafet
 		obs_log(LOG_INFO, "IRLSAFETY+: drew %zu GPU overlay box(es)", drawn);
 }
 
-void irlsafety_gpu_frame_draw_fullscreen_censor(struct obs_source *filter, const irlsafety_filter_settings *settings,
-						uint32_t width, uint32_t height)
+void irlsafety_gpu_frame_draw_fullscreen_censor(irlsafety_gpu_frame *gpu, struct obs_source *filter,
+						const irlsafety_filter_settings *settings, uint32_t width,
+						uint32_t height)
 {
 	irlsafety_region_list regions;
 	irlsafety_filter_settings solid_settings;
 
-	if (!filter || !settings || width == 0 || height == 0)
+	if (!gpu || !filter || !settings || width == 0 || height == 0)
 		return;
 
 	solid_settings = *settings;
@@ -508,7 +592,7 @@ void irlsafety_gpu_frame_draw_fullscreen_censor(struct obs_source *filter, const
 		.height = (float)height,
 		.confidence = 1.0f,
 	};
-	irlsafety_gpu_frame_draw_overlays(filter, &regions, &solid_settings);
+	irlsafety_gpu_frame_draw_overlays(gpu, filter, &regions, &solid_settings);
 }
 
 static bool draw_texture_scaled_to_texrender(gs_texture_t *source, gs_texrender_t *dest, uint32_t width,

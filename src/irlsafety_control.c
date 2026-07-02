@@ -7,6 +7,7 @@
 
 #include "filter_settings.h"
 #include "pii-filter.h"
+#include "irlsafety_paths.h"
 
 #ifndef IRLSAFETY_TEST_BUILD
 #include <obs-frontend-api.h>
@@ -166,17 +167,7 @@ void irlsafety_control_resolve_default_model_path(char *dest, size_t dest_size)
 
 	dest[0] = '\0';
 
-#ifndef IRLSAFETY_TEST_BUILD
-	{
-		char *bundled = obs_module_file("models/irlsafety-detect.onnx");
-
-		if (bundled) {
-			strncpy(dest, bundled, dest_size - 1);
-			dest[dest_size - 1] = '\0';
-			bfree(bundled);
-		}
-	}
-#endif
+	irlsafety_resolve_model_path("models/irlsafety-detect.onnx", NULL, dest, dest_size);
 }
 
 void irlsafety_control_get_models_folder(char *dest, size_t dest_size)
@@ -240,6 +231,31 @@ bool irlsafety_control_open_path(const char *path)
 	return (INT_PTR)result > 32;
 #else
 	UNUSED_PARAMETER(path);
+	return false;
+#endif
+}
+
+bool irlsafety_control_open_models_guide(const char *filename)
+{
+#ifndef IRLSAFETY_TEST_BUILD
+	char rel[256];
+	char *guide;
+
+	if (!filename || filename[0] == '\0')
+		return false;
+
+	snprintf(rel, sizeof(rel), "models/%s", filename);
+	guide = obs_module_file(rel);
+	if (!guide || guide[0] == '\0') {
+		bfree(guide);
+		return false;
+	}
+
+	irlsafety_control_open_path(guide);
+	bfree(guide);
+	return true;
+#else
+	(void)filename;
 	return false;
 #endif
 }

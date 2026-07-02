@@ -11,14 +11,18 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 import random
 import shutil
 import sys
 import zipfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from urllib.request import urlretrieve
 
-LISA_ZIP_URL = "http://cvrr.ucsd.edu/LISA_traffic_signs/signDatabasePublicFramesOnly.zip"
+LISA_ZIP_URLS = [
+    "http://cvrr.ucsd.edu/LISA_traffic_signs/signDatabasePublicFramesOnly.zip",
+    "https://git-disl.github.io/GTDLBench/datasets/lisa_traffic_sign_dataset/signDatabasePublicFramesOnly.zip",
+]
 CLASS_LICENSE_PLATE = 0
 CLASS_STREET_SIGN = 1
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".bmp"}
@@ -118,64 +122,171 @@ def import_lisa_signs(raw_dir: Path, images_dir: Path, labels_dir: Path, max_ima
     return imported
 
 
+def coco_bbox_to_yolo(bbox: list[float], img_w: int, img_h: int) -> tuple[float, float, float, float] | None:
+    if len(bbox) < 4 or img_w <= 0 or img_h <= 0:
+        return None
+    x, y, w, h = bbox[:4]
+    if w <= 1 or h <= 1:
+        return None
+    xc = (x + w * 0.5) / img_w
+    yc = (y + h * 0.5) / img_h
+    nw = w / img_w
+    nh = h / img_h
+    return xc, yc, nw, nh
+
+
+def import_coco_zip(zip_path: Path, images_dir: Path, labels_dir: Path, class_id: int, max_images: int,
+                    prefix: str, imported_so_far: int) -> int:
+    """Import Roboflow-style COCO zip (image + _annotations.coco.json per archive)."""
+    imported = 0
+    if not zip_path.is_file():
+        return 0
+
+    print(f"Importing COCO zip: {zip_path.name}")
+    with zipfile.ZipFile(zip_path, "r") as zf:
+        if "_annotations.coco.json" not in zf.namelist():
+            print(f"  Skipped {zip_path.name} — no _annotations.coco.json")
+            return 0
+
+        coco = json.loads(zf.read("_annotations.coco.json").decode("utf-8"))
+        images = {item["id"]: item for item in coco.get("images", [])}
+        anns_by_image: dict[int, list[dict]] = {}
+        for ann in coco.get("annotations", []):
+            anns_by_image.setdefault(ann["image_id"], []).append(ann)
+
+        for image_id, meta in images.items():
+            if imported_so_far + imported >= max_images:
+                break
+
+            file_name = meta.get("file_name")
+            if not file_name or file_name not in zf.namelist():
+                continue
+
+            img_w = int(meta.get("width") or 0)
+            img_h = int(meta.get("height") or 0)
+            lines: list[str] = []
+            for ann in anns_by_image.get(image_id, []):
+                yolo = coco_bbox_to_yolo(ann.get("bbox", []), img_w, img_h)
+                if yolo:
+                    lines.append(yolo_line(class_id, *yolo))
+
+            if not lines:
+                continue
+
+            stem = f"{prefix}_{Path(file_name).stem}"
+            suffix = Path(file_name).suffix.lower() or ".jpg"
+            out_img = images_dir / f"{stem}{suffix}"
+            out_lbl = labels_dir / f"{stem}.txt"
+            with zf.open(file_name) as src, out_img.open("wb") as dst:
+                shutil.copyfileobj(src, dst)
+            write_label(out_lbl, lines)
+            imported += 1
+            if imported % 200 == 0:
+                print(f"  {prefix} imported: {imported}")
+
+    print(f"  {prefix} imported: {imported}")
+    return imported
+
+
 def import_hf_plates(training_dir: Path, images_dir: Path, labels_dir: Path, max_images: int) -> int:
-    """Import keremberke/license-plate-object-detection if huggingface_hub is available."""
+    """Import keremberke/license-plate-object-detection COCO zips (local cache)."""
     try:
-        from huggingface_hub import snapshot_download
+        from huggingface_hub import hf_hub_download
     except ImportError:
         print("Optional: pip install huggingface_hub  (for plate bootstrap download)")
         return 0
 
-    cache = training_dir / "raw" / "hf_plates"
-    print("Downloading HuggingFace license-plate-object-detection (local cache)...")
-    try:
-        repo_path = Path(
-            snapshot_download(
-                repo_id="keremberke/license-plate-object-detection",
-                repo_type="dataset",
-                local_dir=cache,
-            )
-        )
-    except Exception as exc:  # noqa: BLE001
-        print(f"Plate bootstrap skipped: {exc}")
-        return 0
+    cache = training_dir / "raw" / "hf_plates" / "data"
+    cache.mkdir(parents=True, exist_ok=True)
+    repo_id = "keremberke/license-plate-object-detection"
 
     imported = 0
-    for split in ("train", "valid", "validation", "val", "test"):
-        split_img = repo_path / split / "images"
-        split_lbl = repo_path / split / "labels"
-        if not split_img.is_dir():
-            split_img = repo_path / "images" / split
-            split_lbl = repo_path / "labels" / split
-        if not split_img.is_dir():
-            continue
-
-        for img in sorted(split_img.iterdir()):
-            if imported >= max_images:
-                return imported
-            if img.suffix.lower() not in IMAGE_EXTS:
-                continue
-            src_lbl = split_lbl / f"{img.stem}.txt"
-            if not src_lbl.is_file():
+    for split, remote_name, local_name in (
+        ("train", "data/train.zip", "train.zip"),
+        ("valid", "data/valid.zip", "valid.zip"),
+    ):
+        zip_path = cache / local_name
+        if not zip_path.is_file():
+            print(f"Downloading HuggingFace {remote_name}...")
+            try:
+                downloaded = hf_hub_download(repo_id=repo_id, repo_type="dataset", filename=remote_name,
+                                             local_dir=cache.parent)
+                zip_path = Path(downloaded)
+            except Exception as exc:  # noqa: BLE001
+                print(f"Plate zip download failed ({remote_name}): {exc}")
                 continue
 
-            raw_lines = src_lbl.read_text(encoding="utf-8").splitlines()
-            remapped: list[str] = []
-            for line in raw_lines:
-                parts = line.strip().split()
-                if len(parts) < 5:
+        imported += import_coco_zip(zip_path, images_dir, labels_dir, CLASS_LICENSE_PLATE,
+                                    max_images, "plate", imported)
+
+    return imported
+
+
+def import_hf_signs(training_dir: Path, images_dir: Path, labels_dir: Path, max_images: int) -> int:
+    """Import ayoubsa/Sign_Road_Detection_Dataset (Roboflow YOLO zips, remapped to street_sign)."""
+    try:
+        from huggingface_hub import hf_hub_download
+    except ImportError:
+        print("Optional: pip install huggingface_hub  (for sign bootstrap download)")
+        return 0
+
+    cache = training_dir / "raw" / "hf_signs"
+    cache.mkdir(parents=True, exist_ok=True)
+    repo_id = "ayoubsa/Sign_Road_Detection_Dataset"
+
+    imported = 0
+    for remote_name in ("train.zip", "valid.zip"):
+        zip_path = cache / remote_name
+        if not zip_path.is_file():
+            print(f"Downloading HuggingFace {remote_name}...")
+            try:
+                downloaded = hf_hub_download(repo_id=repo_id, repo_type="dataset", filename=remote_name,
+                                             local_dir=cache)
+                zip_path = Path(downloaded)
+            except Exception as exc:  # noqa: BLE001
+                print(f"Sign zip download failed ({remote_name}): {exc}")
+                continue
+
+        print(f"Importing sign zip: {zip_path.name}")
+        with zipfile.ZipFile(zip_path, "r") as zf:
+            img_names = [
+                n for n in zf.namelist()
+                if "/images/" in n and n.lower().endswith((".jpg", ".jpeg", ".png"))
+            ]
+            for img_name in img_names:
+                if imported >= max_images:
+                    break
+
+                lbl_name = str(PurePosixPath(img_name).with_suffix(".txt")).replace("/images/", "/labels/")
+                if lbl_name not in zf.namelist():
                     continue
-                remapped.append(f"{CLASS_LICENSE_PLATE} {' '.join(parts[1:5])}")
 
-            if not remapped:
-                continue
+                raw_lines = zf.read(lbl_name).decode("utf-8").strip().splitlines()
+                remapped: list[str] = []
+                for line in raw_lines:
+                    parts = line.strip().split()
+                    if len(parts) < 5:
+                        continue
+                    remapped.append(f"{CLASS_STREET_SIGN} {' '.join(parts[1:5])}")
 
-            stem = f"plate_{img.stem}"
-            shutil.copy2(img, images_dir / f"{stem}{img.suffix.lower()}")
-            write_label(labels_dir / f"{stem}.txt", remapped)
-            imported += 1
+                if not remapped:
+                    continue
 
-    print(f"  License plates imported: {imported}")
+                stem = f"sign_{PurePosixPath(img_name).stem}"
+                suffix = PurePosixPath(img_name).suffix.lower()
+                out_img = images_dir / f"{stem}{suffix}"
+                out_lbl = labels_dir / f"{stem}.txt"
+                with zf.open(img_name) as src, out_img.open("wb") as dst:
+                    shutil.copyfileobj(src, dst)
+                write_label(out_lbl, remapped)
+                imported += 1
+                if imported % 200 == 0:
+                    print(f"  sign imported: {imported}")
+
+        if imported >= max_images:
+            break
+
+    print(f"  sign imported: {imported}")
     return imported
 
 
@@ -203,8 +314,17 @@ def main() -> int:
         lisa_extract = raw_dir / "lisa_signs"
         try:
             if not lisa_zip.is_file():
-                download(LISA_ZIP_URL, lisa_zip)
-            if not lisa_extract.is_dir():
+                last_err: Exception | None = None
+                for url in LISA_ZIP_URLS:
+                    try:
+                        download(url, lisa_zip)
+                        last_err = None
+                        break
+                    except Exception as exc:  # noqa: BLE001
+                        last_err = exc
+                if last_err is not None:
+                    raise last_err
+            if not lisa_extract.is_dir() or not any(lisa_extract.rglob("annotations.csv")):
                 print(f"Extracting {lisa_zip.name}...")
                 with zipfile.ZipFile(lisa_zip, "r") as zf:
                     zf.extractall(lisa_extract)
@@ -212,8 +332,12 @@ def main() -> int:
         except Exception as exc:  # noqa: BLE001
             print(f"LISA download failed: {exc}")
             print("Manual fallback: download signDatabasePublicFramesOnly.zip from")
-            print("  http://cvrr.ucsd.edu/LISA_traffic_signs/")
+            print("  http://cvrr.ucsd.edu/LISA/lisa-traffic-sign-dataset.html")
             print(f"  extract to {lisa_extract}")
+
+    if sign_count == 0:
+        print("Falling back to HuggingFace street sign bootstrap...")
+        sign_count = import_hf_signs(training_dir, images_dir, labels_dir, args.max_signs)
 
     if not args.skip_plates:
         plate_count = import_hf_plates(training_dir, images_dir, labels_dir, args.max_plates)

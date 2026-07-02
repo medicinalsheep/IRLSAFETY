@@ -36,6 +36,9 @@ private slots:
 	void onOpenModelsFolder();
 	void onOpenTrainingFolder();
 	void onOpenTrainingGuide();
+	void onOpenOcrGuide();
+	void onOpenPlatformsGuide();
+	void onOpenVirtualCamGuide();
 	void onCaptureTrainingFrame();
 	void onShowWalkthrough();
 	void onLabelImages();
@@ -56,11 +59,13 @@ private:
 	QLabel *ocr_status = nullptr;
 	QLabel *model_status = nullptr;
 	QLabel *overlay_status = nullptr;
+	QLabel *vcam_status = nullptr;
 	QLineEdit *model_path = nullptr;
 	QCheckBox *enable_all = nullptr;
 	QCheckBox *cat_plates = nullptr;
 	QCheckBox *cat_signs = nullptr;
 	QCheckBox *cat_screen = nullptr;
+	QCheckBox *cat_sensitive = nullptr;
 	QPushButton *reload_btn = nullptr;
 	QPushButton *walkthrough_btn = nullptr;
 	QPushButton *capture_btn = nullptr;

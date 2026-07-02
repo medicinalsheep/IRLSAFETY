@@ -1,6 +1,10 @@
 # IRLSAFETY+ Custom PII example list
 # Add one entry per line. Lines starting with # are ignored.
 # These keywords are ALWAYS blurred when Custom PII category is enabled.
+#
+# TIP: Enable "Sensitive Numbers" category for auto-detection of credit cards,
+# tracking numbers, SSN-style IDs, and long numeric sequences (no keywords needed).
+# See models/PII_STRATEGY.txt for the full privacy strategy.
 
 John Smith
 123 Main Street

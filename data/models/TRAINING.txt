@@ -4,7 +4,8 @@ IRLSAFETY+ — Train US License Plates & Street Signs (100% local)
 GOAL
 ----
 Produce:  data/models/irlsafety-detect.onnx
-Classes:  0 = license_plate   1 = street_sign   (2 = document, 3 = face optional)
+Classes (v0.6 release model):  0 = license_plate   1 = street_sign
+Future classes: see classes_roadmap.txt (shipping_label, payment_card, id_document)
 
 QUICK START (one command)
 -------------------------
@@ -25,6 +26,13 @@ REQUIREMENTS
   - Python 3.10+ (Add to PATH during install)
   - NVIDIA GPU recommended (CPU works, slower)
   - ~2 GB disk for bootstrap data
+
+OPTIONAL: FAST TRAINING DISK
+----------------------------
+  set IRLSAFETY_TRAINING_ROOT=Z:\irlsafety-training
+  scripts\train-model.ps1
+
+  Use a local RAM disk or fast network share for datasets + runs (advanced).
 
 STEP BY STEP
 ------------
@@ -69,5 +77,16 @@ TROUBLESHOOTING
   "Not enough labeled data" -> run fetch-us-bootstrap.ps1, then label-images.ps1
   Model loads but no detections -> add more val frames from your actual stream
   COCO model rejected in log -> you need a CUSTOM trained onnx, not yolov8n COCO
+
+NEXT DATASETS (strategic)
+-------------------------
+  shipping_label  — UPS/FedEx/USPS/Amazon labels on packages (unboxing, mail)
+  payment_card    — physical cards + on-screen card entry UIs
+  id_document     — licenses, passports, account confirmation screens
+
+  Until YOLO classes ship, enable "Sensitive Numbers" in filter categories —
+  catches cards, tracking numbers, SSN-style IDs, and long numeric sequences via OCR.
+
+  Full plan: models/PII_STRATEGY.txt
 
 Control dock buttons: Label Images | Train US Model

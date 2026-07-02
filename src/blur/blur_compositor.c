@@ -5,6 +5,9 @@
 
 #include "blur_compositor.h"
 
+#include "../frame_sample.h"
+#include "overlay_image.h"
+
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -361,6 +364,110 @@ static void fill_rect_i420(irlsafety_frame_view *frame, const irlsafety_rect *re
 	}
 }
 
+static void fill_rect_packed_yuv(irlsafety_frame_view *frame, const irlsafety_rect *rect, uint32_t color,
+				 irlsafety_fill_shape shape, bool uyvy)
+{
+	uint8_t r, g, b, a, y, u, v;
+	uint32_t x0, y0, x1, y1;
+
+	color_bytes_from_obs(color, &r, &g, &b, &a);
+	irlsafety_rgb_to_yuv601(r, g, b, &y, &u, &v);
+
+	x0 = (uint32_t)rect->x;
+	y0 = (uint32_t)rect->y;
+	x1 = x0 + (uint32_t)rect->width;
+	y1 = y0 + (uint32_t)rect->height;
+	if (x1 > frame->width)
+		x1 = frame->width;
+	if (y1 > frame->height)
+		y1 = frame->height;
+
+	for (uint32_t row = y0; row < y1; row++) {
+		uint8_t *line = frame->planes[0] + row * frame->linesize[0];
+
+		for (uint32_t col = x0; col < x1; col++) {
+			if (!point_in_shape((float)col + 0.5f, (float)row + 0.5f, rect, shape))
+				continue;
+			if (uyvy)
+				irlsafety_uyvy_write_pixel(line, col, y, u, v);
+			else
+				irlsafety_yuy2_write_pixel(line, col, y, u, v);
+		}
+	}
+}
+
+static void blur_rect_packed_yuv(irlsafety_frame_view *frame, const irlsafety_rect *rect, int radius, bool uyvy)
+{
+	uint32_t x0 = (uint32_t)rect->x;
+	uint32_t y0 = (uint32_t)rect->y;
+	uint32_t x1 = x0 + (uint32_t)rect->width;
+	uint32_t y1 = y0 + (uint32_t)rect->height;
+	uint8_t *tmp;
+	uint32_t rw;
+	uint32_t rh;
+
+	if (x1 > frame->width)
+		x1 = frame->width;
+	if (y1 > frame->height)
+		y1 = frame->height;
+	if (x0 >= x1 || y0 >= y1)
+		return;
+
+	rw = x1 - x0;
+	rh = y1 - y0;
+	tmp = malloc((size_t)rw * (size_t)rh);
+	if (!tmp)
+		return;
+
+	for (uint32_t row = y0; row < y1; row++) {
+		const uint8_t *line = frame->planes[0] + row * frame->linesize[0];
+
+		for (uint32_t col = x0; col < x1; col++) {
+			if (uyvy)
+				tmp[(row - y0) * rw + (col - x0)] = irlsafety_uyvy_read_y(line, col);
+			else
+				tmp[(row - y0) * rw + (col - x0)] = irlsafety_yuy2_read_y(line, col);
+		}
+	}
+
+	for (uint32_t row = 0; row < rh; row++) {
+		for (uint32_t col = 0; col < rw; col++) {
+			int sum = 0;
+			int count = 0;
+
+			for (int ky = -radius; ky <= radius; ky++) {
+				int sy = (int)row + ky;
+				if (sy < 0 || sy >= (int)rh)
+					continue;
+				for (int kx = -radius; kx <= radius; kx++) {
+					int sx = (int)col + kx;
+					if (sx < 0 || sx >= (int)rw)
+						continue;
+					sum += tmp[(uint32_t)sy * rw + (uint32_t)sx];
+					count++;
+				}
+			}
+
+			tmp[row * rw + col] = (uint8_t)(sum / (count > 0 ? count : 1));
+		}
+	}
+
+	for (uint32_t row = y0; row < y1; row++) {
+		uint8_t *line = frame->planes[0] + row * frame->linesize[0];
+
+		for (uint32_t col = x0; col < x1; col++) {
+			uint8_t y_val = tmp[(row - y0) * rw + (col - x0)];
+
+			if (uyvy)
+				irlsafety_uyvy_write_pixel(line, col, y_val, 128, 128);
+			else
+				irlsafety_yuy2_write_pixel(line, col, y_val, 128, 128);
+		}
+	}
+
+	free(tmp);
+}
+
 static void fill_rect_nv12(irlsafety_frame_view *frame, const irlsafety_rect *rect, uint32_t color,
 			   irlsafety_fill_shape shape)
 {
@@ -464,6 +571,12 @@ static void blur_region(irlsafety_frame_view *frame, const irlsafety_rect *regio
 				       (uint32_t)rect.height / 2, radius / 2);
 		}
 		break;
+	case IRLSAFETY_FORMAT_YUY2:
+		blur_rect_packed_yuv(frame, &rect, radius, false);
+		break;
+	case IRLSAFETY_FORMAT_UYVY:
+		blur_rect_packed_yuv(frame, &rect, radius, true);
+		break;
 	default:
 		box_blur_plane(frame->planes[0], frame->linesize[0], frame->width, frame->height, (uint32_t)rect.x,
 			       (uint32_t)rect.y, (uint32_t)rect.width, (uint32_t)rect.height, radius);
@@ -504,6 +617,12 @@ static void fill_region(irlsafety_frame_view *frame, const irlsafety_rect *regio
 	case IRLSAFETY_FORMAT_NV12:
 		fill_rect_nv12(frame, &rect, color, shape);
 		break;
+	case IRLSAFETY_FORMAT_YUY2:
+		fill_rect_packed_yuv(frame, &rect, color, shape, false);
+		break;
+	case IRLSAFETY_FORMAT_UYVY:
+		fill_rect_packed_yuv(frame, &rect, color, shape, true);
+		break;
 	default:
 		fill_rect_bgra(frame, &rect, color, shape);
 		break;
@@ -513,10 +632,20 @@ static void fill_region(irlsafety_frame_view *frame, const irlsafety_rect *regio
 static void censor_region(irlsafety_frame_view *frame, const irlsafety_rect *region, const irlsafety_censor_options *options,
 			  int radius)
 {
-	if (options->mode == IRLSAFETY_CENSOR_BLUR)
+	if (options->mode == IRLSAFETY_CENSOR_BLUR) {
 		blur_region(frame, region, radius);
-	else
-		fill_region(frame, region, options->color, shape_for_mode(options->mode));
+		return;
+	}
+
+	if (options->mode == IRLSAFETY_CENSOR_OVERLAY) {
+		if (options->overlay)
+			irlsafety_overlay_apply_region_bgra(options->overlay, frame, region);
+		else
+			fill_region(frame, region, options->color, IRLSAFETY_FILL_RECT);
+		return;
+	}
+
+	fill_region(frame, region, options->color, shape_for_mode(options->mode));
 }
 
 blur_compositor_context *blur_compositor_create(void)

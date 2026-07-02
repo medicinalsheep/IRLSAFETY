@@ -1,0 +1,65 @@
+IRLSAFETY+ — Platform & App Compatibility Guide
+=================================================
+
+Core idea: IRLSAFETY is privacy infrastructure — OBS is one adapter, not the only one.
+
+PRIVACY (all modes)
+-------------------
+100% local processing. No cloud OCR. No telemetry. Train models on your own disk.
+
+ADAPTER MATRIX
+--------------
+
+| Where you stream/chat | Best setup today              | Future (standalone)        |
+|-----------------------|-------------------------------|----------------------------|
+| OBS / Streamlabs      | Filter on each source         | Same + vcam output         |
+| Twitch / Kick via OBS | Filter before encoder         | Standalone + OBS optional  |
+| Discord (game/cam)    | OBS Virtual Cam + filters     | IRLSAFETY Virtual Camera   |
+| Discord (screen)      | Share window w/ risk*         | Desktop capture + vcam     |
+| Zoom / Google Meet    | OBS Virtual Cam or vcam       | IRLSAFETY Virtual Camera   |
+| VLC playback          | Filter on Media Source in OBS | Standalone file redaction  |
+| GoPro / webcam        | Filter on Video Capture Dev   | Same (YUY2/UYVY supported) |
+| Phone (NDI/SRT)       | OBS source + filter           | NDI in/out module          |
+
+* Screen share in Discord does not run through OBS filters. Prefer camera virtual device
+  or window capture of a single sanitized app when privacy is critical.
+
+SOURCE SETUP CHEAT SHEET
+------------------------
+Desk / coding stream:
+  Display or Window Capture -> IRLSAFETY+ filter -> Screen Text + Custom PII ON
+
+IRL / body cam:
+  Video Capture Device -> IRLSAFETY+ filter -> train plates/signs model
+
+Game + facecam:
+  Filter on BOTH game source and camera (not just one)
+
+Multi-monitor:
+  One Display Capture per monitor OR filter each source you show
+
+SETTINGS FOR NON-STREAMERS TESTING
+----------------------------------
+You do not need to stream to use IRLSAFETY.
+  - Add filter -> Enable Test Effect -> verify overlay
+  - Record to file in OBS with filter enabled
+  - Control dock -> Capture Frame for training data
+
+ADVANCED: FAST TRAINING DISK
+------------------------------
+Power users can point training to a fast local or network RAM disk:
+
+  set IRLSAFETY_TRAINING_ROOT=Z:\irlsafety-training
+  scripts\train-model.ps1
+
+(Requires a shared folder you create — e.g. ImDisk RAM disk on another PC.)
+
+RESOURCES IN THIS FOLDER
+------------------------
+  README.txt         — detection model (irlsafety-detect.onnx)
+  TRAINING.txt       — train plates + signs locally
+  OCR.txt            — Screen Text / Custom PII / child OCR plan
+  VIRTUAL_CAMERA.txt — protected output for Discord, Zoom, etc.
+  PLATFORMS.txt      — this file
+
+Control dock: Open Training Guide opens TRAINING.txt from your install folder.

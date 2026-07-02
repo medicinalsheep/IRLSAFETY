@@ -8,6 +8,8 @@ option(ENABLE_FRONTEND_API "Use obs-frontend-api for UI functionality" OFF)
 option(ENABLE_QT "Use Qt functionality" OFF)
 option(IRLSAFETY_BUILD_TESTS "Build pipeline stub unit tests" ON)
 option(IRLSAFETY_ENABLE_ONNX "Enable YOLO ONNX detection (license plates, signs)" ON)
+set(IRLSAFETY_OCR_BACKEND "windows" CACHE STRING "OCR backend: windows, child, stub")
+set_property(CACHE IRLSAFETY_OCR_BACKEND PROPERTY STRINGS windows child stub)
 
 include(compilerconfig)
 include(defaults)
@@ -37,9 +39,13 @@ if(ENABLE_QT)
   )
 endif()
 
-set(_irlsafety_ocr_sources src/ocr/ocr_engine.c src/ocr/pii_match.c src/ocr/ocr_frame_util.c)
+set(_irlsafety_ocr_sources src/ocr/ocr_engine.c src/ocr/pii_match.c src/ocr/pii_patterns.c src/ocr/ocr_frame_util.c)
 
-if(OS_WINDOWS)
+if(IRLSAFETY_OCR_BACKEND STREQUAL "child" AND IRLSAFETY_ENABLE_ONNX AND OS_WINDOWS)
+  list(APPEND _irlsafety_ocr_sources src/ocr/ocr_child_onnx.cpp)
+elseif(IRLSAFETY_OCR_BACKEND STREQUAL "stub")
+  list(APPEND _irlsafety_ocr_sources src/ocr/ocr_stub.c)
+elseif(OS_WINDOWS)
   list(APPEND _irlsafety_ocr_sources src/ocr/ocr_windows.cpp)
 else()
   list(APPEND _irlsafety_ocr_sources src/ocr/ocr_stub.c)
@@ -63,11 +69,16 @@ set(_irlsafety_core_sources
     src/filter_property_ui.c
     src/custom_pii.c
     src/frame_convert.c
+    src/frame_sample.c
     src/gpu_frame.c
     src/irlsafety_types.c
+    src/irlsafety_paths.c
+    src/irlsafety_shutdown.c
     src/irlsafety_control.c
     src/hybrid_delay.c
+    src/virtual_cam/virtual_cam_stub.c
     src/blur/blur_compositor.c
+    src/blur/overlay_image.c
     ${_irlsafety_detection_sources}
     ${_irlsafety_ocr_sources})
 
@@ -81,9 +92,17 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE ${_irlsafety_core_sources})
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 if(OS_WINDOWS)
-  set_source_files_properties(src/ocr/ocr_windows.cpp PROPERTIES LANGUAGE CXX)
+  if(IRLSAFETY_OCR_BACKEND STREQUAL "child" AND IRLSAFETY_ENABLE_ONNX)
+    set_source_files_properties(src/ocr/ocr_child_onnx.cpp PROPERTIES LANGUAGE CXX)
+  else()
+    set_source_files_properties(src/ocr/ocr_windows.cpp PROPERTIES LANGUAGE CXX)
+  endif()
   target_compile_features(${CMAKE_PROJECT_NAME} PRIVATE cxx_std_20)
   target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE windowsapp)
+endif()
+
+if(IRLSAFETY_OCR_BACKEND STREQUAL "child" AND IRLSAFETY_ENABLE_ONNX AND OS_WINDOWS)
+  target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE IRLSAFETY_OCR_BACKEND_CHILD=1)
 endif()
 
 if(IRLSAFETY_ENABLE_ONNX AND OS_WINDOWS)

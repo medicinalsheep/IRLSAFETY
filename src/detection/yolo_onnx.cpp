@@ -147,6 +147,15 @@ yolo_onnx_context *yolo_onnx_create(void)
 
 void yolo_onnx_destroy(yolo_onnx_context *ctx)
 {
+	if (!ctx)
+		return;
+
+	{
+		std::lock_guard<std::mutex> lock(ctx->mutex);
+		ctx->loaded = false;
+		ctx->session.reset();
+	}
+
 	delete ctx;
 }
 

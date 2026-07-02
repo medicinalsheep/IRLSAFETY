@@ -6,16 +6,22 @@
 #include "pipeline.h"
 
 #include "blur/blur_compositor.h"
+#include "blur/overlay_image.h"
 #include "detection/yolo_onnx.h"
 #include "irlsafety_control.h"
 #include "ocr/ocr_backend.h"
 #include "ocr/ocr_engine.h"
 #include "ocr/ocr_frame_util.h"
 #include "ocr/pii_match.h"
+#include "ocr/pii_patterns.h"
 #include "hybrid_delay.h"
+#include "irlsafety_shutdown.h"
 #include "region_tracker.h"
 
 #include <obs-module.h>
+#ifndef IRLSAFETY_TEST_BUILD
+#include <util/platform.h>
+#endif
 #include <plugin-support.h>
 #include <stdlib.h>
 #include <string.h>
@@ -53,6 +59,7 @@ struct irlsafety_pipeline {
 	uint64_t last_secured_frame;
 	int escalation_level;
 	int insecure_streak;
+	bool shutting_down;
 };
 
 static void copy_region_list(irlsafety_region_list *dest, const irlsafety_region_list *src)
@@ -218,6 +225,9 @@ static bool settings_need_ocr(const irlsafety_filter_settings *settings, const i
 	if (settings->cat_screen_text)
 		return true;
 
+	if (settings->cat_sensitive_patterns)
+		return true;
+
 	if (settings->cat_custom_pii && custom_pii && custom_pii->count > 0)
 		return true;
 
@@ -292,11 +302,39 @@ irlsafety_pipeline *irlsafety_pipeline_create(void)
 	return pipeline;
 }
 
+void irlsafety_pipeline_shutdown(irlsafety_pipeline *pipeline)
+{
+	irlsafety_ocr_hit_list hits;
+
+	if (!pipeline || pipeline->shutting_down)
+		return;
+
+	pipeline->shutting_down = true;
+
+	for (int i = 0; i < 200 && pipeline->ocr_in_flight; i++) {
+		memset(&hits, 0, sizeof(hits));
+		if (ocr_poll_hits(pipeline->ocr_job_id, &hits) != 0)
+			break;
+#ifndef IRLSAFETY_TEST_BUILD
+		os_sleep_ms(5);
+#endif
+	}
+
+	pipeline->ocr_in_flight = false;
+	pipeline->ocr_pass = 0;
+	memset(&pipeline->ocr_merged_hits, 0, sizeof(pipeline->ocr_merged_hits));
+	ocr_clear_cached_source(pipeline->ocr);
+	irlsafety_region_tracker_clear(&pipeline->overlay_tracker);
+	irlsafety_hybrid_delay_runtime_reset(&pipeline->hybrid_delay);
+	pipeline_reset_secure_state(pipeline);
+}
+
 void irlsafety_pipeline_destroy(irlsafety_pipeline *pipeline)
 {
 	if (!pipeline)
 		return;
 
+	irlsafety_pipeline_shutdown(pipeline);
 	yolo_onnx_destroy(pipeline->detector);
 	ocr_engine_destroy(pipeline->ocr);
 	blur_compositor_destroy(pipeline->blur);
@@ -358,6 +396,7 @@ void irlsafety_pipeline_get_runtime_status(const irlsafety_pipeline *pipeline, s
 	out->cat_license_plates = settings->cat_license_plates;
 	out->cat_street_signs = settings->cat_street_signs;
 	out->cat_screen_text = settings->cat_screen_text;
+	out->cat_sensitive_patterns = settings->cat_sensitive_patterns;
 	out->cat_documents = settings->cat_documents;
 	out->cat_faces = settings->cat_faces;
 	out->cat_custom_pii = settings->cat_custom_pii;
@@ -376,6 +415,19 @@ void irlsafety_pipeline_get_runtime_status(const irlsafety_pipeline *pipeline, s
 	}
 
 	out->ocr_available = ocr_backend_available();
+	{
+		const char *name = ocr_backend_name();
+		const char *status = ocr_backend_status_message();
+
+		if (name) {
+			strncpy(out->ocr_backend, name, sizeof(out->ocr_backend) - 1);
+			out->ocr_backend[sizeof(out->ocr_backend) - 1] = '\0';
+		}
+		if (status) {
+			strncpy(out->ocr_backend_status, status, sizeof(out->ocr_backend_status) - 1);
+			out->ocr_backend_status[sizeof(out->ocr_backend_status) - 1] = '\0';
+		}
+	}
 }
 
 static void process_ocr_hits(irlsafety_pipeline *pipeline, const irlsafety_filter_settings *active,
@@ -384,9 +436,11 @@ static void process_ocr_hits(irlsafety_pipeline *pipeline, const irlsafety_filte
 {
 	irlsafety_region_list custom_regions;
 	irlsafety_region_list screen_regions;
+	irlsafety_region_list pattern_regions;
 
 	custom_regions.count = 0;
 	screen_regions.count = 0;
+	pattern_regions.count = 0;
 	pipeline->fresh_regions.count = 0;
 
 		if (active->cat_custom_pii) {
@@ -410,8 +464,15 @@ static void process_ocr_hits(irlsafety_pipeline *pipeline, const irlsafety_filte
 			obs_log(LOG_INFO, "IRLSAFETY+: Screen Text — %zu region(s)", screen_regions.count);
 	}
 
+	if (active->cat_sensitive_patterns) {
+		irlsafety_match_sensitive_pattern_hits(hits, scale_x, scale_y, active->overlay_overlap, &pattern_regions);
+		if (log_frame)
+			obs_log(LOG_INFO, "IRLSAFETY+: Sensitive Patterns — %zu region(s)", pattern_regions.count);
+	}
+
 	merge_regions(&pipeline->fresh_regions, &custom_regions);
 	merge_regions(&pipeline->fresh_regions, &screen_regions);
+	merge_regions(&pipeline->fresh_regions, &pattern_regions);
 
 	{
 		int frames_since = 1;
@@ -517,7 +578,7 @@ int irlsafety_pipeline_submit_detection(irlsafety_pipeline *pipeline, irlsafety_
 	if (!pipeline || !frame)
 		return -1;
 
-	if (!active->enable_all)
+	if (!active->enable_all || pipeline->shutting_down || irlsafety_is_shutting_down())
 		return 0;
 
 	if (pipeline->ocr_in_flight)
@@ -753,8 +814,12 @@ int irlsafety_pipeline_apply_cpu_censor(irlsafety_pipeline *pipeline, irlsafety_
 		.mode = active->censor_mode,
 		.blur_strength = active->blur_strength,
 		.color = active->censor_color ? active->censor_color : 0xFF404040,
+		.overlay = NULL,
 		.show_preview = active->show_preview,
 	};
+
+	if (active->censor_mode == IRLSAFETY_CENSOR_OVERLAY)
+		options.overlay = irlsafety_overlay_acquire(active->censor_overlay_file);
 
 	return apply_censor(pipeline->blur, frame, &merged, &options);
 }

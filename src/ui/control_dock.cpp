@@ -8,6 +8,8 @@
 
 #include "../irlsafety_control.h"
 #include "../filter_settings.h"
+#include "../irlsafety_shutdown.h"
+#include "../virtual_cam/virtual_cam.h"
 
 #include <obs-frontend-api.h>
 #include <obs-module.h>
@@ -90,12 +92,16 @@ IRLSafetyControlDock::IRLSafetyControlDock(QWidget *parent) : QFrame(parent)
 	ocr_status = new QLabel(tr("IRLSAFETYPlus.Dock.OcrChecking"));
 	model_status = new QLabel(tr("IRLSAFETYPlus.Dock.ModelChecking"));
 	overlay_status = new QLabel(tr("IRLSAFETYPlus.Dock.OverlayIdle"));
+	vcam_status = new QLabel();
 	ocr_status->setWordWrap(true);
 	model_status->setWordWrap(true);
 	overlay_status->setWordWrap(true);
+	vcam_status->setWordWrap(true);
+	vcam_status->setStyleSheet(QStringLiteral("color: #aaaaaa; font-size: 11px;"));
 	status_layout->addWidget(ocr_status);
 	status_layout->addWidget(model_status);
 	status_layout->addWidget(overlay_status);
+	status_layout->addWidget(vcam_status);
 	layout->addWidget(status_group);
 
 	auto *toggle_group = new QGroupBox(tr("IRLSAFETYPlus.Dock.QuickToggles"));
@@ -108,10 +114,13 @@ IRLSafetyControlDock::IRLSafetyControlDock(QWidget *parent) : QFrame(parent)
 	cat_signs->setToolTip(tr("IRLSAFETYPlus.CatStreetSigns.Tooltip"));
 	cat_screen = new QCheckBox(tr("IRLSAFETYPlus.CatScreenText"));
 	cat_screen->setToolTip(tr("IRLSAFETYPlus.CatScreenText.Tooltip"));
+	cat_sensitive = new QCheckBox(tr("IRLSAFETYPlus.CatSensitivePatterns"));
+	cat_sensitive->setToolTip(tr("IRLSAFETYPlus.CatSensitivePatterns.Tooltip"));
 	toggle_layout->addWidget(enable_all);
 	toggle_layout->addWidget(cat_plates);
 	toggle_layout->addWidget(cat_signs);
 	toggle_layout->addWidget(cat_screen);
+	toggle_layout->addWidget(cat_sensitive);
 	layout->addWidget(toggle_group);
 
 	auto *model_group = new QGroupBox(tr("IRLSAFETYPlus.Dock.ModelGroup"));
@@ -164,6 +173,24 @@ IRLSafetyControlDock::IRLSafetyControlDock(QWidget *parent) : QFrame(parent)
 	train_layout->addWidget(guide_btn);
 	layout->addWidget(train_group);
 
+	auto *resource_group = new QGroupBox(tr("IRLSAFETYPlus.Dock.ResourcesGroup"));
+	auto *resource_layout = new QVBoxLayout(resource_group);
+	auto *resource_intro = new QLabel(tr("IRLSAFETYPlus.Dock.ResourcesIntro"));
+	resource_intro->setWordWrap(true);
+	resource_layout->addWidget(resource_intro);
+	auto *resource_row = new QHBoxLayout();
+	auto *ocr_guide_btn = new QPushButton(tr("IRLSAFETYPlus.Dock.OpenOcrGuide"));
+	ocr_guide_btn->setToolTip(tr("IRLSAFETYPlus.Dock.OpenOcrGuide.Tooltip"));
+	auto *platforms_guide_btn = new QPushButton(tr("IRLSAFETYPlus.Dock.OpenPlatformsGuide"));
+	platforms_guide_btn->setToolTip(tr("IRLSAFETYPlus.Dock.OpenPlatformsGuide.Tooltip"));
+	auto *vcam_guide_btn = new QPushButton(tr("IRLSAFETYPlus.Dock.OpenVirtualCamGuide"));
+	vcam_guide_btn->setToolTip(tr("IRLSAFETYPlus.Dock.OpenVirtualCamGuide.Tooltip"));
+	resource_row->addWidget(ocr_guide_btn);
+	resource_row->addWidget(platforms_guide_btn);
+	resource_row->addWidget(vcam_guide_btn);
+	resource_layout->addLayout(resource_row);
+	layout->addWidget(resource_group);
+
 	layout->addStretch(1);
 
 	connect(filter_combo, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
@@ -172,11 +199,15 @@ IRLSafetyControlDock::IRLSafetyControlDock(QWidget *parent) : QFrame(parent)
 	connect(cat_plates, &QCheckBox::toggled, this, &IRLSafetyControlDock::onCategoryToggled);
 	connect(cat_signs, &QCheckBox::toggled, this, &IRLSafetyControlDock::onCategoryToggled);
 	connect(cat_screen, &QCheckBox::toggled, this, &IRLSafetyControlDock::onCategoryToggled);
+	connect(cat_sensitive, &QCheckBox::toggled, this, &IRLSafetyControlDock::onCategoryToggled);
 	connect(reload_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onReloadModel);
 	connect(browse_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onBrowseModel);
 	connect(models_folder_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onOpenModelsFolder);
 	connect(training_folder_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onOpenTrainingFolder);
 	connect(guide_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onOpenTrainingGuide);
+	connect(ocr_guide_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onOpenOcrGuide);
+	connect(platforms_guide_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onOpenPlatformsGuide);
+	connect(vcam_guide_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onOpenVirtualCamGuide);
 	connect(capture_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onCaptureTrainingFrame);
 	connect(label_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onLabelImages);
 	connect(train_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onTrainModel);
@@ -236,6 +267,7 @@ void IRLSafetyControlDock::syncTogglesFromStatus()
 		cat_plates->setEnabled(false);
 		cat_signs->setEnabled(false);
 		cat_screen->setEnabled(false);
+		cat_sensitive->setEnabled(false);
 		return;
 	}
 
@@ -243,15 +275,18 @@ void IRLSafetyControlDock::syncTogglesFromStatus()
 	cat_plates->setEnabled(true);
 	cat_signs->setEnabled(true);
 	cat_screen->setEnabled(true);
+	cat_sensitive->setEnabled(true);
 
 	const QSignalBlocker b1(enable_all);
 	const QSignalBlocker b2(cat_plates);
 	const QSignalBlocker b3(cat_signs);
 	const QSignalBlocker b4(cat_screen);
+	const QSignalBlocker b5(cat_sensitive);
 	enable_all->setChecked(status.protection_enabled);
 	cat_plates->setChecked(status.cat_license_plates);
 	cat_signs->setChecked(status.cat_street_signs);
 	cat_screen->setChecked(status.cat_screen_text);
+	cat_sensitive->setChecked(status.cat_sensitive_patterns);
 }
 
 void IRLSafetyControlDock::refreshUi()
@@ -286,11 +321,14 @@ void IRLSafetyControlDock::refreshUi()
 
 	if (status.ocr_available) {
 		const char *busy = status.ocr_busy ? "IRLSAFETYPlus.Dock.OcrBusy" : "IRLSAFETYPlus.Dock.OcrReady";
-		ocr_status->setText(QStringLiteral("<span style='color:%1'>●</span> %2")
-					    .arg(statusColor(true), tr(busy)));
+		ocr_status->setText(QStringLiteral("<span style='color:%1'>●</span> %2<br><span style='color:#aaa;font-size:11px'>%3</span>")
+					    .arg(statusColor(true), tr(busy), QString::fromUtf8(status.ocr_backend)));
 	} else {
-		ocr_status->setText(QStringLiteral("<span style='color:%1'>●</span> %2")
-					    .arg(statusColor(false), tr("IRLSAFETYPlus.Dock.OcrUnavailable")));
+		ocr_status->setText(
+			QStringLiteral("<span style='color:%1'>●</span> %2<br><span style='color:#aaa;font-size:11px'>%3</span>")
+				.arg(statusColor(false), tr("IRLSAFETYPlus.Dock.OcrUnavailable"),
+				     QString::fromUtf8(status.ocr_backend[0] ? status.ocr_backend
+									       : status.ocr_backend_status)));
 	}
 	ocr_status->setTextFormat(Qt::RichText);
 
@@ -308,6 +346,13 @@ void IRLSafetyControlDock::refreshUi()
 	model_status->setTextFormat(Qt::RichText);
 
 	overlay_status->setText(tr("IRLSAFETYPlus.Dock.OverlayCount").arg(status.overlay_count));
+	if (irlsafety_virtual_cam_supported()) {
+		vcam_status->setText(QStringLiteral("<span style='color:#3ecf8e'>●</span> %1")
+					     .arg(QString::fromUtf8(irlsafety_virtual_cam_status_message())));
+	} else {
+		vcam_status->setText(tr("IRLSAFETYPlus.Dock.VirtualCamPlanned"));
+	}
+	vcam_status->setTextFormat(Qt::RichText);
 	if (status.protection_enabled)
 		model_path->setText(QString::fromUtf8(status.model_path));
 	else
@@ -343,6 +388,8 @@ void IRLSafetyControlDock::onCategoryToggled(bool checked)
 		key = IRLSAFETY_SET_CAT_STREET_SIGNS;
 	else if (box == cat_screen)
 		key = IRLSAFETY_SET_CAT_SCREEN_TEXT;
+	else if (box == cat_sensitive)
+		key = IRLSAFETY_SET_CAT_SENSITIVE_PATTERNS;
 
 	if (key)
 		irlsafety_control_set_bool_setting(filter, key, checked);
@@ -398,11 +445,22 @@ void IRLSafetyControlDock::onOpenTrainingFolder()
 
 void IRLSafetyControlDock::onOpenTrainingGuide()
 {
-	char *guide = obs_module_file("models/TRAINING.txt");
-	if (guide) {
-		irlsafety_control_open_path(guide);
-		bfree(guide);
-	}
+	irlsafety_control_open_models_guide("TRAINING.txt");
+}
+
+void IRLSafetyControlDock::onOpenOcrGuide()
+{
+	irlsafety_control_open_models_guide("OCR.txt");
+}
+
+void IRLSafetyControlDock::onOpenPlatformsGuide()
+{
+	irlsafety_control_open_models_guide("PLATFORMS.txt");
+}
+
+void IRLSafetyControlDock::onOpenVirtualCamGuide()
+{
+	irlsafety_control_open_models_guide("VIRTUAL_CAMERA.txt");
 }
 
 void IRLSafetyControlDock::onShowWalkthrough()
@@ -455,6 +513,8 @@ extern "C" void irlsafety_control_dock_unregister(void)
 		return;
 
 	obs_frontend_remove_dock("irlsafety_plus_control");
-	delete g_control_dock;
+	/* OBS exit destroys Qt children with the main window — avoid double-delete. */
+	if (!irlsafety_is_shutting_down())
+		delete g_control_dock;
 	g_control_dock = nullptr;
 }

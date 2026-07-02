@@ -20,20 +20,21 @@ void irlsafety_filter_settings_set_defaults(struct obs_data *settings)
 		return;
 
 	obs_data_set_default_bool(settings, IRLSAFETY_SET_ENABLE_ALL, true);
-	obs_data_set_default_bool(settings, IRLSAFETY_SET_CAT_STREET_SIGNS, false);
-	obs_data_set_default_bool(settings, IRLSAFETY_SET_CAT_LICENSE_PLATES, false);
+	obs_data_set_default_bool(settings, IRLSAFETY_SET_CAT_STREET_SIGNS, true);
+	obs_data_set_default_bool(settings, IRLSAFETY_SET_CAT_LICENSE_PLATES, true);
 	obs_data_set_default_bool(settings, IRLSAFETY_SET_CAT_DOCUMENTS, false);
 	obs_data_set_default_bool(settings, IRLSAFETY_SET_CAT_FACES, false);
 	obs_data_set_default_bool(settings, IRLSAFETY_SET_CAT_SCREEN_TEXT, true);
+	obs_data_set_default_bool(settings, IRLSAFETY_SET_CAT_SENSITIVE_PATTERNS, true);
 	obs_data_set_default_bool(settings, IRLSAFETY_SET_CAT_CUSTOM_PII, true);
 
-	obs_data_set_default_double(settings, IRLSAFETY_SET_CONFIDENCE, 0.45);
-	obs_data_set_default_int(settings, IRLSAFETY_SET_FRAME_SKIP, 2);
-	obs_data_set_default_int(settings, IRLSAFETY_SET_OCR_DETAIL, 1);
-	obs_data_set_default_double(settings, IRLSAFETY_SET_BLUR_STRENGTH, 12.0);
+	obs_data_set_default_double(settings, IRLSAFETY_SET_CONFIDENCE, 0.35);
+	obs_data_set_default_int(settings, IRLSAFETY_SET_FRAME_SKIP, 3);
+	obs_data_set_default_int(settings, IRLSAFETY_SET_OCR_DETAIL, 0);
+	obs_data_set_default_double(settings, IRLSAFETY_SET_BLUR_STRENGTH, 24.0);
 	obs_data_set_default_int(settings, IRLSAFETY_SET_CENSOR_MODE, IRLSAFETY_CENSOR_BOX);
-	/* Opaque dark gray (AARRGGBB) — visible on most sources; pick black in UI if preferred. */
-	obs_data_set_default_int(settings, IRLSAFETY_SET_CENSOR_COLOR, 0xFF404040);
+	obs_data_set_default_int(settings, IRLSAFETY_SET_CENSOR_COLOR, 0xFF000000);
+	obs_data_set_default_string(settings, IRLSAFETY_SET_CENSOR_OVERLAY, "");
 	obs_data_set_default_bool(settings, IRLSAFETY_SET_TEST_EFFECT, false);
 	obs_data_set_default_bool(settings, IRLSAFETY_SET_SHOW_PREVIEW, false);
 	obs_data_set_default_bool(settings, IRLSAFETY_SET_ENABLE_LOGGING, false);
@@ -42,11 +43,11 @@ void irlsafety_filter_settings_set_defaults(struct obs_data *settings)
 	obs_data_set_default_string(settings, IRLSAFETY_SET_CUSTOM_PII_INLINE, "");
 	obs_data_set_default_string(settings, IRLSAFETY_SET_CUSTOM_PII_FILE, "");
 	obs_data_set_default_string(settings, IRLSAFETY_SET_MODEL_PATH, "");
-	obs_data_set_default_double(settings, IRLSAFETY_SET_OVERLAY_OVERLAP, 0.0);
+	obs_data_set_default_double(settings, IRLSAFETY_SET_OVERLAY_OVERLAP, 0.25);
 	obs_data_set_default_bool(settings, IRLSAFETY_SET_HYBRID_DELAY_ENABLE, true);
-	obs_data_set_default_double(settings, IRLSAFETY_SET_GLOBAL_DELAY_SEC, 0.5);
-	obs_data_set_default_double(settings, IRLSAFETY_SET_AUTO_DELAY_SEC, 0.5);
-	obs_data_set_default_double(settings, IRLSAFETY_SET_AUTO_DELAY_HOLD_SEC, 2.0);
+	obs_data_set_default_double(settings, IRLSAFETY_SET_GLOBAL_DELAY_SEC, 1.5);
+	obs_data_set_default_double(settings, IRLSAFETY_SET_AUTO_DELAY_SEC, 1.0);
+	obs_data_set_default_double(settings, IRLSAFETY_SET_AUTO_DELAY_HOLD_SEC, 4.0);
 	obs_data_set_default_double(settings, IRLSAFETY_SET_PARTIAL_PII_THRESHOLD, 0.50);
 	obs_data_set_default_bool(settings, IRLSAFETY_SET_SECURE_MODE_ENABLE, true);
 	obs_data_set_default_bool(settings, IRLSAFETY_SET_SECURE_DROP_FRAMES, true);
@@ -85,25 +86,26 @@ void irlsafety_filter_settings_load(struct obs_data *settings, irlsafety_filter_
 
 	if (!settings) {
 		out->enable_all = true;
-		out->cat_street_signs = false;
-		out->cat_license_plates = false;
+		out->cat_street_signs = true;
+		out->cat_license_plates = true;
 		out->cat_documents = false;
 		out->cat_faces = false;
 		out->cat_screen_text = true;
+		out->cat_sensitive_patterns = true;
 		out->cat_custom_pii = true;
-		out->confidence_threshold = 0.45f;
-		out->frame_skip = 2;
-		out->ocr_detail = 1;
-		out->blur_strength = 12.0f;
+		out->confidence_threshold = 0.35f;
+		out->frame_skip = 3;
+		out->ocr_detail = 0;
+		out->blur_strength = 24.0f;
 		out->censor_mode = IRLSAFETY_CENSOR_BOX;
-		out->censor_color = 0xFF404040;
+		out->censor_color = 0xFF000000;
 		out->test_effect = false;
 		out->prefer_gpu = true;
-		out->overlay_overlap = 0.0f;
+		out->overlay_overlap = 0.25f;
 		out->hybrid_delay_enable = true;
-		out->global_delay_sec = 0.5f;
-		out->auto_delay_sec = 0.5f;
-		out->auto_delay_hold_sec = 2.0f;
+		out->global_delay_sec = 1.5f;
+		out->auto_delay_sec = 1.0f;
+		out->auto_delay_hold_sec = 4.0f;
 		out->partial_pii_threshold = 0.50f;
 		out->secure_mode_enable = true;
 		out->secure_drop_frames = true;
@@ -117,6 +119,7 @@ void irlsafety_filter_settings_load(struct obs_data *settings, irlsafety_filter_
 	out->cat_documents = obs_data_get_bool(settings, IRLSAFETY_SET_CAT_DOCUMENTS);
 	out->cat_faces = obs_data_get_bool(settings, IRLSAFETY_SET_CAT_FACES);
 	out->cat_screen_text = obs_data_get_bool(settings, IRLSAFETY_SET_CAT_SCREEN_TEXT);
+	out->cat_sensitive_patterns = obs_data_get_bool(settings, IRLSAFETY_SET_CAT_SENSITIVE_PATTERNS);
 	out->cat_custom_pii = obs_data_get_bool(settings, IRLSAFETY_SET_CAT_CUSTOM_PII);
 
 	out->confidence_threshold = (float)obs_data_get_double(settings, IRLSAFETY_SET_CONFIDENCE);
@@ -130,9 +133,11 @@ void irlsafety_filter_settings_load(struct obs_data *settings, irlsafety_filter_
 
 	out->blur_strength = (float)obs_data_get_double(settings, IRLSAFETY_SET_BLUR_STRENGTH);
 	out->censor_mode = (irlsafety_censor_mode)obs_data_get_int(settings, IRLSAFETY_SET_CENSOR_MODE);
-	if (out->censor_mode < IRLSAFETY_CENSOR_BLUR || out->censor_mode > IRLSAFETY_CENSOR_CLOUD)
+	if (out->censor_mode < IRLSAFETY_CENSOR_BLUR || out->censor_mode > IRLSAFETY_CENSOR_OVERLAY)
 		out->censor_mode = IRLSAFETY_CENSOR_BOX;
 	out->censor_color = (uint32_t)obs_data_get_int(settings, IRLSAFETY_SET_CENSOR_COLOR);
+	copy_string_field(out->censor_overlay_file, sizeof(out->censor_overlay_file),
+			  obs_data_get_string(settings, IRLSAFETY_SET_CENSOR_OVERLAY));
 	if (out->censor_color == 0)
 		out->censor_color = 0xFF404040;
 	out->test_effect = obs_data_get_bool(settings, IRLSAFETY_SET_TEST_EFFECT);

@@ -248,6 +248,18 @@ static void ensure_ocr_worker(void)
 	});
 }
 
+extern "C" const char *ocr_backend_name(void)
+{
+	return "Windows OCR (local)";
+}
+
+extern "C" const char *ocr_backend_status_message(void)
+{
+	if (g_winrt_ready.load(std::memory_order_acquire))
+		return "Windows.Media.Ocr ready";
+	return "Windows OCR initializing or unavailable";
+}
+
 extern "C" bool ocr_backend_available(void)
 {
 	ensure_ocr_worker();
@@ -259,6 +271,17 @@ extern "C" bool ocr_backend_available(void)
 	}
 
 	return g_winrt_ready.load(std::memory_order_acquire);
+}
+
+extern "C" void ocr_backend_configure(const char *model_path)
+{
+	(void)model_path;
+}
+
+extern "C" void ocr_backend_configure_models(const char *det_path, const char *rec_path)
+{
+	(void)det_path;
+	(void)rec_path;
 }
 
 extern "C" void ocr_backend_shutdown(void)

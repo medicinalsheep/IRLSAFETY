@@ -14,10 +14,13 @@ extern "C" {
 
 typedef struct blur_compositor_context blur_compositor_context;
 
+typedef struct irlsafety_overlay_image irlsafety_overlay_image;
+
 typedef struct irlsafety_censor_options {
 	irlsafety_censor_mode mode;
 	float blur_strength;
 	uint32_t color;
+	const irlsafety_overlay_image *overlay;
 	bool show_preview;
 } irlsafety_censor_options;
 

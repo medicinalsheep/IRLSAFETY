@@ -4,6 +4,7 @@
  */
 
 #include "hybrid_delay.h"
+#include "irlsafety_shutdown.h"
 
 #ifndef IRLSAFETY_TEST_BUILD
 #ifdef IRLSAFETY_HAS_FRONTEND_API
@@ -50,8 +51,14 @@ static void copy_region_list(irlsafety_region_list *dest, const irlsafety_region
 #ifdef IRLSAFETY_HAS_FRONTEND_API
 static void hybrid_apply_obs_stream_delay(double total_sec)
 {
-	obs_output_t *output = obs_frontend_get_streaming_output();
-	config_t *profile = obs_frontend_get_profile_config();
+	obs_output_t *output;
+	config_t *profile;
+
+	if (irlsafety_is_shutting_down())
+		return;
+
+	output = obs_frontend_get_streaming_output();
+	profile = obs_frontend_get_profile_config();
 
 	if (!output)
 		return;
@@ -111,15 +118,17 @@ void irlsafety_hybrid_delay_on_stream_stopped(void)
 {
 #ifndef IRLSAFETY_TEST_BUILD
 #ifdef IRLSAFETY_HAS_FRONTEND_API
-	config_t *profile = obs_frontend_get_profile_config();
-	obs_output_t *output = obs_frontend_get_streaming_output();
+	if (!irlsafety_is_shutting_down() || g_hybrid.user_delay_saved) {
+		config_t *profile = obs_frontend_get_profile_config();
+		obs_output_t *output = obs_frontend_get_streaming_output();
 
-	if (g_hybrid.user_delay_saved && profile) {
-		config_set_bool(profile, "Output", "DelayEnable", g_hybrid.saved_delay_enable);
-		config_set_int(profile, "Output", "DelaySec", (int)g_hybrid.saved_delay_sec);
-		if (output)
-			obs_output_set_delay(output, g_hybrid.saved_delay_enable ? g_hybrid.saved_delay_sec : 0,
-					   OBS_OUTPUT_DELAY_PRESERVE);
+		if (g_hybrid.user_delay_saved && profile) {
+			config_set_bool(profile, "Output", "DelayEnable", g_hybrid.saved_delay_enable);
+			config_set_int(profile, "Output", "DelaySec", (int)g_hybrid.saved_delay_sec);
+			if (output)
+				obs_output_set_delay(output, g_hybrid.saved_delay_enable ? g_hybrid.saved_delay_sec : 0,
+						   OBS_OUTPUT_DELAY_PRESERVE);
+		}
 	}
 #endif
 #endif

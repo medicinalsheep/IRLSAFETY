@@ -1,0 +1,75 @@
+IRLSAFETY+ — Privacy Strategy (Detection + OCR + Training Roadmap)
+====================================================================
+
+MISSION
+-------
+Eliminate identity leaks on stream: plates, signs, labels, cards, account numbers,
+and anything OCR can read — 100% on your PC.
+
+THREE LAYERS (use all three)
+----------------------------
+1. YOLO detection (irlsafety-detect.onnx)
+   - Finds objects before OCR: license plates, street signs
+   - Lightweight YOLOv8n (~12 MB) ships in release packages
+   - Train on YOUR frames for your camera angle
+
+2. OCR + Sensitive Patterns (ON by default)
+   - Credit cards (Luhn-valid 13–19 digit runs)
+   - Shipping tracking (UPS 1Z…, USPS/FedEx long numeric, Amazon TBA…)
+   - SSN-style ###-##-####
+   - US phone numbers (10–11 digits)
+   - Long ID sequences (10+ digits)
+   - Filter category: "Sensitive Numbers (cards, tracking, IDs)"
+
+3. Custom PII keywords
+   - Names, emails, handles, addresses you add manually
+   - Partial match + typing mode for chat overlays
+
+RELEASE MODEL (v0.6+)
+---------------------
+  data/models/irlsafety-detect.onnx
+
+  Bundled in official releases after training on US plates + signs.
+  ~12 MB YOLOv8n — CPU-friendly, optional GPU later.
+  Classes today: 0=license_plate  1=street_sign
+
+TRAINING ROADMAP (your next datasets)
+-------------------------------------
+Phase 2 — Shipping & packaging (v0.8 model)
+  Class 2: shipping_label
+  Capture: unboxing streams, mail on desk, Amazon/UPS/FedEx labels
+  Label full label region (barcode + address block)
+  Combine with Sensitive Patterns for text OCR on labels
+
+Phase 3 — Payment & identity surfaces (v0.9 model)
+  Class 3: payment_card
+  Class 4: id_document
+  Capture: wallet shots, receipts, ID cards on desk (use fake props for training)
+  Never upload real PII — blur before capture or use stock/training props
+
+Phase 4 — Faces (optional)
+  Class 5: face
+  For bystanders / ID photos when you enable the category
+
+See data/training/classes_roadmap.txt for LabelImg class names.
+
+CAPTURE TIPS FOR NEW CATEGORIES
+-------------------------------
+  Shipping labels: varied carriers, crumpled labels, thermal print, partial glare
+  Cards: edge cases (amex 15-digit, spaced groups, screen reflections)
+  ID numbers: order confirmations, account screens, chat digits typed live
+  Always capture from YOUR actual stream setup (GoPro, HDMI, display capture)
+
+TUNING IN OBS
+-------------
+  Sensitive Patterns ON + Screen Text OFF = numbers only (less CPU)
+  Sensitive Patterns ON + Screen Text ON = full desktop protection
+  OCR Detail = Maximum for small receipt/label text
+  Overlay Overlap = 5–10% if digits leak at box edges
+
+PRIVACY
+-------
+  No cloud. No telemetry. Training data stays on your disk (or Z:\ RAM disk).
+  Pattern matching runs locally on OCR boxes — not full-frame upload.
+
+See TRAINING.txt (how to train), OCR.txt (text engines), PLATFORMS.txt (apps).

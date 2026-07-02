@@ -49,8 +49,10 @@ static int test_filter_defaults_and_properties(void)
 
 	info->get_defaults(settings);
 	TEST_ASSERT(obs_data_get_bool(settings, IRLSAFETY_SET_ENABLE_ALL) == true);
-	TEST_ASSERT(obs_data_get_double(settings, IRLSAFETY_SET_BLUR_STRENGTH) == 12.0);
-	TEST_ASSERT(obs_data_get_int(settings, IRLSAFETY_SET_FRAME_SKIP) == 2);
+	TEST_ASSERT(obs_data_get_double(settings, IRLSAFETY_SET_BLUR_STRENGTH) == 24.0);
+	TEST_ASSERT(obs_data_get_int(settings, IRLSAFETY_SET_FRAME_SKIP) == 3);
+	TEST_ASSERT(obs_data_get_bool(settings, IRLSAFETY_SET_CAT_STREET_SIGNS) == true);
+	TEST_ASSERT(obs_data_get_bool(settings, IRLSAFETY_SET_CAT_LICENSE_PLATES) == true);
 
 	obs_properties_t *props = info->get_properties(NULL);
 	TEST_ASSERT(props != NULL);
@@ -94,6 +96,25 @@ static int test_filter_video_multiplanar_i420(void)
 	return 0;
 }
 
+static int test_frame_convert_yuy2(void)
+{
+	uint8_t yuy2_plane[16];
+	struct obs_source_frame frame = {0};
+	irlsafety_frame_view view;
+
+	frame.format = VIDEO_FORMAT_YUY2;
+	frame.width = 4;
+	frame.height = 2;
+	frame.data[0] = yuy2_plane;
+	frame.linesize[0] = 8;
+
+	TEST_ASSERT(irlsafety_frame_view_from_obs(&frame, &view) == 0);
+	TEST_ASSERT(view.format == IRLSAFETY_FORMAT_YUY2);
+	TEST_ASSERT(view.plane_count == 1);
+	TEST_ASSERT(view.planes[0] == yuy2_plane);
+	return 0;
+}
+
 static int test_frame_convert_planes(void)
 {
 	uint8_t y_plane[16];
@@ -131,6 +152,8 @@ int main(void)
 	if (test_filter_video_multiplanar_i420() != 0)
 		return 1;
 	if (test_frame_convert_planes() != 0)
+		return 1;
+	if (test_frame_convert_yuy2() != 0)
 		return 1;
 	printf("IRLSAFETY+ OBS filter entry-point tests passed.\n");
 	return 0;

@@ -5,18 +5,11 @@
 
 #include "yolo_preprocess.h"
 
+#include "../frame_sample.h"
+
 #include <string.h>
 
-static inline float clampf(float v, float lo, float hi)
-{
-	if (v < lo)
-		return lo;
-	if (v > hi)
-		return hi;
-	return v;
-}
-
-static void sample_bgra(const irlsafety_frame_view *frame, float fx, float fy, float *r, float *g, float *b)
+static void sample_bgra_bilinear(const irlsafety_frame_view *frame, float fx, float fy, float *r, float *g, float *b)
 {
 	uint32_t x0 = (uint32_t)fx;
 	uint32_t y0 = (uint32_t)fy;
@@ -67,66 +60,14 @@ static void sample_bgra(const irlsafety_frame_view *frame, float fx, float fy, f
 	     255.0f;
 }
 
-static void sample_i420(const irlsafety_frame_view *frame, float fx, float fy, float *r, float *g, float *b)
-{
-	uint32_t x = (uint32_t)clampf(fx, 0.0f, (float)(frame->width - 1));
-	uint32_t y = (uint32_t)clampf(fy, 0.0f, (float)(frame->height - 1));
-	uint32_t uv_x = x / 2;
-	uint32_t uv_y = y / 2;
-	uint8_t y_val = frame->planes[0][y * frame->linesize[0] + x];
-	uint8_t u_val = frame->planes[1][uv_y * frame->linesize[1] + uv_x];
-	uint8_t v_val = frame->planes[2][uv_y * frame->linesize[2] + uv_x];
-	int c = (int)y_val - 16;
-	int d = (int)u_val - 128;
-	int e = (int)v_val - 128;
-	int ri = (298 * c + 409 * e + 128) >> 8;
-	int gi = (298 * c - 100 * d - 208 * e + 128) >> 8;
-	int bi = (298 * c + 516 * d + 128) >> 8;
-
-	*r = (float)(ri < 0 ? 0 : ri > 255 ? 255 : ri) / 255.0f;
-	*g = (float)(gi < 0 ? 0 : gi > 255 ? 255 : gi) / 255.0f;
-	*b = (float)(bi < 0 ? 0 : bi > 255 ? 255 : bi) / 255.0f;
-}
-
-static void sample_nv12(const irlsafety_frame_view *frame, float fx, float fy, float *r, float *g, float *b)
-{
-	uint32_t x = (uint32_t)clampf(fx, 0.0f, (float)(frame->width - 1));
-	uint32_t y = (uint32_t)clampf(fy, 0.0f, (float)(frame->height - 1));
-	uint32_t uv_x = (x / 2) * 2;
-	uint32_t uv_y = y / 2;
-	uint8_t y_val = frame->planes[0][y * frame->linesize[0] + x];
-	uint8_t u_val = frame->planes[1][uv_y * frame->linesize[1] + uv_x];
-	uint8_t v_val = frame->planes[1][uv_y * frame->linesize[1] + uv_x + 1];
-	int c = (int)y_val - 16;
-	int d = (int)u_val - 128;
-	int e = (int)v_val - 128;
-	int ri = (298 * c + 409 * e + 128) >> 8;
-	int gi = (298 * c - 100 * d - 208 * e + 128) >> 8;
-	int bi = (298 * c + 516 * d + 128) >> 8;
-
-	*r = (float)(ri < 0 ? 0 : ri > 255 ? 255 : ri) / 255.0f;
-	*g = (float)(gi < 0 ? 0 : gi > 255 ? 255 : gi) / 255.0f;
-	*b = (float)(bi < 0 ? 0 : bi > 255 ? 255 : bi) / 255.0f;
-}
-
 static void sample_pixel(const irlsafety_frame_view *frame, float fx, float fy, float *r, float *g, float *b)
 {
-	if (frame->format == IRLSAFETY_FORMAT_I420) {
-		sample_i420(frame, fx, fy, r, g, b);
-		return;
-	}
-
-	if (frame->format == IRLSAFETY_FORMAT_NV12) {
-		sample_nv12(frame, fx, fy, r, g, b);
-		return;
-	}
-
 	if (frame->format == IRLSAFETY_FORMAT_BGRA || frame->format == IRLSAFETY_FORMAT_BGRX) {
-		sample_bgra(frame, fx, fy, r, g, b);
+		sample_bgra_bilinear(frame, fx, fy, r, g, b);
 		return;
 	}
 
-	*r = *g = *b = 0.0f;
+	irlsafety_frame_sample_rgb_f(frame, fx, fy, r, g, b);
 }
 
 int yolo_frame_to_tensor(const irlsafety_frame_view *frame, float *tensor_nchw, uint32_t tensor_w, uint32_t tensor_h,

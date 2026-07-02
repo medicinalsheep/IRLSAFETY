@@ -1,6 +1,7 @@
 # Download US-focused bootstrap images (LISA signs + optional HF plates).
 param(
     [string]$PluginRoot = "",
+    [string]$TrainingDir = "",
     [switch]$SkipLisa,
     [switch]$SkipPlates
 )
@@ -11,7 +12,15 @@ if (-not $PluginRoot) {
     $PluginRoot = Split-Path $PSScriptRoot -Parent
 }
 
-$TrainingDir = Join-Path $env:APPDATA "obs-studio\plugin_config\irlsafety-plus\training"
+if (-not $TrainingDir) {
+    if ($env:IRLSAFETY_TRAINING_ROOT) {
+        $TrainingDir = $env:IRLSAFETY_TRAINING_ROOT
+    } elseif (Test-Path "Z:\irlsafety-training") {
+        $TrainingDir = "Z:\irlsafety-training"
+    } else {
+        $TrainingDir = Join-Path $env:APPDATA "obs-studio\plugin_config\irlsafety-plus\training"
+    }
+}
 $FetchPy = Join-Path $PluginRoot "training\fetch_us_bootstrap.py"
 
 if (-not (Test-Path $FetchPy)) {

@@ -5,6 +5,17 @@
 
 #include "ocr_backend.h"
 
+void ocr_backend_configure(const char *model_path)
+{
+	(void)model_path;
+}
+
+void ocr_backend_configure_models(const char *det_path, const char *rec_path)
+{
+	(void)det_path;
+	(void)rec_path;
+}
+
 void ocr_backend_shutdown(void)
 {
 }
@@ -12,6 +23,16 @@ void ocr_backend_shutdown(void)
 uint32_t ocr_backend_last_error(void)
 {
 	return 0;
+}
+
+const char *ocr_backend_name(void)
+{
+	return "OCR unavailable";
+}
+
+const char *ocr_backend_status_message(void)
+{
+	return "OCR not built for this platform";
 }
 
 bool ocr_backend_available(void)

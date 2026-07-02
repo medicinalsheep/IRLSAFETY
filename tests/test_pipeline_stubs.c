@@ -5,10 +5,13 @@
 
 #include "blur/blur_compositor.h"
 #include "custom_pii.h"
+#include "frame_sample.h"
+#include "ocr/ocr_frame_util.h"
 #include "detection/yolo_onnx.h"
 #include "filter_settings.h"
 #include "ocr/ocr_engine.h"
 #include "ocr/pii_match.h"
+#include "ocr/pii_patterns.h"
 #include "pipeline.h"
 #include "hybrid_delay.h"
 #include "region_tracker.h"
@@ -290,9 +293,72 @@ static int test_pipeline_process_frame(void)
 	return 0;
 }
 
+static int test_sensitive_patterns(void)
+{
+	irlsafety_ocr_hit_list hits = {0};
+	irlsafety_region_list regions = {0};
+
+	TEST_ASSERT(irlsafety_text_has_sensitive_pattern("Card 4111 1111 1111 1111") == true);
+	TEST_ASSERT(irlsafety_sensitive_pattern_classify("Tracking 1Z999AA10123456784") ==
+		    IRLSAFETY_PATTERN_TRACKING_NUMBER);
+	TEST_ASSERT(irlsafety_sensitive_pattern_classify("SSN 123-45-6789") == IRLSAFETY_PATTERN_SSN);
+	TEST_ASSERT(irlsafety_text_has_sensitive_pattern("hello world") == false);
+
+	strcpy(hits.hits[0].text, "UPS 1Z999AA10123456784");
+	hits.hits[0].x = 5.0f;
+	hits.hits[0].y = 10.0f;
+	hits.hits[0].width = 180.0f;
+	hits.hits[0].height = 20.0f;
+	hits.count = 1;
+
+	TEST_ASSERT(irlsafety_match_sensitive_pattern_hits(&hits, 1.0f, 1.0f, 0.0f, &regions) == 0);
+	TEST_ASSERT(regions.count == 1);
+	return 0;
+}
+
+static int test_yuy2_frame_read_and_censor(void)
+{
+	uint8_t yuy2[16] = {235, 128, 235, 128, 235, 128, 235, 128, 16, 128, 16, 128, 16, 128, 16, 128};
+	irlsafety_frame_view frame = {0};
+	uint8_t bgra[32];
+	uint8_t r = 0;
+	uint8_t g = 0;
+	uint8_t b = 0;
+	blur_compositor_context *ctx;
+	irlsafety_region_list regions = {0};
+	irlsafety_censor_options opts = {.mode = IRLSAFETY_CENSOR_BOX, .color = 0xFF000000, .blur_strength = 12.0f};
+
+	frame.planes[0] = yuy2;
+	frame.linesize[0] = 8;
+	frame.width = 4;
+	frame.height = 2;
+	frame.format = IRLSAFETY_FORMAT_YUY2;
+	frame.plane_count = 1;
+
+	irlsafety_frame_read_rgb(&frame, 0, 0, &r, &g, &b);
+	TEST_ASSERT(r > 200);
+	irlsafety_frame_read_rgb(&frame, 0, 1, &r, &g, &b);
+	TEST_ASSERT(r < 50);
+
+	TEST_ASSERT(irlsafety_frame_to_bgra_scaled(&frame, bgra, 4, 2) == 0);
+	TEST_ASSERT(bgra[2] > 200);
+
+	ctx = blur_compositor_create();
+	regions.regions[0] = (irlsafety_rect){.x = 0.0f, .y = 0.0f, .width = 2.0f, .height = 2.0f, .confidence = 1.0f};
+	regions.count = 1;
+	TEST_ASSERT(apply_censor(ctx, &frame, &regions, &opts) == 0);
+	TEST_ASSERT(irlsafety_yuy2_read_y(yuy2, 0) < 32);
+	blur_compositor_destroy(ctx);
+	return 0;
+}
+
 int main(void)
 {
+	if (test_yuy2_frame_read_and_censor() != 0)
+		return 1;
 	if (test_ci_contains() != 0)
+		return 1;
+	if (test_sensitive_patterns() != 0)
 		return 1;
 	if (test_match_custom_pii_hits() != 0)
 		return 1;

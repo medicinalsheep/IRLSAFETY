@@ -5,13 +5,19 @@ set(_irlsafety_core_sources
     ../src/filter_settings.c
     ../src/custom_pii.c
     ../src/irlsafety_types.c
+    ../src/irlsafety_paths.c
+    ../src/irlsafety_shutdown.c
+    ../src/frame_sample.c
+    ../src/virtual_cam/virtual_cam_stub.c
     ../src/detection/yolo_onnx_stub.c
     ../src/detection/yolo_preprocess.c
     ../src/ocr/ocr_engine.c
     ../src/ocr/pii_match.c
+    ../src/ocr/pii_patterns.c
     ../src/ocr/ocr_frame_util.c
     ../src/ocr/ocr_stub.c
-    ../src/blur/blur_compositor.c)
+    ../src/blur/blur_compositor.c
+    ../src/blur/overlay_image.c)
 
 add_executable(test_pipeline_stubs test_pipeline_stubs.c mocks/obs-mock.c ${_irlsafety_core_sources})
 target_compile_definitions(test_pipeline_stubs PRIVATE IRLSAFETY_TEST_BUILD)

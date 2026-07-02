@@ -37,12 +37,13 @@ int irlsafety_gpu_frame_readback_ocr(irlsafety_gpu_frame *gpu, irlsafety_frame_v
 bool irlsafety_gpu_frame_draw_captured(irlsafety_gpu_frame *gpu);
 
 /* Draw solid censorship boxes on top of the current framebuffer. */
-void irlsafety_gpu_frame_draw_overlays(struct obs_source *filter, const irlsafety_region_list *regions,
-				       const irlsafety_filter_settings *settings);
+void irlsafety_gpu_frame_draw_overlays(irlsafety_gpu_frame *gpu, struct obs_source *filter,
+				       const irlsafety_region_list *regions, const irlsafety_filter_settings *settings);
 
 /* Opaque full-frame censor — used when secure mode drops frames on the GPU path. */
-void irlsafety_gpu_frame_draw_fullscreen_censor(struct obs_source *filter, const irlsafety_filter_settings *settings,
-						uint32_t width, uint32_t height);
+void irlsafety_gpu_frame_draw_fullscreen_censor(irlsafety_gpu_frame *gpu, struct obs_source *filter,
+						const irlsafety_filter_settings *settings, uint32_t width,
+						uint32_t height);
 
 /* Capture → CPU censor (blur/ellipse) → draw modified texture. */
 int irlsafety_gpu_frame_render_cpu_censor(irlsafety_gpu_frame *gpu, irlsafety_pipeline *pipeline,

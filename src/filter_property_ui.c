@@ -44,6 +44,7 @@ void irlsafety_filter_apply_property_tooltips(struct obs_properties *props, stru
 	set_tip_on(categories, IRLSAFETY_SET_CAT_DOCUMENTS, "IRLSAFETYPlus.CatDocuments.Tooltip");
 	set_tip_on(categories, IRLSAFETY_SET_CAT_FACES, "IRLSAFETYPlus.CatFaces.Tooltip");
 	set_tip_on(categories, IRLSAFETY_SET_CAT_SCREEN_TEXT, "IRLSAFETYPlus.CatScreenText.Tooltip");
+	set_tip_on(categories, IRLSAFETY_SET_CAT_SENSITIVE_PATTERNS, "IRLSAFETYPlus.CatSensitivePatterns.Tooltip");
 	set_tip_on(categories, IRLSAFETY_SET_CAT_CUSTOM_PII, "IRLSAFETYPlus.CatCustomPii.Tooltip");
 
 	set_tip_on(custom, "custom_pii_hint", "IRLSAFETYPlus.CustomPiiHint.Tooltip");
@@ -54,6 +55,7 @@ void irlsafety_filter_apply_property_tooltips(struct obs_properties *props, stru
 	set_tip_on(protection, IRLSAFETY_SET_FRAME_SKIP, "IRLSAFETYPlus.FrameSkip.Tooltip");
 	set_tip_on(protection, IRLSAFETY_SET_OCR_DETAIL, "IRLSAFETYPlus.OcrDetail.Tooltip");
 	set_tip_on(protection, IRLSAFETY_SET_CENSOR_MODE, "IRLSAFETYPlus.CensorMode.Tooltip");
+	set_tip_on(protection, IRLSAFETY_SET_CENSOR_OVERLAY, "IRLSAFETYPlus.CensorOverlay.Tooltip");
 	set_tip_on(protection, IRLSAFETY_SET_CENSOR_COLOR, "IRLSAFETYPlus.CensorColor.Tooltip");
 	set_tip_on(protection, IRLSAFETY_SET_BLUR_STRENGTH, "IRLSAFETYPlus.BlurStrength.Tooltip");
 	set_tip_on(protection, IRLSAFETY_SET_OVERLAY_OVERLAP, "IRLSAFETYPlus.OverlayOverlap.Tooltip");

@@ -14,7 +14,15 @@
 extern "C" {
 #endif
 
+/* Optional: set ONNX model path before first use (child OCR backend). */
+void ocr_backend_configure(const char *model_path);
+
+/* Child OCR: det + rec ONNX pair (irlsafety-ocr-det.onnx + irlsafety-ocr-rec.onnx). */
+void ocr_backend_configure_models(const char *det_path, const char *rec_path);
+
 bool ocr_backend_available(void);
+const char *ocr_backend_name(void);
+const char *ocr_backend_status_message(void);
 void ocr_backend_shutdown(void);
 uint32_t ocr_backend_last_error(void);
 int ocr_backend_recognize(const uint8_t *bgra, uint32_t width, uint32_t height, uint32_t stride,

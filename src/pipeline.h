@@ -18,6 +18,7 @@ extern "C" {
 typedef struct irlsafety_pipeline irlsafety_pipeline;
 
 irlsafety_pipeline *irlsafety_pipeline_create(void);
+void irlsafety_pipeline_shutdown(irlsafety_pipeline *pipeline);
 void irlsafety_pipeline_destroy(irlsafety_pipeline *pipeline);
 
 /* Reload custom PII keywords from current filter settings. */

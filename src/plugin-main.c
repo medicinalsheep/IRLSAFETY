@@ -6,7 +6,11 @@
 #include <obs-module.h>
 #include <plugin-support.h>
 
+#include "blur/overlay_image.h"
 #include "pii-filter.h"
+#include "irlsafety_paths.h"
+#include "irlsafety_shutdown.h"
+#include "virtual_cam/virtual_cam.h"
 
 #if defined(IRLSAFETY_HAS_CONTROL_DOCK)
 void irlsafety_control_dock_register(void);
@@ -21,7 +25,13 @@ static void irlsafety_frontend_event(enum obs_frontend_event event, void *unused
 {
 	UNUSED_PARAMETER(unused);
 
-	if (event == OBS_FRONTEND_EVENT_STREAMING_STARTED)
+	if (event == OBS_FRONTEND_EVENT_EXIT) {
+		irlsafety_begin_shutdown();
+#if defined(IRLSAFETY_HAS_CONTROL_DOCK)
+		irlsafety_control_dock_unregister();
+#endif
+		irlsafety_hybrid_delay_on_stream_stopped();
+	} else if (event == OBS_FRONTEND_EVENT_STREAMING_STARTED)
 		irlsafety_hybrid_delay_on_stream_started();
 	else if (event == OBS_FRONTEND_EVENT_STREAMING_STOPPED)
 		irlsafety_hybrid_delay_on_stream_stopped();
@@ -55,12 +65,27 @@ bool obs_module_load(void)
 	obs_register_source(&irlsafety_pii_filter);
 	obs_log(LOG_INFO, "IRLSAFETY+ loaded (version %s)", PLUGIN_VERSION);
 #if IRLSAFETY_HAS_OCR_PROBE
-	if (ocr_backend_available())
-		obs_log(LOG_INFO, "IRLSAFETY+: Windows OCR is ready");
-	else
-		obs_log(LOG_WARNING,
-			"IRLSAFETY+: Windows OCR unavailable — enable a Windows text OCR language in Settings");
+	{
+#if defined(IRLSAFETY_OCR_BACKEND_CHILD)
+		char det_model[1024];
+		char rec_model[1024];
+
+		irlsafety_resolve_model_path("models/irlsafety-ocr-det.onnx", NULL, det_model, sizeof(det_model));
+		irlsafety_resolve_model_path("models/irlsafety-ocr-rec.onnx", NULL, rec_model, sizeof(rec_model));
+		ocr_backend_configure_models(det_model[0] != '\0' ? det_model : NULL,
+					     rec_model[0] != '\0' ? rec_model : NULL);
+#else
+		char ocr_model[1024];
+
+		irlsafety_resolve_model_path("models/irlsafety-ocr.onnx", NULL, ocr_model, sizeof(ocr_model));
+		ocr_backend_configure(ocr_model[0] != '\0' ? ocr_model : NULL);
 #endif
+		obs_log(LOG_INFO, "IRLSAFETY+: %s — %s", ocr_backend_name(), ocr_backend_status_message());
+	}
+#endif
+	irlsafety_virtual_cam_refresh_status();
+	if (!irlsafety_virtual_cam_supported())
+		obs_log(LOG_INFO, "IRLSAFETY+: Virtual camera — %s", irlsafety_virtual_cam_status_message());
 #if IRLSAFETY_HAS_ONNX_PROBE
 	obs_log(LOG_INFO,
 		"IRLSAFETY+: ONNX object detection ready — enable License Plates / Street Signs and place irlsafety-detect.onnx in plugin models folder");
@@ -71,13 +96,14 @@ bool obs_module_load(void)
 #endif
 #if defined(IRLSAFETY_HAS_FRONTEND_API) && !defined(IRLSAFETY_TEST_BUILD)
 	obs_frontend_add_event_callback(irlsafety_frontend_event, NULL);
-	obs_log(LOG_INFO, "IRLSAFETY+: Hybrid stream delay ready (default 0.5s global + 0.5s auto when protecting)");
+	obs_log(LOG_INFO, "IRLSAFETY+: Hybrid stream delay ready (default 1.5s global + 1.0s auto when protecting)");
 #endif
 	return true;
 }
 
 void obs_module_unload(void)
 {
+	irlsafety_begin_shutdown();
 #if defined(IRLSAFETY_HAS_FRONTEND_API) && !defined(IRLSAFETY_TEST_BUILD)
 	obs_frontend_remove_event_callback(irlsafety_frontend_event, NULL);
 	irlsafety_hybrid_delay_on_stream_stopped();
@@ -88,5 +114,6 @@ void obs_module_unload(void)
 #if IRLSAFETY_HAS_OCR_PROBE
 	ocr_backend_shutdown();
 #endif
+	irlsafety_overlay_release_cache();
 	obs_log(LOG_INFO, "IRLSAFETY+ unloaded");
 }

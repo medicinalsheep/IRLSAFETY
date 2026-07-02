@@ -1,0 +1,59 @@
+IRLSAFETY+ — Text OCR (Screen Text + Custom PII keywords)
+=========================================================
+
+PRIVACY
+-------
+- OCR runs 100% on your PC. No cloud. No uploads.
+- Only bounding boxes + matched keywords become overlays — not your full transcript.
+- Child OCR (coming) uses the same local ONNX stack as object detection.
+
+TODAY (v0.6.x)
+--------------
+Windows 10/11:
+  Backend: Windows.Media.Ocr (built into Windows)
+  Works on: Display Capture, Window Capture, Video Capture (webcam/GoPro)
+
+Other platforms:
+  OCR stub — install Windows build for Screen Text / Custom PII today.
+
+BEST RESULTS
+------------
+1. Add filter to Display Capture (GPU path — fastest).
+2. Custom PII: one keyword per line (names, emails, handles).
+3. Screen Text: covers visible UI text on captured sources.
+4. OCR Detail: Standard for busy desktops; Maximum for tiny text (dual scan).
+5. Cameras: add filter on the camera source; YUY2/UYVY supported.
+
+CHILD OCR (v0.7 — IRLSAFETY ONNX)
+---------------------------------
+Goal: fast, lightweight, private OCR that works everywhere we ship ONNX.
+
+Model files (PP-OCR English mobile, renamed for IRLSAFETY+):
+  data/models/irlsafety-ocr-det.onnx   (~4 MB — text region detection)
+  data/models/irlsafety-ocr-rec.onnx   (~8 MB — character recognition)
+  data/models/en_dict.txt              (optional — CTC character set)
+
+  Auto-discovered at startup when built with IRLSAFETY_OCR_BACKEND=child.
+  Default Windows builds still use Windows.Media.Ocr until you switch backends.
+
+One-time download (local, from GitHub — no telemetry):
+  data\scripts\fetch-ocr-models.ps1
+
+Design targets:
+  - ~12 MB total ONNX (mobile DBNet + CRNN stack)
+  - Same scan widths as today (1280 / 1920 / 2560 max width)
+  - CPU first; optional DirectML later
+  - macOS / Linux parity via same backend (no WinRT lock-in)
+
+Build switch (developers):
+  cmake -DIRLSAFETY_OCR_BACKEND=child ...
+
+Keyword matching stays in the plugin (partial %, typing mode) — separate from the OCR engine.
+
+TROUBLESHOOTING
+---------------
+"No text found" -> try OCR Detail = Maximum; check source has readable text.
+Keywords not matching -> use Solid Box on Display Capture; check spelling (case-insensitive).
+Camera text missed -> lower OCR Scan Every N Frames; cameras scan less often by default.
+
+See also: PLATFORMS.txt (Discord, Zoom, OBS, etc.) and VIRTUAL_CAMERA.txt (protected output).

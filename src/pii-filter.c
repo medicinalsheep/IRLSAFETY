@@ -6,10 +6,12 @@
 #include "pii-filter.h"
 
 #include "frame_convert.h"
+#include "irlsafety_paths.h"
 #include "filter_settings.h"
 #include "irlsafety_control.h"
 #include "ocr/ocr_frame_util.h"
 #include "pipeline.h"
+#include "irlsafety_shutdown.h"
 #ifndef IRLSAFETY_TEST_BUILD
 #include "filter_property_ui.h"
 #endif
@@ -35,6 +37,7 @@ struct pii_filter_data {
 	uint64_t frame_count;
 };
 
+static void pii_filter_deactivate(void *data);
 static void pii_filter_destroy(void *data);
 static void pii_filter_apply_settings(struct pii_filter_data *filter, obs_data_t *settings);
 
@@ -122,30 +125,7 @@ static bool pii_filter_target_is_heavy(struct pii_filter_data *filter)
 
 static void pii_filter_resolve_model_path(char *dest, size_t dest_size, const char *user_path)
 {
-	if (!dest || dest_size == 0)
-		return;
-
-	dest[0] = '\0';
-
-	if (user_path && user_path[0] != '\0') {
-		strncpy(dest, user_path, dest_size - 1);
-		dest[dest_size - 1] = '\0';
-		return;
-	}
-
-#ifndef IRLSAFETY_TEST_BUILD
-	{
-		char *bundled = obs_module_file("models/irlsafety-detect.onnx");
-
-		if (bundled) {
-			strncpy(dest, bundled, dest_size - 1);
-			dest[dest_size - 1] = '\0';
-			bfree(bundled);
-		}
-	}
-#else
-	UNUSED_PARAMETER(user_path);
-#endif
+	irlsafety_resolve_model_path("models/irlsafety-detect.onnx", user_path, dest, dest_size);
 }
 
 static void pii_filter_apply_settings(struct pii_filter_data *filter, obs_data_t *settings)
@@ -172,13 +152,17 @@ static bool pii_filter_censor_mode_modified(obs_properties_t *props, obs_propert
 		mode = (int)obs_data_get_int(settings, IRLSAFETY_SET_CENSOR_MODE);
 	obs_property_t *color_prop = obs_properties_get(props, IRLSAFETY_SET_CENSOR_COLOR);
 	obs_property_t *blur_prop = obs_properties_get(props, IRLSAFETY_SET_BLUR_STRENGTH);
+	obs_property_t *overlay_prop = obs_properties_get(props, IRLSAFETY_SET_CENSOR_OVERLAY);
 
 	UNUSED_PARAMETER(property);
 
 	if (color_prop)
-		obs_property_set_visible(color_prop, mode != IRLSAFETY_CENSOR_BLUR);
+		obs_property_set_visible(color_prop,
+					 mode != IRLSAFETY_CENSOR_BLUR && mode != IRLSAFETY_CENSOR_OVERLAY);
 	if (blur_prop)
 		obs_property_set_visible(blur_prop, mode == IRLSAFETY_CENSOR_BLUR);
+	if (overlay_prop)
+		obs_property_set_visible(overlay_prop, mode == IRLSAFETY_CENSOR_OVERLAY);
 	return true;
 }
 
@@ -220,11 +204,24 @@ static void *pii_filter_create(obs_data_t *settings, obs_source_t *source)
 	return filter;
 }
 
+static void pii_filter_deactivate(void *data)
+{
+	struct pii_filter_data *filter = data;
+
+	if (!filter)
+		return;
+
+	if (filter->pipeline)
+		irlsafety_pipeline_shutdown(filter->pipeline);
+}
+
 static void pii_filter_destroy(void *data)
 {
 	struct pii_filter_data *filter = data;
 	if (!filter)
 		return;
+
+	pii_filter_deactivate(filter);
 
 #ifndef IRLSAFETY_TEST_BUILD
 	obs_enter_graphics();
@@ -263,6 +260,8 @@ static obs_properties_t *pii_filter_properties(void *unused)
 	obs_properties_add_bool(categories, IRLSAFETY_SET_CAT_FACES, obs_module_text("IRLSAFETYPlus.CatFaces"));
 	obs_properties_add_bool(categories, IRLSAFETY_SET_CAT_SCREEN_TEXT,
 				obs_module_text("IRLSAFETYPlus.CatScreenText"));
+	obs_properties_add_bool(categories, IRLSAFETY_SET_CAT_SENSITIVE_PATTERNS,
+				obs_module_text("IRLSAFETYPlus.CatSensitivePatterns"));
 	obs_properties_add_bool(categories, IRLSAFETY_SET_CAT_CUSTOM_PII,
 				obs_module_text("IRLSAFETYPlus.CatCustomPii"));
 	obs_properties_add_group(props, "categories", obs_module_text("IRLSAFETYPlus.GroupCategories"),
@@ -297,9 +296,12 @@ static obs_properties_t *pii_filter_properties(void *unused)
 	obs_property_list_add_int(mode_prop, obs_module_text("IRLSAFETYPlus.CensorModeBox"), IRLSAFETY_CENSOR_BOX);
 	obs_property_list_add_int(mode_prop, obs_module_text("IRLSAFETYPlus.CensorModeEllipse"), IRLSAFETY_CENSOR_ELLIPSE);
 	obs_property_list_add_int(mode_prop, obs_module_text("IRLSAFETYPlus.CensorModeCloud"), IRLSAFETY_CENSOR_CLOUD);
+	obs_property_list_add_int(mode_prop, obs_module_text("IRLSAFETYPlus.CensorModeOverlay"), IRLSAFETY_CENSOR_OVERLAY);
 	obs_property_set_modified_callback(mode_prop, pii_filter_censor_mode_modified);
 	obs_properties_add_color_alpha(protection, IRLSAFETY_SET_CENSOR_COLOR,
 				       obs_module_text("IRLSAFETYPlus.CensorColor"));
+	obs_properties_add_path(protection, IRLSAFETY_SET_CENSOR_OVERLAY, obs_module_text("IRLSAFETYPlus.CensorOverlay"),
+				OBS_PATH_FILE, "Images (*.png *.jpg *.jpeg *.gif *.webp)", NULL);
 	obs_properties_add_float_slider(protection, IRLSAFETY_SET_BLUR_STRENGTH,
 					obs_module_text("IRLSAFETYPlus.BlurStrength"), 1.0, 32.0, 1.0);
 	obs_properties_add_float_slider(protection, IRLSAFETY_SET_OVERLAY_OVERLAP,
@@ -351,7 +353,7 @@ static void pii_filter_video_tick(void *data, float seconds)
 	UNUSED_PARAMETER(seconds);
 	struct pii_filter_data *filter = data;
 
-	if (!filter)
+	if (!filter || irlsafety_is_shutting_down())
 		return;
 
 	filter->frame_count++;
@@ -368,7 +370,7 @@ static struct obs_source_frame *pii_filter_video(void *data, struct obs_source_f
 	if (!filter || !filter->pipeline || !frame)
 		return frame;
 
-	if (!filter->settings.enable_all)
+	if (!filter->settings.enable_all || irlsafety_is_shutting_down())
 		return frame;
 
 	if (irlsafety_frame_view_from_obs(frame, &view) != 0)
@@ -434,7 +436,7 @@ static void pii_filter_video_render(void *data, gs_effect_t *effect)
 	if (!filter || !filter->context)
 		return;
 
-	if (!filter->settings.enable_all) {
+	if (!filter->settings.enable_all || irlsafety_is_shutting_down()) {
 		obs_source_skip_video_filter(filter->context);
 		return;
 	}
@@ -473,7 +475,7 @@ static void pii_filter_video_render(void *data, gs_effect_t *effect)
 	}
 
 	if (irlsafety_pipeline_should_drop_frame(filter->pipeline, &filter->settings)) {
-		irlsafety_gpu_frame_draw_fullscreen_censor(filter->context, &filter->settings, cx, cy);
+		irlsafety_gpu_frame_draw_fullscreen_censor(filter->gpu, filter->context, &filter->settings, cx, cy);
 		return;
 	}
 
@@ -497,7 +499,7 @@ static void pii_filter_video_render(void *data, gs_effect_t *effect)
 	}
 
 	if (overlays.count > 0)
-		irlsafety_gpu_frame_draw_overlays(filter->context, &overlays, &filter->settings);
+		irlsafety_gpu_frame_draw_overlays(filter->gpu, filter->context, &overlays, &filter->settings);
 }
 #endif /* IRLSAFETY_TEST_BUILD */
 
@@ -508,6 +510,9 @@ struct obs_source_info irlsafety_pii_filter = {
 	.get_name = pii_filter_get_name,
 	.create = pii_filter_create,
 	.destroy = pii_filter_destroy,
+#ifndef IRLSAFETY_TEST_BUILD
+	.deactivate = pii_filter_deactivate,
+#endif
 	.get_defaults = pii_filter_defaults,
 	.get_properties = pii_filter_properties,
 	.update = pii_filter_update,
