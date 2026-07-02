@@ -38,6 +38,8 @@ private slots:
 	void onOpenTrainingGuide();
 	void onCaptureTrainingFrame();
 	void onShowWalkthrough();
+	void onLabelImages();
+	void onTrainModel();
 
 private:
 	void rebuildFilterList();
@@ -62,6 +64,8 @@ private:
 	QPushButton *reload_btn = nullptr;
 	QPushButton *walkthrough_btn = nullptr;
 	QPushButton *capture_btn = nullptr;
+	QPushButton *label_btn = nullptr;
+	QPushButton *train_btn = nullptr;
 	QLabel *capture_hint = nullptr;
 };
 

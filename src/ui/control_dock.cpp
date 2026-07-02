@@ -146,6 +146,15 @@ IRLSafetyControlDock::IRLSafetyControlDock(QWidget *parent) : QFrame(parent)
 	capture_btn = new QPushButton(tr("IRLSAFETYPlus.Dock.CaptureFrame"));
 	capture_btn->setToolTip(tr("IRLSAFETYPlus.Dock.CaptureFrame.Tooltip"));
 	train_layout->addWidget(capture_btn);
+
+	auto *train_row = new QHBoxLayout();
+	label_btn = new QPushButton(tr("IRLSAFETYPlus.Dock.LabelImages"));
+	label_btn->setToolTip(tr("IRLSAFETYPlus.Dock.LabelImages.Tooltip"));
+	train_btn = new QPushButton(tr("IRLSAFETYPlus.Dock.TrainModel"));
+	train_btn->setToolTip(tr("IRLSAFETYPlus.Dock.TrainModel.Tooltip"));
+	train_row->addWidget(label_btn);
+	train_row->addWidget(train_btn);
+	train_layout->addLayout(train_row);
 	capture_hint = new QLabel(tr("IRLSAFETYPlus.Dock.CaptureHint"));
 	capture_hint->setWordWrap(true);
 	capture_hint->setStyleSheet(QStringLiteral("color: #aaaaaa; font-size: 11px;"));
@@ -169,6 +178,8 @@ IRLSafetyControlDock::IRLSafetyControlDock(QWidget *parent) : QFrame(parent)
 	connect(training_folder_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onOpenTrainingFolder);
 	connect(guide_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onOpenTrainingGuide);
 	connect(capture_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onCaptureTrainingFrame);
+	connect(label_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onLabelImages);
+	connect(train_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onTrainModel);
 	connect(walkthrough_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onShowWalkthrough);
 
 	connect(&refresh_timer, &QTimer::timeout, this, &IRLSafetyControlDock::refreshUi);
@@ -397,6 +408,20 @@ void IRLSafetyControlDock::onOpenTrainingGuide()
 void IRLSafetyControlDock::onShowWalkthrough()
 {
 	irlsafety_onboarding_show();
+}
+
+void IRLSafetyControlDock::onLabelImages()
+{
+	if (irlsafety_control_run_script("scripts/label-images.ps1") != 0)
+		QMessageBox::warning(this, tr("IRLSAFETYPlus.Dock.LabelImages"),
+				     tr("IRLSAFETYPlus.Dock.TrainScriptFailed"));
+}
+
+void IRLSafetyControlDock::onTrainModel()
+{
+	if (irlsafety_control_run_script("scripts/train-model.ps1") != 0)
+		QMessageBox::warning(this, tr("IRLSAFETYPlus.Dock.TrainModel"),
+				     tr("IRLSAFETYPlus.Dock.TrainScriptFailed"));
 }
 
 void IRLSafetyControlDock::onCaptureTrainingFrame()

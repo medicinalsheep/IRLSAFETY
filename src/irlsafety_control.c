@@ -244,6 +244,33 @@ bool irlsafety_control_open_path(const char *path)
 #endif
 }
 
+int irlsafety_control_run_script(const char *script_relative_path)
+{
+#ifndef IRLSAFETY_TEST_BUILD
+	char *script_path;
+	char args[1600];
+	INT_PTR result;
+
+	if (!script_relative_path || script_relative_path[0] == '\0')
+		return -1;
+
+	script_path = obs_module_file(script_relative_path);
+	if (!script_path || script_path[0] == '\0') {
+		bfree(script_path);
+		return -1;
+	}
+
+	snprintf(args, sizeof(args), "-NoProfile -ExecutionPolicy Bypass -File \"%s\"", script_path);
+	result = (INT_PTR)ShellExecuteA(NULL, "open", "powershell.exe", args, NULL, SW_SHOWNORMAL);
+	bfree(script_path);
+
+	return result > 32 ? 0 : -1;
+#else
+	(void)script_relative_path;
+	return -1;
+#endif
+}
+
 int irlsafety_control_save_training_screenshot(void)
 {
 #ifndef IRLSAFETY_TEST_BUILD

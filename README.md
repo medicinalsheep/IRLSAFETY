@@ -4,7 +4,7 @@
 
 | | |
 |---|---|
-| **Version** | 0.5.3 |
+| **Version** | 0.6.0 |
 | **Platform** | Windows 10/11 x64 |
 | **OBS** | 31.x / 32.x (64-bit) |
 | **License** | MIT ([LICENSE](LICENSE)) |
@@ -58,15 +58,17 @@ Package output: `release\IRLSAFETY+-v0.5.3-win64\`
 
 ---
 
-## Local model training
+## Local model training (US plates + street signs)
 
-1. Open **Docks → IRLSAFETY+ Control**
-2. **Capture Frame for Training** → saves to local `training/images/train`
-3. Label with [LabelImg](https://github.com/HumanSignal/labelImg) (local)
-4. See `data/models/TRAINING.txt` or **Open Training Guide** in the dock
-5. Optional: `scripts\setup-training.ps1` and `scripts\download-detection-model.ps1`
+**One command** (requires Python 3.10+):
 
-Bundled detector: `irlsafety-detect.onnx` (US plates & signs baseline). Train your own for other regions.
+```bat
+scripts\train-model.ps1
+```
+
+Or from OBS Control dock: **Train US Model** | **Label Images** | **Capture Frame**
+
+Pipeline downloads US bootstrap data (LISA signs + plate boxes), trains YOLOv8n locally, exports `irlsafety-detect.onnx`. Add your own GoPro/stream frames for best results. Full guide: `data/models/TRAINING.txt`
 
 ---
 

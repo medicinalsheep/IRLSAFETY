@@ -1,0 +1,1 @@
+& "$PSScriptRoot\..\data\scripts\fetch-us-bootstrap.ps1" @args

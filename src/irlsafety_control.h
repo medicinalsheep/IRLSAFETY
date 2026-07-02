@@ -59,6 +59,9 @@ bool irlsafety_control_ensure_dir(const char *path);
 bool irlsafety_control_open_path(const char *path);
 int irlsafety_control_save_training_screenshot(void);
 
+/* Launch a bundled PowerShell script from data/scripts/ (training pipeline). */
+int irlsafety_control_run_script(const char *script_relative_path);
+
 #ifdef __cplusplus
 }
 #endif

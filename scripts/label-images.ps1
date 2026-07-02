@@ -1,0 +1,1 @@
+& "$PSScriptRoot\..\data\scripts\label-images.ps1" @args

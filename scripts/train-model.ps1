@@ -1,0 +1,1 @@
+& "$PSScriptRoot\..\data\scripts\train-model.ps1" @args
