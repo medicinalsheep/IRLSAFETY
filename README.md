@@ -1,29 +1,78 @@
 # IRLSAFETY+
 
-**Real-time privacy protection for OBS Studio** — an overlay filter that detects and blurs PII in live streams (street signs, license plates, IDs, documents, screen text, faces, and your custom keywords).
+**Real-time privacy protection for OBS Studio** — local OCR, custom PII keywords, optional YOLO detection, hybrid stream delay, and a training hub for your own models. Nothing leaves your PC.
 
 | | |
 |---|---|
-| **Version** | 0.1.0 — Custom PII OCR + blur working on Windows |
+| **Version** | 0.5.3 |
 | **Platform** | Windows 10/11 x64 |
-| **OBS** | 31.x (64-bit) |
-| **License** | MIT ([LICENSE](LICENSE)) — OBS/libobs is GPLv2 when running inside OBS |
+| **OBS** | 31.x / 32.x (64-bit) |
+| **License** | MIT ([LICENSE](LICENSE)) |
 
 ---
 
-## Quick Start for Streamers (3 steps)
+## Private tester install (GitHub Release)
 
-### Option A — v0.1 test package (easiest)
+1. Open [Releases](https://github.com/medicinalsheep/IRLSAFETY/releases) on this repo
+2. Download **`IRLSAFETY+-v0.5.3-win64.zip`** from the latest release
+3. Extract the folder
+4. Right-click **`install-from-package.bat`** → **Run as administrator**
+5. Restart OBS
+6. **Docks → IRLSAFETY+ Control** — setup guide runs on first open
+
+Or build locally:
 
 ```bat
+scripts\build-windows.bat
 scripts\package-v0.1.bat
 ```
 
-1. Open `release\IRLSAFETY+-v0.1.0-win64\`
-2. Double-click **`install-from-package.bat`**
-3. Restart OBS → right-click any source → **Filters** → **+** → **IRLSAFETY+ PII Blur**
+Package output: `release\IRLSAFETY+-v0.5.3-win64\`
 
-### Option B — Build from source
+---
+
+## Quick setup
+
+1. Add **IRLSAFETY+** filter to **Display Capture** (top of filter list)
+2. Defaults: **Screen Text** + **Custom PII** on, **Solid Box** censor
+3. Add keywords under **Custom PII List** (one per line)
+4. Hover any setting for a full tooltip explanation
+
+### Verify
+
+- **Test Effect** ON + Solid Box → center overlay appears
+- Notepad with large text on captured display → Screen Text covers it
+- Custom keyword visible → partial cover at **50%** by default
+
+---
+
+## v0.5.3 defaults
+
+| Setting | Default |
+|---------|---------|
+| Overlay Overlap | **0%** (tight OCR boxes) |
+| Partial PII Cover | **50%** |
+| Cover While Typing | OFF |
+| Escalated Secure Mode | ON |
+| Hybrid Stream Delay | ON (0.5s + 0.5s auto) |
+
+---
+
+## Local model training
+
+1. Open **Docks → IRLSAFETY+ Control**
+2. **Capture Frame for Training** → saves to local `training/images/train`
+3. Label with [LabelImg](https://github.com/HumanSignal/labelImg) (local)
+4. See `data/models/TRAINING.txt` or **Open Training Guide** in the dock
+5. Optional: `scripts\setup-training.ps1` and `scripts\download-detection-model.ps1`
+
+Bundled detector: `irlsafety-detect.onnx` (US plates & signs baseline). Train your own for other regions.
+
+---
+
+## Build from source
+
+**Requirements:** Visual Studio 2022 (C++), CMake 3.28+
 
 ```bat
 scripts\build-windows.bat
@@ -32,118 +81,23 @@ scripts\install-to-obs.bat
 
 ---
 
-## v0.1 — Custom PII blur (working now)
-
-**Goal:** Add your name in settings, show an ID or paper with that name on camera, and see it blurred in real time.
-
-1. Add the **IRLSAFETY+ PII Blur** filter to your webcam (or any source)
-2. Turn on **Enable All Protection** and **Custom PII**
-3. In **Custom PII (one per line)**, enter your name:
-   ```
-   John Smith
-   ```
-   Or browse to a `.txt` file (`data/custom-pii.example.txt` is a template)
-4. Point your camera at text containing that name
-5. Matched text is blurred using **Windows OCR** + **case-insensitive** keyword matching
-
-**Tips:**
-- Increase **Blur Intensity** (default 12) for stronger obfuscation
-- Set **Process Every N Frames** to `2` or `3` if CPU usage is high
-- Enable **Enable Debug Logging** to see match counts in the OBS log
-
-### What works in v0.1
-
-| Feature | Status |
-|---------|--------|
-| Custom PII list (inline + file) | **Working** |
-| Windows OCR text detection | **Working** |
-| Case-insensitive PII match | **Working** |
-| Box blur on matched regions | **Working** |
-| Master + category toggles | **Working** |
-| Screen Text (all OCR text) | **Working** (basic — blurs all detected text) |
-| Street Signs / Plates / Docs / Faces | Stub (awaiting YOLO/ONNX) |
-| Detection tracking | Planned |
-| GPU ONNX inference | Planned |
-
----
-
-## Using the Filter in OBS
-
-1. **Enable All Protection** — master on/off
-2. **Protection Categories** — toggle each class independently
-3. **Custom PII List** — names, addresses, usernames (one per line)
-4. **Detection & Blur** — confidence, frame skip, blur intensity
-5. **Advanced** — GPU preference, debug logging, ONNX model path
-
----
-
-## Architecture (v0.1)
-
-```mermaid
-flowchart LR
-    A[OBS Frame] --> B[Frame Skip]
-    B --> C[Windows OCR]
-    C --> D[Custom PII Match]
-    D --> E[Box Blur Regions]
-    E --> F[Output Frame]
-    B --> G[YOLO Stub]
-    G --> E
-```
-
-| Module | File | Role |
-|--------|------|------|
-| Filter UI | `src/pii-filter.c` | OBS properties + `filter_video` |
-| OCR | `src/ocr/ocr_windows.cpp` | Windows.Media.Ocr word boxes |
-| PII match | `src/ocr/pii_match.c` | Case-insensitive keyword match |
-| Blur | `src/blur/blur_compositor.c` | In-place box blur (BGRA / I420) |
-| Custom PII | `src/custom_pii.c` | Parse inline + file lists |
-| Pipeline | `src/pipeline.c` | Category gates + orchestration |
-
----
-
-## Build from Source (Windows 10/11)
-
-### Prerequisites
-
-- Visual Studio 2022 with **Desktop development with C++**
-- CMake 3.28+ (bundled with VS)
-- OBS Studio 31.x installed (for testing)
-
-### Commands
+## Maintainer: publish a release
 
 ```bat
-scripts\build-windows.bat          REM configure + build + test
-scripts\install-to-obs.bat         REM install to Program Files\obs-studio
-scripts\package-v0.1.bat           REM create release\IRLSAFETY+-v0.1.0-win64\
+scripts\package-v0.1.bat
+scripts\zip-release.ps1
 ```
+
+Upload `release\IRLSAFETY+-v0.5.3-win64.zip` to GitHub → **Releases → New release** → tag `v0.5.3`.
 
 ---
 
-## Project Layout
+## Project layout
 
 ```
-IRLSAFETY-obs/
-├── scripts/              build, install, package batch files
-├── release/              INSTALL notes + packaged builds
-├── src/ocr/              Windows OCR, PII matching, frame conversion
-├── src/blur/             Box blur compositor
-├── data/custom-pii.example.txt
-└── tests/                Unit tests (match, blur, OBS entry points)
+src/           plugin, pipeline, OCR, GPU path, hybrid delay
+src/ui/        control dock, setup walkthrough
+data/locale/   UI strings + hover tooltips
+scripts/       build, package, training helpers
+tests/         unit tests
 ```
-
----
-
-## Roadmap
-
-- [x] Custom PII OCR + blur (v0.1)
-- [ ] YOLOv8n ONNX for signs, plates, documents, faces
-- [ ] ONNX Runtime GPU path
-- [ ] Detection tracking across frames
-- [ ] Detection preview overlay
-- [ ] Audio PII muting
-
----
-
-## Attributions
-
-See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) — OBS Studio, obs-plugintemplate, obs-detect, obs-ocr, Ultralytics YOLO, EasyOCR, ONNX Runtime, Windows OCR API.

@@ -14,6 +14,7 @@
 
 #define MAX_AV_PLANES 4
 #define UNUSED_PARAMETER(x) (void)(x)
+#define LOG_WARNING 2
 #define LOG_INFO 3
 
 enum video_format {
@@ -36,6 +37,7 @@ enum obs_source_type {
 };
 
 #define OBS_SOURCE_VIDEO (1 << 0)
+#define OBS_SOURCE_SRGB (1 << 15)
 
 enum obs_text_type {
 	OBS_TEXT_DEFAULT,
@@ -54,10 +56,32 @@ enum obs_group_type {
 	OBS_GROUP_CHECKABLE,
 };
 
+enum obs_combo_type {
+	OBS_COMBO_TYPE_INVALID,
+	OBS_COMBO_TYPE_EDITABLE,
+	OBS_COMBO_TYPE_LIST,
+};
+
+enum obs_combo_format {
+	OBS_COMBO_FORMAT_INT,
+	OBS_COMBO_FORMAT_FLOAT,
+	OBS_COMBO_FORMAT_STRING,
+};
+
+struct obs_property {
+	int unused;
+};
+
 typedef struct obs_data obs_data_t;
 typedef struct obs_properties obs_properties_t;
+typedef struct obs_property obs_property_t;
 typedef struct obs_source obs_source_t;
 typedef struct obs_module obs_module_t;
+typedef struct gs_effect gs_effect_t;
+
+typedef bool (*obs_property_modified_t)(obs_properties_t *props, obs_property_t *property, obs_data_t *settings);
+typedef bool (*obs_property_modified2_t)(void *priv, obs_properties_t *props, obs_property_t *property,
+					 obs_data_t *settings);
 
 struct obs_source_frame {
 	uint8_t *data[MAX_AV_PLANES];
@@ -79,6 +103,7 @@ struct obs_source_info {
 	obs_properties_t *(*get_properties)(void *data);
 	void (*update)(void *data, obs_data_t *settings);
 	void (*video_tick)(void *data, float seconds);
+	void (*video_render)(void *data, gs_effect_t *effect);
 	struct obs_source_frame *(*filter_video)(void *data, struct obs_source_frame *frame);
 };
 
@@ -114,8 +139,8 @@ void obs_data_set_default_string(obs_data_t *data, const char *name, const char 
 obs_properties_t *obs_properties_create(void);
 obs_properties_t *obs_properties_add_group(obs_properties_t *props, const char *name, const char *desc,
 					   enum obs_group_type type, obs_properties_t *group);
-obs_properties_t *obs_properties_add_text(obs_properties_t *props, const char *name, const char *desc,
-					    enum obs_text_type type);
+obs_property_t *obs_properties_add_text(obs_properties_t *props, const char *name, const char *desc,
+					enum obs_text_type type);
 obs_properties_t *obs_properties_add_bool(obs_properties_t *props, const char *name, const char *desc);
 obs_properties_t *obs_properties_add_float(obs_properties_t *props, const char *name, const char *desc, double min,
 					   double max, double step);
@@ -125,3 +150,15 @@ obs_properties_t *obs_properties_add_int_slider(obs_properties_t *props, const c
 						  int max, int step);
 obs_properties_t *obs_properties_add_path(obs_properties_t *props, const char *name, const char *desc,
 					    enum obs_path_type type, const char *filter, const char *default_path);
+obs_property_t *obs_properties_add_list(obs_properties_t *props, const char *name, const char *desc,
+					enum obs_combo_type type, enum obs_combo_format format);
+obs_property_t *obs_properties_add_color(obs_properties_t *props, const char *name, const char *desc);
+obs_property_t *obs_properties_add_color_alpha(obs_properties_t *props, const char *name, const char *desc);
+obs_property_t *obs_properties_get(obs_properties_t *props, const char *name);
+void obs_property_set_visible(obs_property_t *prop, bool visible);
+void obs_property_set_modified_callback(obs_property_t *prop, obs_property_modified_t callback);
+void obs_property_set_modified_callback2(obs_property_t *prop, obs_property_modified2_t callback, void *priv);
+void obs_property_list_add_int(obs_property_t *prop, const char *name, long long val);
+
+void obs_enter_graphics(void);
+void obs_leave_graphics(void);

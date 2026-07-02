@@ -1,10 +1,11 @@
 /*
- * IRLSAFETY+ — blur compositing stub.
+ * IRLSAFETY+ — censor compositing (blur, solid box, solid ellipse).
  * Copyright (c) 2026 IRLSAFETY+ Contributors. MIT License.
  */
 
 #pragma once
 
+#include "../filter_settings.h"
 #include "../irlsafety_types.h"
 
 #ifdef __cplusplus
@@ -13,12 +14,22 @@ extern "C" {
 
 typedef struct blur_compositor_context blur_compositor_context;
 
+typedef struct irlsafety_censor_options {
+	irlsafety_censor_mode mode;
+	float blur_strength;
+	uint32_t color;
+	bool show_preview;
+} irlsafety_censor_options;
+
 blur_compositor_context *blur_compositor_create(void);
 void blur_compositor_destroy(blur_compositor_context *ctx);
 
-/* Planned: expand region masks and apply Gaussian/pixelate blur in-place. */
-int apply_blur(blur_compositor_context *ctx, irlsafety_frame_view *frame,
-	       const irlsafety_region_list *regions, float blur_strength);
+int apply_censor(blur_compositor_context *ctx, irlsafety_frame_view *frame, const irlsafety_region_list *regions,
+		 const irlsafety_censor_options *options);
+
+/* Back-compat wrapper used by older tests. */
+int apply_blur(blur_compositor_context *ctx, irlsafety_frame_view *frame, const irlsafety_region_list *regions,
+	       float blur_strength);
 
 #ifdef __cplusplus
 }

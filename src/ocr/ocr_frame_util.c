@@ -7,16 +7,38 @@
 
 #include <string.h>
 
-void irlsafety_compute_ocr_size(uint32_t frame_width, uint32_t frame_height, uint32_t *ocr_width, uint32_t *ocr_height,
-				float *scale_x, float *scale_y)
+uint32_t irlsafety_ocr_max_width_for_detail(int ocr_detail)
+{
+	switch (ocr_detail) {
+	case 0:
+		return IRLSAFETY_OCR_WIDTH_STANDARD;
+	case 2:
+		return IRLSAFETY_OCR_WIDTH_MAXIMUM;
+	default:
+		return IRLSAFETY_OCR_WIDTH_DETAILED;
+	}
+}
+
+void irlsafety_compute_ocr_size(uint32_t frame_width, uint32_t frame_height, uint32_t max_width, uint32_t *ocr_width,
+				uint32_t *ocr_height, float *scale_x, float *scale_y)
 {
 	float scale = 1.0f;
 
 	if (!ocr_width || !ocr_height)
 		return;
 
-	if (frame_width > IRLSAFETY_OCR_MAX_WIDTH) {
-		scale = (float)IRLSAFETY_OCR_MAX_WIDTH / (float)frame_width;
+	if (max_width == 0) {
+		*ocr_width = frame_width;
+		*ocr_height = frame_height;
+		if (scale_x)
+			*scale_x = 1.0f;
+		if (scale_y)
+			*scale_y = 1.0f;
+		return;
+	}
+
+	if (frame_width > max_width) {
+		scale = (float)max_width / (float)frame_width;
 	}
 
 	*ocr_width = (uint32_t)((float)frame_width * scale);
@@ -114,6 +136,24 @@ static void sample_bgra(const irlsafety_frame_view *frame, uint32_t x, uint32_t 
 	bgra_out[3] = 255;
 }
 
+static void sample_rgba(const irlsafety_frame_view *frame, uint32_t x, uint32_t y, uint8_t *bgra_out)
+{
+	uint32_t fx = x;
+	uint32_t fy = y;
+	const uint8_t *src;
+
+	if (fx >= frame->width)
+		fx = frame->width - 1;
+	if (fy >= frame->height)
+		fy = frame->height - 1;
+
+	src = frame->planes[0] + fy * frame->linesize[0] + fx * 4;
+	bgra_out[0] = src[2];
+	bgra_out[1] = src[1];
+	bgra_out[2] = src[0];
+	bgra_out[3] = 255;
+}
+
 int irlsafety_frame_to_bgra_scaled(const irlsafety_frame_view *frame, uint8_t *bgra, uint32_t ocr_width,
 				   uint32_t ocr_height)
 {
@@ -132,6 +172,9 @@ int irlsafety_frame_to_bgra_scaled(const irlsafety_frame_view *frame, uint8_t *b
 				break;
 			case IRLSAFETY_FORMAT_NV12:
 				sample_nv12(frame, src_x, src_y, dst);
+				break;
+			case IRLSAFETY_FORMAT_RGBA:
+				sample_rgba(frame, src_x, src_y, dst);
 				break;
 			case IRLSAFETY_FORMAT_BGRA:
 			case IRLSAFETY_FORMAT_BGRX:

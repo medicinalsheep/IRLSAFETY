@@ -1,0 +1,88 @@
+IRLSAFETY+ — Local-only model training (privacy-first)
+========================================================
+
+PRIVACY — READ THIS FIRST
+-------------------------
+IRLSAFETY+ is built for on-device privacy:
+
+  - Live video never leaves your PC during streaming
+  - Windows OCR runs locally (no cloud OCR API)
+  - YOLO detection runs locally via ONNX on your GPU/CPU
+  - The plugin does NOT upload frames, train in the cloud, or phone home
+  - Your PII never trains anyone else's model
+
+Model training (optional) happens ONLY on YOUR machine with YOUR images.
+Do NOT upload stream frames to third-party websites (Roboflow, Google, etc.)
+if privacy is your goal. Use the local tools below instead.
+
+GOAL
+----
+A small YOLOv8n ONNX file: irlsafety-detect.onnx
+Finds license plates and street signs — tuned for your IRL setup.
+
+STEP 1 — Local training setup (one time)
+----------------------------------------
+  scripts\setup-training.ps1
+
+Installs ultralytics (YOLO) locally. No cloud account required.
+
+STEP 2 — Collect images (stay local)
+------------------------------------
+200+ images minimum. Only use footage YOU control:
+
+  - Pause OBS → screenshot your own clips
+  - Export frames from your recordings on disk
+  - NEVER upload plates, faces, addresses, or IDs to a website
+
+Include variety: angled plates, night, blur, different signs.
+
+STEP 3 — Label images (local tools only)
+--------------------------------------
+Recommended: LabelImg (free, offline, no account)
+  pip install labelImg
+  labelImg
+
+  1. Open training\images\train
+  2. Set save format to YOLO
+  3. Draw boxes — class names MUST match:
+       0  license_plate
+       1  street_sign
+       2  document      (optional)
+       3  face          (optional)
+  4. Labels save as .txt next to each image
+
+Alternative: CVAT self-hosted on localhost (still your machine).
+
+Put 80% of images in training\images\train, 20% in training\images\val.
+
+STEP 4 — Train locally
+----------------------
+  cd training
+  yolo detect train data=dataset.yaml model=yolov8n.pt epochs=100 imgsz=640 batch=8
+
+All training runs on your GPU/CPU. No data sent anywhere.
+
+STEP 5 — Export ONNX (local)
+----------------------------
+  yolo export model=runs\detect\train\weights\best.pt format=onnx imgsz=640 simplify=True
+
+  copy runs\detect\train\weights\best.onnx ..\data\models\irlsafety-detect.onnx
+
+Install to OBS:
+  copy data\models\irlsafety-detect.onnx ^
+    "%ProgramFiles%\obs-studio\data\obs-plugins\irlsafety-plus\models\"
+
+STEP 6 — Test in OBS
+--------------------
+License Plates + Street Signs ON, Debug Logging ON.
+Log should show: Object detection — N region(s)
+
+FUTURE: USER-GUIDED TUNING (planned, still local)
+------------------------------------------------
+Later versions may let users mark "missed this plate" → save frame locally
+→ optional local re-train script. Still no cloud. Still your data on your disk.
+
+MOBILE / LOW POWER
+------------------
+YOLOv8n stays small (~6 MB). Future phone builds use the same architecture
+with smaller input (320px) and on-device quantization — no cloud inference.

@@ -337,13 +337,14 @@ obs_properties_t *obs_properties_add_group(obs_properties_t *props, const char *
 	return props;
 }
 
-obs_properties_t *obs_properties_add_text(obs_properties_t *props, const char *name, const char *desc,
-					    enum obs_text_type type)
+obs_property_t *obs_properties_add_text(obs_properties_t *props, const char *name, const char *desc,
+					enum obs_text_type type)
 {
+	static obs_property_t dummy_prop;
 	(void)name;
 	(void)type;
 	track_property_label(desc, props);
-	return props;
+	return &dummy_prop;
 }
 
 obs_properties_t *obs_properties_add_bool(obs_properties_t *props, const char *name, const char *desc)
@@ -391,3 +392,65 @@ obs_properties_t *obs_properties_add_path(obs_properties_t *props, const char *n
 	track_property_label(desc, props);
 	return props;
 }
+
+obs_property_t *obs_properties_add_list(obs_properties_t *props, const char *name, const char *desc,
+					  enum obs_combo_type type, enum obs_combo_format format)
+{
+	static obs_property_t dummy_prop;
+	(void)name;
+	(void)type;
+	(void)format;
+	track_property_label(desc, props);
+	return &dummy_prop;
+}
+
+obs_property_t *obs_properties_add_color(obs_properties_t *props, const char *name, const char *desc)
+{
+	static obs_property_t dummy_prop;
+	(void)name;
+	track_property_label(desc, props);
+	return &dummy_prop;
+}
+
+obs_property_t *obs_properties_add_color_alpha(obs_properties_t *props, const char *name, const char *desc)
+{
+	return obs_properties_add_color(props, name, desc);
+}
+
+obs_property_t *obs_properties_get(obs_properties_t *props, const char *name)
+{
+	static obs_property_t dummy_prop;
+	(void)props;
+	(void)name;
+	return &dummy_prop;
+}
+
+void obs_property_set_visible(obs_property_t *prop, bool visible)
+{
+	(void)prop;
+	(void)visible;
+}
+
+void obs_property_set_modified_callback(obs_property_t *prop, obs_property_modified_t callback)
+{
+	(void)prop;
+	(void)callback;
+}
+
+void obs_property_set_modified_callback2(obs_property_t *prop, obs_property_modified2_t callback, void *priv)
+{
+	(void)prop;
+	(void)callback;
+	(void)priv;
+}
+
+void obs_property_list_add_int(obs_property_t *prop, const char *name, long long val)
+{
+	(void)prop;
+	(void)name;
+	(void)val;
+}
+
+void obs_enter_graphics(void) {}
+
+void obs_leave_graphics(void) {}

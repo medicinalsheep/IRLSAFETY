@@ -11,8 +11,8 @@
 extern "C" {
 #endif
 
-#define IRLSAFETY_OCR_MAX_HITS 128
-#define IRLSAFETY_OCR_TEXT_LEN 256
+#define IRLSAFETY_OCR_MAX_HITS 512
+#define IRLSAFETY_OCR_TEXT_LEN 512
 
 typedef struct irlsafety_ocr_hit {
 	char text[IRLSAFETY_OCR_TEXT_LEN];

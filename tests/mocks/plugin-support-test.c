@@ -5,10 +5,11 @@
 
 #include <plugin-support.h>
 
+#include <stdarg.h>
 #include <stdio.h>
 
 const char *PLUGIN_NAME = "irlsafety-plus";
-const char *PLUGIN_VERSION = "0.1.0";
+const char *PLUGIN_VERSION = "0.1.3";
 
 void obs_log(int log_level, const char *format, ...)
 {

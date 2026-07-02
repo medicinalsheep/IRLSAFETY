@@ -14,6 +14,7 @@ uint8_t irlsafety_plane_count_for_format(irlsafety_video_format format)
 		return 2;
 	case IRLSAFETY_FORMAT_BGRA:
 	case IRLSAFETY_FORMAT_BGRX:
+	case IRLSAFETY_FORMAT_RGBA:
 	case IRLSAFETY_FORMAT_YUY2:
 	case IRLSAFETY_FORMAT_UYVY:
 		return 1;

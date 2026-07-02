@@ -1,9 +1,12 @@
 set(_irlsafety_core_sources
     ../src/pipeline.c
+    ../src/region_tracker.c
+    ../src/hybrid_delay.c
     ../src/filter_settings.c
     ../src/custom_pii.c
     ../src/irlsafety_types.c
-    ../src/detection/yolo_onnx.c
+    ../src/detection/yolo_onnx_stub.c
+    ../src/detection/yolo_preprocess.c
     ../src/ocr/ocr_engine.c
     ../src/ocr/pii_match.c
     ../src/ocr/ocr_frame_util.c

@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 
-#define IRLSAFETY_MAX_REGIONS 64
+#define IRLSAFETY_MAX_REGIONS 256
 #define IRLSAFETY_MAX_PLANES 4
 
 typedef enum irlsafety_video_format {
@@ -21,6 +21,7 @@ typedef enum irlsafety_video_format {
 	IRLSAFETY_FORMAT_NV12,
 	IRLSAFETY_FORMAT_BGRA,
 	IRLSAFETY_FORMAT_BGRX,
+	IRLSAFETY_FORMAT_RGBA,
 	IRLSAFETY_FORMAT_YUY2,
 	IRLSAFETY_FORMAT_UYVY,
 } irlsafety_video_format;

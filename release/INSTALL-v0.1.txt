@@ -1,33 +1,109 @@
-IRLSAFETY+ v0.1.0 — Windows Test Package
-========================================
+IRLSAFETY+ v0.1 — Windows install & test
+==========================================
 
-QUICK INSTALL (OBS already installed)
-------------------------------------
-1. Double-click: install-from-package.bat
-2. Restart OBS Studio
-3. Right-click any video source → Filters → + → "IRLSAFETY+ PII Blur"
-
-TEST CUSTOM PII BLUR (v0.1)
----------------------------
-1. Open filter properties
-2. Ensure "Enable All Protection" and "Custom PII" are ON
-3. In "Custom PII (one per line)" enter your name, e.g.:
-     John Smith
-4. Hold an ID or paper with that name in front of your webcam
-5. Increase "Blur Intensity" if needed (default 12)
-6. Tip: set "Process Every N Frames" to 2–3 if CPU usage is high
-
-v0.1 CAPABILITIES
------------------
-- Windows OCR reads on-screen / camera text
-- Case-insensitive match against your custom PII list
-- Real box blur applied to matched text regions
-- All category toggles preserved (YOLO object classes still stubbed)
+PRIVACY (core design)
+---------------------
+- All live censorship runs ON YOUR PC — no cloud inference
+- Windows OCR and YOLO detection are local; frames are not uploaded
+- Optional model training is local-only (see data\models\TRAINING.txt)
+- Do not upload stream screenshots to cloud labeling sites if PII matters
 
 REQUIREMENTS
 ------------
-- Windows 10/11 x64 with OCR language pack installed
-- OBS Studio 31.x (64-bit)
+- Windows 10/11 x64
+- OBS Studio 31.x or 32.x (64-bit)
+- Windows OCR language pack (Settings → Time & Language → Language → OCR)
+
+DISPLAY / HDR (recommended)
+---------------------------
+IRLSAFETY+ works best with SDR (standard dynamic range) video:
+
+1. Windows: Settings → System → Display → HDR = OFF (if available)
+2. OBS: Settings → Advanced → Color Format = NV12 or P010 as default
+3. For Display Capture sources: right-click source → Properties → leave color
+   space at default unless you know you need HDR capture
+
+HDR or wide-gamut capture can wash out or shift text contrast, which makes
+OCR less reliable. Forcing SDR on your monitor (as you did) is a good idea.
+
+INSTALL
+-------
+1. Close OBS completely.
+2. Double-click install-from-package.bat (Run as administrator if access denied).
+3. Restart OBS.
+4. Right-click any source → Filters → + → IRLSAFETY+ PII Blur.
+
+FILTER ORDER (important)
+------------------------
+In the Filters list, keep IRLSAFETY+ at the TOP (last applied = visible on stream).
+Other filters below it can cover up blur boxes if placed above IRLSAFETY+.
+
+QUICK TEST — rendering (no OCR)
+-------------------------------
+1. Enable All Protection = ON
+2. Test Effect = ON
+3. Censor Style = Solid Box, Color = bright red
+4. You should see ONE red box in the center immediately.
+
+QUICK TEST — Screen Text (OCR)
+--------------------------------
+1. Test Effect = OFF
+2. Screen Text category = ON
+3. Censor Style = Solid Box, Color = bright red
+4. OCR Scan Every N Frames = 2
+5. OCR Detail = Standard (try Maximum if small text is missed)
+6. Enable Debug Logging = ON (Advanced)
+7. Open Notepad, type HELLO WORLD in 72pt on the captured monitor
+8. Help → Log Files — look for:
+     IRLSAFETY+: OCR pass — N hit(s)
+     IRLSAFETY+: Screen Text — N region(s)
+
+OCR DETAIL GUIDE
+----------------
+- Standard (1280px): Fastest. Often best for dense UI / lots of text on screen.
+- Detailed (1920px): Balanced resolution for mixed content.
+- Maximum (dual scan): Runs 1280px AND 1920px passes and merges results.
+  Slower but best for small text. Give it 1–2 seconds per scan cycle.
+
+CUSTOM PII
+----------
+1. Custom PII category = ON
+2. Enter keywords (one per line), e.g. your name or full email address
+3. Show that text on camera or screen (high contrast helps)
+4. For emails/URLs, enter the full address as one keyword line
+
+CAMERA / GOPRO TIPS
+-------------------
+- Use Solid Box censor mode (fastest on camera path)
+- OCR Scan Every N Frames = 6–12 for cameras
+- OCR Detail = Maximum for small on-screen text
+- Lower camera resolution in OBS if you see lag (1080p30 recommended)
+
+LICENSE PLATES & STREET SIGNS (v0.3 ONNX)
+-----------------------------------------
+1. Run scripts\download-detection-model.ps1 (or place your own YOLOv8 ONNX)
+2. Copy model to OBS data folder:
+     data\obs-plugins\irlsafety-plus\models\irlsafety-detect.onnx
+3. Enable License Plates and/or Street Signs categories
+4. Confidence Threshold = 0.45 (raise if too many false positives)
+5. Prefer GPU = ON (uses DirectML on Windows)
+6. Debug log should show: IRLSAFETY+: Object detection — N region(s)
+
+For production use, train/export a plate+sign model (see data\models\README.txt).
+The download script ships a YOLOv8n smoke-test model only.
+
+WHAT WORKS IN v0.3
+------------------
+- Custom PII OCR + blur/box/ellipse
+- Screen Text (line-level censorship)
+- GPU sources (Display Capture, Game Capture)
+- Webcam / GoPro (async CPU path, non-blocking OCR)
+- YOLO ONNX detection (plates, signs, docs, faces — needs model file)
+
+STILL IN PROGRESS
+-----------------
+- Bundled production plate/sign weights (bring your own ONNX for now)
+- Document / face model tuning
 
 UNINSTALL
 ---------
