@@ -16,6 +16,8 @@
 #if defined(IRLSAFETY_HAS_CONTROL_DOCK)
 void irlsafety_control_dock_register(void);
 void irlsafety_control_dock_unregister(void);
+void irlsafety_tray_panel_register(void);
+void irlsafety_tray_panel_unregister(void);
 #endif
 
 #if defined(IRLSAFETY_HAS_FRONTEND_API) && !defined(IRLSAFETY_TEST_BUILD)
@@ -29,6 +31,7 @@ static void irlsafety_frontend_event(enum obs_frontend_event event, void *unused
 	if (event == OBS_FRONTEND_EVENT_EXIT) {
 		irlsafety_begin_shutdown();
 #if defined(IRLSAFETY_HAS_CONTROL_DOCK)
+		irlsafety_tray_panel_unregister();
 		irlsafety_control_dock_unregister();
 #endif
 		irlsafety_obs_on_stream_stopped();
@@ -94,7 +97,9 @@ bool obs_module_load(void)
 #endif
 #if defined(IRLSAFETY_HAS_CONTROL_DOCK)
 	irlsafety_control_dock_register();
-	obs_log(LOG_INFO, "IRLSAFETY+: Control dock ready — open Docks → IRLSAFETY+ Control");
+	irlsafety_tray_panel_register();
+	obs_log(LOG_INFO, "IRLSAFETY+: Tray panel ready — click the IRLSAFETY+ icon in the system tray");
+	obs_log(LOG_INFO, "IRLSAFETY+: OBS dock also available under Docks → IRLSAFETY+ Control");
 #endif
 #if defined(IRLSAFETY_HAS_FRONTEND_API) && !defined(IRLSAFETY_TEST_BUILD)
 	obs_frontend_add_event_callback(irlsafety_frontend_event, NULL);
@@ -111,6 +116,7 @@ void obs_module_unload(void)
 	irlsafety_hybrid_delay_on_stream_stopped();
 #endif
 #if defined(IRLSAFETY_HAS_CONTROL_DOCK)
+	irlsafety_tray_panel_unregister();
 	irlsafety_control_dock_unregister();
 #endif
 #if IRLSAFETY_HAS_OCR_PROBE

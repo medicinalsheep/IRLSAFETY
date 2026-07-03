@@ -4,6 +4,7 @@
  */
 
 #include "onboarding_dialog.hpp"
+#include "ui_theme.hpp"
 
 #include <obs-frontend-api.h>
 #include <obs-module.h>
@@ -36,6 +37,7 @@ public:
 		setWindowTitle(trKey("IRLSAFETYPlus.Walkthrough.Title"));
 		setMinimumWidth(520);
 		setModal(false);
+		irlsafety_ui::apply_dark_theme(this);
 
 		auto *layout = new QVBoxLayout(this);
 		layout->setSpacing(10);

@@ -9,6 +9,7 @@
 #include "irlsafety_log.h"
 #include "irlsafety_paths.h"
 #include "irlsafety_shutdown.h"
+#include "virtual_cam/virtual_cam.h"
 
 #include <math.h>
 #include <obs-module.h>
@@ -68,6 +69,38 @@ static void obs_stream_delay_hook(double total_sec, void *userdata)
 
 	obs_output_set_delay(output, delay_seconds_from_double(total_sec), OBS_OUTPUT_DELAY_PRESERVE);
 }
+
+static int obs_virtual_cam_start_hook(const irlsafety_virtual_cam_config *config, void *userdata)
+{
+	(void)config;
+	(void)userdata;
+
+	if (irlsafety_is_shutting_down())
+		return -1;
+
+	if (obs_frontend_virtualcam_active())
+		return 0;
+
+	obs_frontend_start_virtualcam();
+	return obs_frontend_virtualcam_active() ? 0 : -1;
+}
+
+static void obs_virtual_cam_stop_hook(void *userdata)
+{
+	(void)userdata;
+
+	if (irlsafety_is_shutting_down())
+		return;
+
+	if (obs_frontend_virtualcam_active())
+		obs_frontend_stop_virtualcam();
+}
+
+static bool obs_virtual_cam_active_hook(void *userdata)
+{
+	(void)userdata;
+	return obs_frontend_virtualcam_active();
+}
 #endif
 
 void irlsafety_obs_adapter_register(void)
@@ -77,6 +110,8 @@ void irlsafety_obs_adapter_register(void)
 
 #ifdef IRLSAFETY_HAS_FRONTEND_API
 	irlsafety_hybrid_delay_set_stream_hook(obs_stream_delay_hook, NULL);
+	irlsafety_virtual_cam_set_hooks(obs_virtual_cam_start_hook, obs_virtual_cam_stop_hook,
+					obs_virtual_cam_active_hook, NULL);
 #endif
 }
 
@@ -85,6 +120,7 @@ void irlsafety_obs_adapter_unregister(void)
 	irlsafety_log_set_callback(NULL, NULL);
 	irlsafety_paths_set_resolver(NULL, NULL);
 	irlsafety_hybrid_delay_set_stream_hook(NULL, NULL);
+	irlsafety_virtual_cam_clear_hooks();
 }
 
 void irlsafety_obs_on_stream_started(void)

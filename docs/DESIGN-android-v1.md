@@ -279,6 +279,8 @@ See `data/models/PLATFORMS.txt`.
 3. ~~**P2** logging + path callbacks; settings split~~ — done (`irlsafety_log`, `irlsafety_paths`, `irlsafety_settings`, `filter_settings` OBS adapter)
 4. ~~**P3** hybrid delay OBS adapter~~ — done (`irlsafety_obs_adapter`, portable `hybrid_delay`)
 5. ~~**P4** tests link `libirlsafety_test`; CI green~~ — done (`libirlsafety_test.lib`, stub backends)
-6. **P5** next: `child` OCR + ONNX on non-Windows CMake paths
-7. **P6**: Windows virtual camera module (`VIRTUAL_CAMERA.txt`)
-8. **P10** (Android): after P9 — `android/` Gradle + NDK JNI bridge
+6. ~~**P5** `child` OCR + ONNX on non-Windows CMake paths~~ — done (`cmake/onnxruntime_detect.cmake`)
+7. ~~**P6** Windows virtual camera module~~ — done (OBS Virtual Cam hooks + tray controls)
+8. ~~**Tray panel** dark-mode UI~~ — done (`tray_panel.cpp`, `data/ui/dark_theme.qss`)
+9. **P7** next: ONNX Runtime abstraction — CPU/NNAPI/DML EP selection
+10. **P10** (Android): after P9 — `android/` Gradle + NDK JNI bridge

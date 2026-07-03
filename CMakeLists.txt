@@ -15,9 +15,7 @@ include(compilerconfig)
 include(defaults)
 include(helpers)
 
-if(IRLSAFETY_ENABLE_ONNX AND OS_WINDOWS)
-  include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/onnxruntime.cmake")
-endif()
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/onnxruntime_detect.cmake")
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/libirlsafety.cmake")
 
@@ -34,8 +32,8 @@ if(ENABLE_FRONTEND_API)
 endif()
 
 if(ENABLE_QT)
-  find_package(Qt6 COMPONENTS Widgets Core)
-  target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE Qt6::Core Qt6::Widgets)
+  find_package(Qt6 COMPONENTS Widgets Core Gui)
+  target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE Qt6::Core Qt6::Widgets Qt6::Gui)
   target_compile_options(
     ${CMAKE_PROJECT_NAME}
     PRIVATE $<$<C_COMPILER_ID:Clang,AppleClang>:-Wno-quoted-include-in-framework-header -Wno-comma>
@@ -57,7 +55,13 @@ set(_irlsafety_plugin_sources
     src/irlsafety_obs_adapter.c)
 
 if(ENABLE_FRONTEND_API AND ENABLE_QT)
-  list(APPEND _irlsafety_plugin_sources src/ui/control_dock.cpp src/ui/onboarding_dialog.cpp)
+  list(APPEND _irlsafety_plugin_sources
+              src/ui/control_widget.cpp
+              src/ui/control_dock.cpp
+              src/ui/tray_panel.cpp
+              src/ui/ui_theme.cpp
+              src/ui/onboarding_dialog.cpp
+              src/ui/irlsafety_resources.qrc)
   target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE IRLSAFETY_HAS_CONTROL_DOCK=1)
 endif()
 
@@ -65,7 +69,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE ${_irlsafety_plugin_sources})
 
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
-if(IRLSAFETY_ENABLE_ONNX AND OS_WINDOWS)
+if(IRLSAFETY_HAS_ONNX_RUNTIME AND OS_WINDOWS)
   file(GLOB _ort_runtime_dlls "${IRLSAFETY_ONNXRUNTIME_DLL_DIR}/*.dll")
   add_custom_command(
     TARGET ${CMAKE_PROJECT_NAME}

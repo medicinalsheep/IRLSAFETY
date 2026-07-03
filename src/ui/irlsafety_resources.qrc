@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/irlsafety">
+        <file alias="icons/appicon-tray.png">../../data/branding/appicon-transparent.png</file>
+        <file alias="icons/appicon-dark.png">../../data/branding/appicon-dark.png</file>
+        <file alias="ui/dark_theme.qss">../../data/ui/dark_theme.qss</file>
+    </qresource>
+</RCC>

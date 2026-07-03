@@ -45,6 +45,14 @@ int irlsafety_virtual_cam_submit_frame(const irlsafety_frame_view *frame);
 /* Refine status message after probing the host environment (OBS virtual cam module, etc.). */
 void irlsafety_virtual_cam_refresh_status(void);
 
+typedef int (*irlsafety_virtual_cam_start_fn)(const irlsafety_virtual_cam_config *config, void *userdata);
+typedef void (*irlsafety_virtual_cam_stop_fn)(void *userdata);
+typedef bool (*irlsafety_virtual_cam_active_fn)(void *userdata);
+
+void irlsafety_virtual_cam_set_hooks(irlsafety_virtual_cam_start_fn start, irlsafety_virtual_cam_stop_fn stop,
+				     irlsafety_virtual_cam_active_fn active, void *userdata);
+void irlsafety_virtual_cam_clear_hooks(void);
+
 #ifdef __cplusplus
 }
 #endif

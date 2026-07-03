@@ -1,0 +1,111 @@
+/* IRLSAFETY+ dark theme — tray panel, dock, onboarding */
+
+QWidget, QFrame, QDialog, QMainWindow {
+    background-color: #12141a;
+    color: #e8eaed;
+    font-family: "Segoe UI", "Inter", sans-serif;
+    font-size: 13px;
+}
+
+QGroupBox {
+    border: 1px solid #2a2f3a;
+    border-radius: 10px;
+    margin-top: 14px;
+    padding: 12px 10px 10px 10px;
+    font-weight: 600;
+    color: #c9cdd3;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 12px;
+    padding: 0 6px;
+}
+
+QPushButton {
+    background-color: #1e2430;
+    border: 1px solid #343b4a;
+    border-radius: 8px;
+    padding: 7px 14px;
+    color: #e8eaed;
+}
+
+QPushButton:hover {
+    background-color: #2a3344;
+    border-color: #3ecf8e;
+}
+
+QPushButton:pressed {
+    background-color: #151a22;
+}
+
+QPushButton:flat {
+    border: none;
+    background: transparent;
+}
+
+QCheckBox {
+    spacing: 8px;
+    color: #d0d4da;
+}
+
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 1px solid #3a4254;
+    background: #1a1f28;
+}
+
+QCheckBox::indicator:checked {
+    background: #3ecf8e;
+    border-color: #3ecf8e;
+}
+
+QComboBox, QLineEdit {
+    background-color: #1a1f28;
+    border: 1px solid #343b4a;
+    border-radius: 8px;
+    padding: 6px 10px;
+    color: #e8eaed;
+    selection-background-color: #3ecf8e;
+}
+
+QComboBox::drop-down {
+    border: none;
+    width: 24px;
+}
+
+QScrollArea {
+    border: none;
+    background: transparent;
+}
+
+QTextBrowser {
+    background-color: #161a22;
+    border: 1px solid #2a2f3a;
+    border-radius: 8px;
+    padding: 8px;
+    color: #d8dce2;
+}
+
+QLabel#irlsafetyTitle {
+    font-size: 18px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+QLabel#irlsafetySubtitle {
+    font-size: 11px;
+    color: #8b929e;
+}
+
+QWidget#irlsafetyTitleBar {
+    background-color: #0d0f14;
+    border-bottom: 1px solid #2a2f3a;
+}
+
+QWidget#irlsafetyPanelChrome {
+    border: 1px solid #2a2f3a;
+    border-radius: 12px;
+}
