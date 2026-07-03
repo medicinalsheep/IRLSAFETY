@@ -21,11 +21,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../third_party/stb_image.h"
 
-#ifndef IRLSAFETY_TEST_BUILD
-#include <obs-module.h>
-#include <util/bmem.h>
-#endif
-
 static irlsafety_overlay_image *g_overlay_cache = NULL;
 static char g_overlay_cache_path[1024] = {0};
 

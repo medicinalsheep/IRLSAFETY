@@ -1,18 +1,9 @@
 /*
- * IRLSAFETY+ — hybrid stream delay + overlay timeline buffer.
+ * IRLSAFETY+ — hybrid stream delay overlay timeline (portable core).
  * Copyright (c) 2026 IRLSAFETY+ Contributors. MIT License.
  */
 
 #include "hybrid_delay.h"
-#include "irlsafety_shutdown.h"
-
-#ifndef IRLSAFETY_TEST_BUILD
-#ifdef IRLSAFETY_HAS_FRONTEND_API
-#include <obs-frontend-api.h>
-#endif
-#include <obs-module.h>
-#include <util/config-file.h>
-#endif
 
 #include <math.h>
 #include <string.h>
@@ -21,9 +12,6 @@
 
 static struct {
 	bool streaming;
-	bool user_delay_saved;
-	bool saved_delay_enable;
-	uint32_t saved_delay_sec;
 	bool global_protecting;
 	uint64_t global_last_overlay_frame;
 	double configured_global_sec;
@@ -32,12 +20,8 @@ static struct {
 	bool hybrid_enabled;
 } g_hybrid = {0};
 
-static uint32_t delay_seconds_from_double(double seconds)
-{
-	if (seconds < 0.0)
-		seconds = 0.0;
-	return (uint32_t)ceil(seconds);
-}
+static irlsafety_stream_delay_fn g_stream_hook;
+static void *g_stream_hook_userdata;
 
 static void copy_region_list(irlsafety_region_list *dest, const irlsafety_region_list *src)
 {
@@ -47,31 +31,17 @@ static void copy_region_list(irlsafety_region_list *dest, const irlsafety_region
 	*dest = *src;
 }
 
-#ifndef IRLSAFETY_TEST_BUILD
-#ifdef IRLSAFETY_HAS_FRONTEND_API
-static void hybrid_apply_obs_stream_delay(double total_sec)
+static void hybrid_apply_stream_delay(double total_sec)
 {
-	obs_output_t *output;
-	config_t *profile;
-
-	if (irlsafety_is_shutting_down())
-		return;
-
-	output = obs_frontend_get_streaming_output();
-	profile = obs_frontend_get_profile_config();
-
-	if (!output)
-		return;
-
-	if (profile) {
-		config_set_bool(profile, "Output", "DelayEnable", total_sec > 0.0);
-		config_set_int(profile, "Output", "DelaySec", (int)delay_seconds_from_double(total_sec));
-	}
-
-	obs_output_set_delay(output, delay_seconds_from_double(total_sec), OBS_OUTPUT_DELAY_PRESERVE);
+	if (g_stream_hook)
+		g_stream_hook(total_sec, g_stream_hook_userdata);
 }
-#endif
-#endif
+
+void irlsafety_hybrid_delay_set_stream_hook(irlsafety_stream_delay_fn fn, void *userdata)
+{
+	g_stream_hook = fn;
+	g_stream_hook_userdata = userdata;
+}
 
 void irlsafety_hybrid_delay_runtime_init(irlsafety_hybrid_delay_runtime *runtime)
 {
@@ -95,46 +65,15 @@ void irlsafety_hybrid_delay_runtime_reset(irlsafety_hybrid_delay_runtime *runtim
 
 void irlsafety_hybrid_delay_on_stream_started(void)
 {
-#ifndef IRLSAFETY_TEST_BUILD
-#ifdef IRLSAFETY_HAS_FRONTEND_API
-	config_t *profile = obs_frontend_get_profile_config();
-
 	g_hybrid.streaming = true;
-	if (!g_hybrid.user_delay_saved && profile) {
-		g_hybrid.saved_delay_enable = config_get_bool(profile, "Output", "DelayEnable");
-		g_hybrid.saved_delay_sec = (uint32_t)config_get_int(profile, "Output", "DelaySec");
-		g_hybrid.user_delay_saved = true;
-	}
 
 	if (g_hybrid.hybrid_enabled)
-		hybrid_apply_obs_stream_delay(g_hybrid.configured_global_sec);
-#endif
-#else
-	g_hybrid.streaming = true;
-#endif
+		hybrid_apply_stream_delay(g_hybrid.configured_global_sec);
 }
 
 void irlsafety_hybrid_delay_on_stream_stopped(void)
 {
-#ifndef IRLSAFETY_TEST_BUILD
-#ifdef IRLSAFETY_HAS_FRONTEND_API
-	if (!irlsafety_is_shutting_down() || g_hybrid.user_delay_saved) {
-		config_t *profile = obs_frontend_get_profile_config();
-		obs_output_t *output = obs_frontend_get_streaming_output();
-
-		if (g_hybrid.user_delay_saved && profile) {
-			config_set_bool(profile, "Output", "DelayEnable", g_hybrid.saved_delay_enable);
-			config_set_int(profile, "Output", "DelaySec", (int)g_hybrid.saved_delay_sec);
-			if (output)
-				obs_output_set_delay(output, g_hybrid.saved_delay_enable ? g_hybrid.saved_delay_sec : 0,
-						   OBS_OUTPUT_DELAY_PRESERVE);
-		}
-	}
-#endif
-#endif
-
 	g_hybrid.streaming = false;
-	g_hybrid.user_delay_saved = false;
 	g_hybrid.global_protecting = false;
 }
 
@@ -176,12 +115,8 @@ void irlsafety_hybrid_delay_update_global(const irlsafety_filter_settings *setti
 	if (g_hybrid.global_protecting)
 		target_delay += settings->auto_delay_sec;
 
-#ifndef IRLSAFETY_TEST_BUILD
-#ifdef IRLSAFETY_HAS_FRONTEND_API
 	if (g_hybrid.streaming)
-		hybrid_apply_obs_stream_delay(target_delay);
-#endif
-#endif
+		hybrid_apply_stream_delay(target_delay);
 }
 
 double irlsafety_hybrid_delay_target_sec(const irlsafety_filter_settings *settings, bool any_overlays,
@@ -202,9 +137,8 @@ double irlsafety_hybrid_delay_target_sec(const irlsafety_filter_settings *settin
 	return settings->global_delay_sec;
 }
 
-void irlsafety_hybrid_delay_tick(irlsafety_hybrid_delay_runtime *runtime,
-				 const irlsafety_filter_settings *settings, uint64_t frame_index,
-				 int frames_elapsed, bool any_overlays)
+void irlsafety_hybrid_delay_tick(irlsafety_hybrid_delay_runtime *runtime, const irlsafety_filter_settings *settings,
+				 uint64_t frame_index, int frames_elapsed, bool any_overlays)
 {
 	double target;
 	double step;
@@ -224,8 +158,8 @@ void irlsafety_hybrid_delay_tick(irlsafety_hybrid_delay_runtime *runtime,
 	target = irlsafety_hybrid_delay_target_sec(settings, any_overlays, frame_index);
 	runtime->protection_latched = target > settings->global_delay_sec + 0.001;
 
-	step = (settings->auto_delay_sec > 0.0 ? settings->auto_delay_sec : 0.5) / (IRLSAFETY_DELAY_RAMP_SEC *
-										  IRLSAFETY_HYBRID_DELAY_FPS_ESTIMATE);
+	step = (settings->auto_delay_sec > 0.0 ? settings->auto_delay_sec : 0.5) /
+	       (IRLSAFETY_DELAY_RAMP_SEC * IRLSAFETY_HYBRID_DELAY_FPS_ESTIMATE);
 	steps = frames_elapsed;
 
 	while (steps-- > 0) {

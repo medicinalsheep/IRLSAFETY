@@ -258,6 +258,7 @@ See `data/models/PLATFORMS.txt`.
 | 2026-07-03 | OCR out of Android v1; detection-first |
 | 2026-07-03 | Reuse v0.7 `irlsafety-detect.onnx`; no retrain required for MVP |
 | 2026-07-03 | NDI/SRT → OBS remains official phone path until v1.0-alpha |
+| 2026-07-03 | P2–P4 merged: `libirlsafety` OBS-agnostic; plugin owns OBS adapters |
 
 ---
 
@@ -274,7 +275,10 @@ See `data/models/PLATFORMS.txt`.
 ## Next action (recommended)
 
 1. ~~Finish **v0.7.1** Windows perf release~~ — shipped (screen text OFF, perf fixes)
-2. ~~**P1** `libirlsafety` CMake target~~ — done (`cmake/libirlsafety.cmake`, links `libirlsafety.lib`)
-3. ~~`data/models/ANDROID.txt`~~ — done
-4. **P2** next: logging + asset path callbacks; split `filter_settings` OBS adapter
-5. **P10** (Android): after P4 — `android/` Gradle + NDK JNI bridge
+2. ~~**P1** `libirlsafety` CMake target~~ — done (`cmake/libirlsafety.cmake`)
+3. ~~**P2** logging + path callbacks; settings split~~ — done (`irlsafety_log`, `irlsafety_paths`, `irlsafety_settings`, `filter_settings` OBS adapter)
+4. ~~**P3** hybrid delay OBS adapter~~ — done (`irlsafety_obs_adapter`, portable `hybrid_delay`)
+5. ~~**P4** tests link `libirlsafety_test`; CI green~~ — done (`libirlsafety_test.lib`, stub backends)
+6. **P5** next: `child` OCR + ONNX on non-Windows CMake paths
+7. **P6**: Windows virtual camera module (`VIRTUAL_CAMERA.txt`)
+8. **P10** (Android): after P9 — `android/` Gradle + NDK JNI bridge

@@ -8,6 +8,7 @@
 
 #include "blur/overlay_image.h"
 #include "pii-filter.h"
+#include "irlsafety_obs_adapter.h"
 #include "irlsafety_paths.h"
 #include "irlsafety_shutdown.h"
 #include "virtual_cam/virtual_cam.h"
@@ -30,11 +31,11 @@ static void irlsafety_frontend_event(enum obs_frontend_event event, void *unused
 #if defined(IRLSAFETY_HAS_CONTROL_DOCK)
 		irlsafety_control_dock_unregister();
 #endif
-		irlsafety_hybrid_delay_on_stream_stopped();
+		irlsafety_obs_on_stream_stopped();
 	} else if (event == OBS_FRONTEND_EVENT_STREAMING_STARTED)
-		irlsafety_hybrid_delay_on_stream_started();
+		irlsafety_obs_on_stream_started();
 	else if (event == OBS_FRONTEND_EVENT_STREAMING_STOPPED)
-		irlsafety_hybrid_delay_on_stream_stopped();
+		irlsafety_obs_on_stream_stopped();
 }
 #endif
 
@@ -62,6 +63,7 @@ OBS_MODULE_USE_DEFAULT_LOCALE(PLUGIN_NAME, "en-US")
 
 bool obs_module_load(void)
 {
+	irlsafety_obs_adapter_register();
 	obs_register_source(&irlsafety_pii_filter);
 	obs_log(LOG_INFO, "IRLSAFETY+ loaded (version %s)", PLUGIN_VERSION);
 #if IRLSAFETY_HAS_OCR_PROBE
@@ -115,5 +117,6 @@ void obs_module_unload(void)
 	ocr_backend_shutdown();
 #endif
 	irlsafety_overlay_release_cache();
+	irlsafety_obs_adapter_unregister();
 	obs_log(LOG_INFO, "IRLSAFETY+ unloaded");
 }

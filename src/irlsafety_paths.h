@@ -1,5 +1,5 @@
 /*
- * IRLSAFETY+ — bundled model path resolution (OBS module paths).
+ * IRLSAFETY+ — bundled asset path resolution (platform-injectable).
  * Copyright (c) 2026 IRLSAFETY+ Contributors. MIT License.
  */
 
@@ -11,7 +11,13 @@
 extern "C" {
 #endif
 
-/* Prefer user_path when set; otherwise resolve bundled relative path via obs_module_file. */
+/* Resolve a bundled relative path; returns heap string or NULL. Caller frees via irlsafety_paths_free_string. */
+typedef char *(*irlsafety_bundled_path_fn)(const char *relative, void *userdata);
+
+void irlsafety_paths_set_resolver(irlsafety_bundled_path_fn fn, void *userdata);
+void irlsafety_paths_free_string(char *path);
+
+/* Prefer user_path when set; otherwise resolve bundled relative path via registered resolver. */
 void irlsafety_resolve_model_path(const char *bundled_relative, const char *user_path, char *dest, size_t dest_size);
 
 #ifdef __cplusplus

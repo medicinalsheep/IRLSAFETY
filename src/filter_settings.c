@@ -1,10 +1,10 @@
 /*
- * IRLSAFETY+ — OBS filter settings (loaded from obs_data_t).
+ * IRLSAFETY+ — OBS filter settings (obs_data_t adapter).
  * Copyright (c) 2026 medicinalsheep. MIT License.
  */
 
 #include "filter_settings.h"
-#include "hybrid_delay.h"
+#include "irlsafety_settings.h"
 
 #ifdef IRLSAFETY_TEST_BUILD
 #include "obs-mock.h"
@@ -46,7 +46,6 @@ void irlsafety_filter_settings_set_defaults(struct obs_data *settings)
 	obs_data_set_default_string(settings, IRLSAFETY_SET_CUSTOM_PII_FILE, "");
 	obs_data_set_default_string(settings, IRLSAFETY_SET_MODEL_PATH, "");
 
-	/* Advanced — hidden defaults */
 	obs_data_set_default_int(settings, IRLSAFETY_SET_OCR_DETAIL, 0);
 	obs_data_set_default_double(settings, IRLSAFETY_SET_BLUR_STRENGTH, 24.0);
 	obs_data_set_default_double(settings, IRLSAFETY_SET_AUTO_DELAY_SEC, 1.0);
@@ -58,13 +57,7 @@ void irlsafety_filter_settings_set_defaults(struct obs_data *settings)
 
 float irlsafety_filter_effective_partial_threshold(const irlsafety_filter_settings *settings)
 {
-	if (!settings)
-		return 0.50f;
-
-	if (settings->cover_while_typing && settings->cat_custom_pii)
-		return IRLSAFETY_TYPING_COVER_THRESHOLD;
-
-	return settings->partial_pii_threshold;
+	return irlsafety_settings_effective_partial_threshold(settings);
 }
 
 static void copy_string_field(char *dest, size_t dest_size, const char *src)
@@ -95,35 +88,6 @@ static bool settings_get_bool(struct obs_data *settings, const char *key, bool d
 	return obs_data_get_bool(settings, key);
 }
 
-static void irlsafety_filter_apply_defaults_struct(irlsafety_filter_settings *out)
-{
-	out->enable_all = true;
-	out->cat_license_plates = true;
-	out->cat_street_signs = true;
-	out->cat_shipping_labels = true;
-	out->cat_id_documents = true;
-	out->cat_screen_text = false;
-	out->cat_custom_pii = true;
-	out->cat_sensitive_patterns = false;
-	out->confidence_threshold = 0.35f;
-	out->frame_skip = 6;
-	out->ocr_detail = 0;
-	out->blur_strength = 24.0f;
-	out->censor_mode = IRLSAFETY_CENSOR_BOX;
-	out->censor_color = 0xFF000000;
-	out->angled_cover = true;
-	out->hybrid_delay_enable = true;
-	out->global_delay_sec = 1.5f;
-	out->auto_delay_sec = 1.0f;
-	out->auto_delay_hold_sec = 4.0f;
-	out->partial_pii_threshold = 0.50f;
-	out->secure_mode_enable = true;
-	out->secure_drop_frames = true;
-	out->cover_while_typing = false;
-	out->test_effect = false;
-	out->prefer_gpu = true;
-}
-
 void irlsafety_filter_settings_load(struct obs_data *settings, irlsafety_filter_settings *out)
 {
 	bool legacy_documents;
@@ -132,12 +96,12 @@ void irlsafety_filter_settings_load(struct obs_data *settings, irlsafety_filter_
 	if (!out)
 		return;
 
-	memset(out, 0, sizeof(*out));
-
 	if (!settings) {
-		irlsafety_filter_apply_defaults_struct(out);
+		irlsafety_settings_apply_defaults(out);
 		return;
 	}
+
+	irlsafety_settings_apply_defaults(out);
 
 	out->enable_all = settings_get_bool(settings, IRLSAFETY_SET_ENABLE_ALL, true);
 	out->cat_street_signs = settings_get_bool(settings, IRLSAFETY_SET_CAT_STREET_SIGNS, true);
@@ -221,38 +185,10 @@ void irlsafety_filter_settings_load(struct obs_data *settings, irlsafety_filter_
 bool irlsafety_filter_should_run_detection(const irlsafety_filter_settings *settings, uint64_t frame_index,
 					   bool heavy_source)
 {
-	int interval;
-
-	if (!settings || !settings->enable_all)
-		return false;
-
-	interval = settings->frame_skip;
-	if (interval < 1)
-		interval = 1;
-
-	if (heavy_source) {
-		interval *= 3;
-		if (interval < 6)
-			interval = 6;
-	}
-
-	if (!heavy_source && settings->cover_while_typing && settings->cat_custom_pii)
-		return true;
-
-	if (!heavy_source && frame_index <= 2)
-		return true;
-
-	if (settings->hybrid_delay_enable && !irlsafety_hybrid_delay_is_protecting() && interval < 30)
-		interval *= 2;
-
-	return (frame_index % (uint64_t)interval) == 0;
+	return irlsafety_settings_should_run_detection(settings, frame_index, heavy_source);
 }
 
 bool irlsafety_filter_detection_enabled(const irlsafety_filter_settings *settings)
 {
-	if (!settings || !settings->enable_all)
-		return false;
-
-	return settings->cat_license_plates || settings->cat_street_signs || settings->cat_shipping_labels ||
-	       settings->cat_id_documents;
+	return irlsafety_settings_detection_enabled(settings);
 }

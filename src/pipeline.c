@@ -15,13 +15,12 @@
 #include "ocr/pii_match.h"
 #include "ocr/pii_patterns.h"
 #include "hybrid_delay.h"
+#include "irlsafety_log.h"
+#include "irlsafety_runtime.h"
+#include "irlsafety_settings.h"
 #include "irlsafety_shutdown.h"
 #include "region_tracker.h"
 
-#include <obs-module.h>
-#ifndef IRLSAFETY_TEST_BUILD
-#include <util/platform.h>
-#endif
 #include <plugin-support.h>
 #include <stdlib.h>
 #include <string.h>
@@ -194,7 +193,7 @@ static bool should_log_frame(const irlsafety_filter_settings *settings, uint64_t
 
 static bool settings_need_detection(const irlsafety_filter_settings *settings)
 {
-	return irlsafety_filter_detection_enabled(settings);
+	return irlsafety_settings_detection_enabled(settings);
 }
 
 static irlsafety_detection_config build_detection_config(const irlsafety_filter_settings *settings)
@@ -294,7 +293,7 @@ irlsafety_pipeline *irlsafety_pipeline_create(void)
 		return NULL;
 	}
 
-	irlsafety_filter_settings_load(NULL, &pipeline->settings);
+	irlsafety_settings_apply_defaults(&pipeline->settings);
 	irlsafety_hybrid_delay_runtime_init(&pipeline->hybrid_delay);
 	return pipeline;
 }
@@ -312,9 +311,7 @@ void irlsafety_pipeline_shutdown(irlsafety_pipeline *pipeline)
 		memset(&hits, 0, sizeof(hits));
 		if (ocr_poll_hits(pipeline->ocr_job_id, &hits) != 0)
 			break;
-#ifndef IRLSAFETY_TEST_BUILD
-		os_sleep_ms(5);
-#endif
+		irlsafety_sleep_ms(5);
 	}
 
 	pipeline->ocr_in_flight = false;
@@ -366,7 +363,7 @@ int irlsafety_pipeline_update_settings(irlsafety_pipeline *pipeline, const irlsa
 
 	loaded = irlsafety_custom_pii_load(settings->custom_pii_inline, settings->custom_pii_file, &pipeline->custom_pii);
 	if (settings->enable_logging && loaded == 0)
-		obs_log(LOG_INFO, "IRLSAFETY+: loaded %zu custom PII keyword(s)", pipeline->custom_pii.count);
+		irlsafety_log(IRLSAFETY_LOG_INFO, "IRLSAFETY+: loaded %zu custom PII keyword(s)", pipeline->custom_pii.count);
 	return loaded;
 }
 
@@ -443,13 +440,13 @@ static void process_ocr_hits(irlsafety_pipeline *pipeline, const irlsafety_filte
 	if (active->cat_custom_pii) {
 		if (pipeline->custom_pii.count == 0) {
 			if (log_frame)
-				obs_log(LOG_INFO, "IRLSAFETY+: Custom PII enabled but no keywords loaded");
+				irlsafety_log(IRLSAFETY_LOG_INFO, "IRLSAFETY+: Custom PII enabled but no keywords loaded");
 		} else {
 			irlsafety_match_custom_pii_hits(hits, &pipeline->custom_pii, scale_x, scale_y,
-							irlsafety_filter_effective_partial_threshold(active),
+							irlsafety_settings_effective_partial_threshold(active),
 							&custom_regions);
 			if (log_frame)
-				obs_log(LOG_INFO, "IRLSAFETY+: Custom PII — %zu region(s) matched (%zu keyword(s))",
+				irlsafety_log(IRLSAFETY_LOG_INFO, "IRLSAFETY+: Custom PII — %zu region(s) matched (%zu keyword(s))",
 					custom_regions.count, pipeline->custom_pii.count);
 		}
 	}
@@ -457,13 +454,13 @@ static void process_ocr_hits(irlsafety_pipeline *pipeline, const irlsafety_filte
 	if (active->cat_screen_text) {
 		irlsafety_regions_from_screen_text_hits(hits, scale_x, scale_y, &screen_regions);
 		if (log_frame)
-			obs_log(LOG_INFO, "IRLSAFETY+: Screen Text — %zu region(s)", screen_regions.count);
+			irlsafety_log(IRLSAFETY_LOG_INFO, "IRLSAFETY+: Screen Text — %zu region(s)", screen_regions.count);
 	}
 
 	if (active->cat_sensitive_patterns) {
 		irlsafety_match_sensitive_pattern_hits(hits, scale_x, scale_y, &pattern_regions);
 		if (log_frame)
-			obs_log(LOG_INFO, "IRLSAFETY+: Sensitive Patterns — %zu region(s)", pattern_regions.count);
+			irlsafety_log(IRLSAFETY_LOG_INFO, "IRLSAFETY+: Sensitive Patterns — %zu region(s)", pattern_regions.count);
 	}
 
 	merge_regions(&pipeline->fresh_regions, &custom_regions);
@@ -487,7 +484,7 @@ static void process_ocr_hits(irlsafety_pipeline *pipeline, const irlsafety_filte
 		pipeline_mark_secured(pipeline, pipeline->ocr_submit_frame, &pipeline->fresh_regions);
 
 	if (log_frame)
-		obs_log(LOG_INFO, "IRLSAFETY+: tracking %zu overlay region(s) after detection",
+		irlsafety_log(IRLSAFETY_LOG_INFO, "IRLSAFETY+: tracking %zu overlay region(s) after detection",
 			pipeline->overlay_tracker.count);
 }
 
@@ -514,7 +511,7 @@ void irlsafety_pipeline_poll_detection(irlsafety_pipeline *pipeline, const irlsa
 		ocr_clear_cached_source(pipeline->ocr);
 		log_frame = should_log_frame(active, pipeline->ocr_submit_frame, &pipeline->last_log_frame);
 		if (log_frame)
-			obs_log(LOG_WARNING, "IRLSAFETY+: OCR recognize failed (HRESULT 0x%08X)",
+			irlsafety_log(IRLSAFETY_LOG_WARNING, "IRLSAFETY+: OCR recognize failed (HRESULT 0x%08X)",
 				ocr_backend_last_error());
 		return;
 	}
@@ -532,7 +529,7 @@ void irlsafety_pipeline_poll_detection(irlsafety_pipeline *pipeline, const irlsa
 
 		log_frame = should_log_frame(active, pipeline->ocr_submit_frame, &pipeline->last_log_frame);
 		if (log_frame)
-			obs_log(LOG_WARNING, "IRLSAFETY+: OCR dual-scan pass 2 submit failed — using pass 1 only");
+			irlsafety_log(IRLSAFETY_LOG_WARNING, "IRLSAFETY+: OCR dual-scan pass 2 submit failed — using pass 1 only");
 	}
 
 	pipeline->ocr_in_flight = false;
@@ -541,13 +538,13 @@ void irlsafety_pipeline_poll_detection(irlsafety_pipeline *pipeline, const irlsa
 	log_frame = should_log_frame(active, pipeline->ocr_submit_frame, &pipeline->last_log_frame);
 
 	if (log_frame)
-		obs_log(LOG_INFO, "IRLSAFETY+: OCR pass — %zu hit(s) (scan → display %ux%u)",
+		irlsafety_log(IRLSAFETY_LOG_INFO, "IRLSAFETY+: OCR pass — %zu hit(s) (scan → display %ux%u)",
 			pipeline->ocr_merged_hits.count, pipeline->ocr_output_width, pipeline->ocr_output_height);
 
 	if (log_frame && pipeline->ocr_merged_hits.count > 0)
-		obs_log(LOG_INFO, "IRLSAFETY+: OCR sample: \"%s\"", pipeline->ocr_merged_hits.hits[0].text);
+		irlsafety_log(IRLSAFETY_LOG_INFO, "IRLSAFETY+: OCR sample: \"%s\"", pipeline->ocr_merged_hits.hits[0].text);
 	else if (log_frame && settings_need_ocr(active, &pipeline->custom_pii))
-		obs_log(LOG_INFO,
+		irlsafety_log(IRLSAFETY_LOG_INFO,
 			"IRLSAFETY+: OCR found no text — try OCR Detail = Maximum (dual scan) or Standard for dense UI");
 
 	process_ocr_hits(pipeline, active, &pipeline->ocr_merged_hits, 1.0f, 1.0f, pipeline->ocr_output_width,
@@ -610,15 +607,15 @@ int irlsafety_pipeline_submit_detection(irlsafety_pipeline *pipeline, irlsafety_
 
 		if (!yolo_onnx_is_ready(pipeline->detector)) {
 			if (log_frame)
-				obs_log(LOG_WARNING, "IRLSAFETY+: Object detection enabled but no ONNX model loaded (%s)",
+				irlsafety_log(IRLSAFETY_LOG_WARNING, "IRLSAFETY+: Object detection enabled but no ONNX model loaded (%s)",
 					yolo_onnx_status_message(pipeline->detector));
 		} else if (detect_regions(pipeline->detector, frame, &detection, &pipeline->detection_regions) != 0) {
 			if (log_frame)
-				obs_log(LOG_WARNING, "IRLSAFETY+: Object detection failed (%s)",
+				irlsafety_log(IRLSAFETY_LOG_WARNING, "IRLSAFETY+: Object detection failed (%s)",
 					yolo_onnx_status_message(pipeline->detector));
 		} else {
 			if (log_frame && pipeline->detection_regions.count > 0)
-				obs_log(LOG_INFO, "IRLSAFETY+: Object detection — %zu region(s)",
+				irlsafety_log(IRLSAFETY_LOG_INFO, "IRLSAFETY+: Object detection — %zu region(s)",
 					pipeline->detection_regions.count);
 			merge_regions(&pipeline->fresh_regions, &pipeline->detection_regions);
 			{
@@ -646,7 +643,7 @@ int irlsafety_pipeline_submit_detection(irlsafety_pipeline *pipeline, irlsafety_
 
 	if (!ocr_backend_available()) {
 		if (log_frame)
-			obs_log(LOG_WARNING, "IRLSAFETY+: Windows OCR is unavailable on this system");
+			irlsafety_log(IRLSAFETY_LOG_WARNING, "IRLSAFETY+: Windows OCR is unavailable on this system");
 		return 0;
 	}
 
@@ -663,7 +660,7 @@ int irlsafety_pipeline_submit_detection(irlsafety_pipeline *pipeline, irlsafety_
 	if (ocr_submit_hits(pipeline->ocr, frame, max_width, &pipeline->ocr_job_id, &pipeline->ocr_scale_x,
 			    &pipeline->ocr_scale_y, active->ocr_detail == 2) != 0) {
 		if (log_frame)
-			obs_log(LOG_WARNING, "IRLSAFETY+: OCR submit busy or failed");
+			irlsafety_log(IRLSAFETY_LOG_WARNING, "IRLSAFETY+: OCR submit busy or failed");
 		return 0;
 	}
 
@@ -690,11 +687,11 @@ int irlsafety_pipeline_detect_frame(irlsafety_pipeline *pipeline, irlsafety_fram
 	if (!active->enable_all || !frame)
 		return 0;
 
-	if (!irlsafety_filter_should_run_detection(active, frame_index, heavy_source))
+	if (!irlsafety_settings_should_run_detection(active, frame_index, heavy_source))
 		return 0;
 
 	if (irlsafety_pipeline_ocr_busy(pipeline) && irlsafety_pipeline_needs_ocr(pipeline, active) &&
-	    !irlsafety_filter_detection_enabled(active))
+	    !irlsafety_settings_detection_enabled(active))
 		return 0;
 
 	return irlsafety_pipeline_submit_detection(pipeline, frame, settings, frame_index, output_width, output_height);

@@ -25,10 +25,12 @@ add_library(${CMAKE_PROJECT_NAME} MODULE)
 
 find_package(libobs REQUIRED)
 
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE libirlsafety)
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE OBS::libobs libirlsafety)
 
 if(ENABLE_FRONTEND_API)
   find_package(obs-frontend-api REQUIRED)
+  target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE OBS::obs-frontend-api)
+  target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE IRLSAFETY_HAS_FRONTEND_API=1)
 endif()
 
 if(ENABLE_QT)
@@ -50,7 +52,9 @@ set(_irlsafety_plugin_sources
     src/frame_convert.c
     src/gpu_frame.c
     src/irlsafety_control.c
-    src/filter_property_ui.c)
+    src/filter_property_ui.c
+    src/filter_settings.c
+    src/irlsafety_obs_adapter.c)
 
 if(ENABLE_FRONTEND_API AND ENABLE_QT)
   list(APPEND _irlsafety_plugin_sources src/ui/control_dock.cpp src/ui/onboarding_dialog.cpp)

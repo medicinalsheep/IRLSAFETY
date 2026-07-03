@@ -36,6 +36,9 @@ typedef struct irlsafety_hybrid_delay_runtime {
 void irlsafety_hybrid_delay_runtime_init(irlsafety_hybrid_delay_runtime *runtime);
 void irlsafety_hybrid_delay_runtime_reset(irlsafety_hybrid_delay_runtime *runtime);
 
+typedef void (*irlsafety_stream_delay_fn)(double total_sec, void *userdata);
+
+void irlsafety_hybrid_delay_set_stream_hook(irlsafety_stream_delay_fn fn, void *userdata);
 void irlsafety_hybrid_delay_on_stream_started(void);
 void irlsafety_hybrid_delay_on_stream_stopped(void);
 
