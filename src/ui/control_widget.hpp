@@ -23,7 +23,7 @@ class IRLSafetyControlWidget : public QWidget {
 	Q_OBJECT
 
 public:
-	explicit IRLSafetyControlWidget(QWidget *parent = nullptr);
+	explicit IRLSafetyControlWidget(QWidget *parent = nullptr, bool compact = false);
 	~IRLSafetyControlWidget() override;
 
 private slots:
@@ -47,18 +47,23 @@ private slots:
 	void onLabelImages();
 	void onTrainModel();
 	void onSupportDevelopment();
+	void onShowCensorLog();
 
 private:
 	void rebuildFilterList();
 	void syncTogglesFromStatus();
+	void applyCompactChrome();
 	struct obs_source *currentFilter() const;
+	QString formatResourceLine(const irlsafety_runtime_status &status) const;
 
+	bool compact_ = false;
 	QTimer refresh_timer;
 	irlsafety_filter_list filters {};
 	int selected_filter_index = -1;
 
 	QLabel *privacy_label = nullptr;
 	QLabel *region_label = nullptr;
+	QLabel *resource_metrics = nullptr;
 	QComboBox *filter_combo = nullptr;
 	QLabel *ocr_status = nullptr;
 	QLabel *model_status = nullptr;
@@ -79,5 +84,10 @@ private:
 	QLabel *capture_hint = nullptr;
 	QPushButton *vcam_start_btn = nullptr;
 	QPushButton *vcam_stop_btn = nullptr;
+	QPushButton *censor_log_btn = nullptr;
 	QPushButton *support_btn = nullptr;
+	QGroupBox *training_group = nullptr;
+	QGroupBox *resource_group = nullptr;
+	QGroupBox *model_group = nullptr;
+	QGroupBox *status_group = nullptr;
 };

@@ -30,8 +30,8 @@ public:
 	explicit IRLSafetyPanelWindow(QWidget *parent = nullptr) : QMainWindow(parent)
 	{
 		setWindowTitle(QStringLiteral("IRLSAFETY+"));
-		setMinimumSize(420, 640);
-		resize(460, 720);
+		setMinimumSize(300, 380);
+		resize(320, 420);
 		setObjectName(QStringLiteral("irlsafetyPanelChrome"));
 		irlsafety_ui::apply_dark_theme(this);
 
@@ -44,10 +44,10 @@ public:
 		auto *title_bar = new QWidget(central);
 		title_bar->setObjectName(QStringLiteral("irlsafetyTitleBar"));
 		auto *title_layout = new QHBoxLayout(title_bar);
-		title_layout->setContentsMargins(14, 10, 10, 10);
+		title_layout->setContentsMargins(10, 6, 8, 6);
 
 		auto *icon = new QLabel(title_bar);
-		icon->setPixmap(QIcon(QStringLiteral(":/irlsafety/icons/appicon-tray.png")).pixmap(28, 28));
+		icon->setPixmap(QIcon(QStringLiteral(":/irlsafety/icons/appicon-tray.png")).pixmap(22, 22));
 		title_layout->addWidget(icon);
 
 		auto *titles = new QVBoxLayout();
@@ -67,7 +67,7 @@ public:
 		title_layout->addWidget(hide_btn);
 		layout->addWidget(title_bar);
 
-		layout->addWidget(new IRLSafetyControlWidget(central), 1);
+		layout->addWidget(new IRLSafetyControlWidget(central, true), 1);
 	}
 };
 

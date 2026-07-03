@@ -66,6 +66,7 @@ if(ENABLE_FRONTEND_API AND ENABLE_QT)
               src/ui/tray_panel.cpp
               src/ui/ui_theme.cpp
               src/ui/onboarding_dialog.cpp
+              src/ui/censor_log_dialog.cpp
               src/ui/irlsafety_resources.qrc)
   target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE IRLSAFETY_HAS_CONTROL_DOCK=1)
 endif()

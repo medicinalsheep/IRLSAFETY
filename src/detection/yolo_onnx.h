@@ -39,6 +39,8 @@ int yolo_onnx_load_model(yolo_onnx_context *ctx, const char *model_path, bool pr
 
 bool yolo_onnx_is_ready(const yolo_onnx_context *ctx);
 const char *yolo_onnx_status_message(const yolo_onnx_context *ctx);
+float yolo_onnx_last_inference_ms(const yolo_onnx_context *ctx);
+const char *yolo_onnx_active_ep(const yolo_onnx_context *ctx);
 
 int detect_regions(yolo_onnx_context *ctx, const irlsafety_frame_view *frame,
 		   const irlsafety_detection_config *config, irlsafety_region_list *out_regions);

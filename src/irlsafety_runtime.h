@@ -5,11 +5,14 @@
 
 #pragma once
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 void irlsafety_sleep_ms(unsigned ms);
+uint64_t irlsafety_monotonic_ms(void);
 
 #ifdef __cplusplus
 }

@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include "censor_log.h"
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -29,6 +31,12 @@ typedef struct irlsafety_runtime_status {
 	char detector_message[256];
 	uint32_t overlay_count;
 	uint64_t frame_count;
+	float last_yolo_ms;
+	char detector_ep[32];
+	uint32_t approx_scans_per_min;
+	uint8_t load_tier;
+	int frame_skip;
+	uint64_t detection_run_count;
 	bool cat_license_plates;
 	bool cat_street_signs;
 	bool cat_screen_text;
@@ -51,6 +59,8 @@ typedef struct irlsafety_filter_list {
 void irlsafety_control_refresh_filters(irlsafety_filter_list *list);
 void irlsafety_control_release_filters(irlsafety_filter_list *list);
 int irlsafety_control_get_status(struct obs_source *filter, irlsafety_runtime_status *out);
+size_t irlsafety_control_get_censor_log(struct obs_source *filter, irlsafety_censor_log_entry *out, size_t max_entries);
+void irlsafety_control_clear_censor_log(struct obs_source *filter);
 int irlsafety_control_set_bool_setting(struct obs_source *filter, const char *key, bool value);
 int irlsafety_control_reload_model(struct obs_source *filter);
 int irlsafety_control_set_model_path(struct obs_source *filter, const char *path);

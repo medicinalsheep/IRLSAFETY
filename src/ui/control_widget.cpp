@@ -4,6 +4,7 @@
  */
 
 #include "control_widget.hpp"
+#include "censor_log_dialog.hpp"
 #include "onboarding_dialog.hpp"
 
 #include "../irlsafety_control.h"
@@ -41,31 +42,49 @@ static QString statusColor(bool ok)
 	return ok ? QStringLiteral("#3ecf8e") : QStringLiteral("#f0a030");
 }
 
-IRLSafetyControlWidget::IRLSafetyControlWidget(QWidget *parent) : QWidget(parent)
+static QString loadTierLabel(uint8_t tier)
+{
+	switch (tier) {
+	case 2:
+		return tr("IRLSAFETYPlus.Dock.LoadHigh");
+	case 1:
+		return tr("IRLSAFETYPlus.Dock.LoadMedium");
+	default:
+		return tr("IRLSAFETYPlus.Dock.LoadLow");
+	}
+}
+
+IRLSafetyControlWidget::IRLSafetyControlWidget(QWidget *parent, bool compact) : QWidget(parent), compact_(compact)
 {
 	auto *outer = new QVBoxLayout(this);
-	outer->setContentsMargins(8, 8, 8, 8);
-	outer->setSpacing(6);
+	outer->setContentsMargins(compact_ ? 6 : 8, compact_ ? 6 : 8, compact_ ? 6 : 8, compact_ ? 6 : 8);
+	outer->setSpacing(compact_ ? 4 : 6);
 
-	auto *title_row = new QHBoxLayout();
-	auto *title = new QLabel(QStringLiteral("<b>IRLSAFETY+</b> ") + QString::fromUtf8(PLUGIN_VERSION));
-	title->setTextFormat(Qt::RichText);
-	title_row->addWidget(title, 1);
-	walkthrough_btn = new QPushButton(tr("IRLSAFETYPlus.Dock.ShowWalkthrough"));
-	walkthrough_btn->setToolTip(tr("IRLSAFETYPlus.Dock.ShowWalkthrough.Tooltip"));
-	title_row->addWidget(walkthrough_btn);
-	outer->addLayout(title_row);
+	if (!compact_) {
+		auto *title_row = new QHBoxLayout();
+		auto *title = new QLabel(QStringLiteral("<b>IRLSAFETY+</b> ") + QString::fromUtf8(PLUGIN_VERSION));
+		title->setTextFormat(Qt::RichText);
+		title_row->addWidget(title, 1);
+		walkthrough_btn = new QPushButton(tr("IRLSAFETYPlus.Dock.ShowWalkthrough"));
+		walkthrough_btn->setToolTip(tr("IRLSAFETYPlus.Dock.ShowWalkthrough.Tooltip"));
+		title_row->addWidget(walkthrough_btn);
+		outer->addLayout(title_row);
 
-	privacy_label = new QLabel(tr("IRLSAFETYPlus.Dock.PrivacyBadge"));
-	privacy_label->setWordWrap(true);
-	privacy_label->setStyleSheet(QStringLiteral("color: #3ecf8e; font-weight: 600;"));
-	privacy_label->setToolTip(tr("IRLSAFETYPlus.Dock.PrivacyBadge.Tooltip"));
-	outer->addWidget(privacy_label);
+		privacy_label = new QLabel(tr("IRLSAFETYPlus.Dock.PrivacyBadge"));
+		privacy_label->setWordWrap(true);
+		privacy_label->setStyleSheet(QStringLiteral("color: #3ecf8e; font-weight: 600;"));
+		privacy_label->setToolTip(tr("IRLSAFETYPlus.Dock.PrivacyBadge.Tooltip"));
+		outer->addWidget(privacy_label);
 
-	region_label = new QLabel(tr("IRLSAFETYPlus.Dock.RegionNote"));
-	region_label->setWordWrap(true);
-	region_label->setStyleSheet(QStringLiteral("color: #8ab4f8; font-size: 11px;"));
-	outer->addWidget(region_label);
+		region_label = new QLabel(tr("IRLSAFETYPlus.Dock.RegionNote"));
+		region_label->setWordWrap(true);
+		region_label->setStyleSheet(QStringLiteral("color: #8ab4f8; font-size: 11px;"));
+		outer->addWidget(region_label);
+	} else {
+		walkthrough_btn = new QPushButton(tr("IRLSAFETYPlus.Dock.ShowWalkthrough"));
+		walkthrough_btn->setToolTip(tr("IRLSAFETYPlus.Dock.ShowWalkthrough.Tooltip"));
+		walkthrough_btn->hide();
+	}
 
 	auto *scroll = new QScrollArea();
 	scroll->setWidgetResizable(true);
@@ -85,14 +104,23 @@ IRLSafetyControlWidget::IRLSafetyControlWidget(QWidget *parent) : QWidget(parent
 	layout->setContentsMargins(0, 0, 0, 0);
 	layout->setSpacing(8);
 
-	auto *filter_group = new QGroupBox(tr("IRLSAFETYPlus.Dock.FilterGroup"));
+	auto *filter_group = new QGroupBox(compact_ ? QString() : tr("IRLSAFETYPlus.Dock.FilterGroup"));
+	if (compact_)
+		filter_group->setFlat(true);
 	auto *filter_layout = new QVBoxLayout(filter_group);
 	filter_combo = new QComboBox();
 	filter_combo->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
 	filter_layout->addWidget(filter_combo);
 	layout->addWidget(filter_group);
 
-	auto *status_group = new QGroupBox(tr("IRLSAFETYPlus.Dock.StatusGroup"));
+	resource_metrics = new QLabel(tr("IRLSAFETYPlus.Dock.ResourceIdle"));
+	resource_metrics->setWordWrap(true);
+	resource_metrics->setStyleSheet(QStringLiteral("color: #9aa0a6; font-size: 11px;"));
+	layout->addWidget(resource_metrics);
+
+	status_group = new QGroupBox(compact_ ? QString() : tr("IRLSAFETYPlus.Dock.StatusGroup"));
+	if (compact_)
+		status_group->setFlat(true);
 	auto *status_layout = new QVBoxLayout(status_group);
 	ocr_status = new QLabel(tr("IRLSAFETYPlus.Dock.OcrChecking"));
 	model_status = new QLabel(tr("IRLSAFETYPlus.Dock.ModelChecking"));
@@ -116,9 +144,13 @@ IRLSafetyControlWidget::IRLSafetyControlWidget(QWidget *parent) : QWidget(parent
 	vcam_btn_row->addWidget(vcam_start_btn);
 	vcam_btn_row->addWidget(vcam_stop_btn);
 	status_layout->addLayout(vcam_btn_row);
+
+	censor_log_btn = new QPushButton(tr("IRLSAFETYPlus.Dock.CensorLog"));
+	censor_log_btn->setToolTip(tr("IRLSAFETYPlus.Dock.CensorLog.Tooltip"));
+	status_layout->addWidget(censor_log_btn);
 	layout->addWidget(status_group);
 
-	auto *toggle_group = new QGroupBox(tr("IRLSAFETYPlus.Dock.QuickToggles"));
+	auto *toggle_group = new QGroupBox(compact_ ? tr("IRLSAFETYPlus.Dock.QuickTogglesShort") : tr("IRLSAFETYPlus.Dock.QuickToggles"));
 	auto *toggle_layout = new QVBoxLayout(toggle_group);
 	enable_all = new QCheckBox(tr("IRLSAFETYPlus.EnableAll"));
 	enable_all->setToolTip(tr("IRLSAFETYPlus.EnableAll.Tooltip"));
@@ -140,7 +172,7 @@ IRLSafetyControlWidget::IRLSafetyControlWidget(QWidget *parent) : QWidget(parent
 	toggle_layout->addWidget(cat_screen);
 	layout->addWidget(toggle_group);
 
-	auto *model_group = new QGroupBox(tr("IRLSAFETYPlus.Dock.ModelGroup"));
+	model_group = new QGroupBox(tr("IRLSAFETYPlus.Dock.ModelGroup"));
 	auto *model_layout = new QVBoxLayout(model_group);
 	model_path = new QLineEdit();
 	model_path->setReadOnly(true);
@@ -163,8 +195,8 @@ IRLSafetyControlWidget::IRLSafetyControlWidget(QWidget *parent) : QWidget(parent
 	model_layout->addLayout(folder_btn_row);
 	layout->addWidget(model_group);
 
-	auto *train_group = new QGroupBox(tr("IRLSAFETYPlus.Dock.TrainingGroup"));
-	auto *train_layout = new QVBoxLayout(train_group);
+	training_group = new QGroupBox(tr("IRLSAFETYPlus.Dock.TrainingGroup"));
+	auto *train_layout = new QVBoxLayout(training_group);
 	auto *train_intro = new QLabel(tr("IRLSAFETYPlus.Dock.TrainingIntro"));
 	train_intro->setWordWrap(true);
 	train_layout->addWidget(train_intro);
@@ -193,9 +225,9 @@ IRLSafetyControlWidget::IRLSafetyControlWidget(QWidget *parent) : QWidget(parent
 	guide_row->addWidget(guide_btn);
 	guide_row->addWidget(session_btn);
 	train_layout->addLayout(guide_row);
-	layout->addWidget(train_group);
+	layout->addWidget(training_group);
 
-	auto *resource_group = new QGroupBox(tr("IRLSAFETYPlus.Dock.ResourcesGroup"));
+	resource_group = new QGroupBox(tr("IRLSAFETYPlus.Dock.ResourcesGroup"));
 	auto *resource_layout = new QVBoxLayout(resource_group);
 	auto *resource_intro = new QLabel(tr("IRLSAFETYPlus.Dock.ResourcesIntro"));
 	resource_intro->setWordWrap(true);
@@ -237,14 +269,69 @@ IRLSafetyControlWidget::IRLSafetyControlWidget(QWidget *parent) : QWidget(parent
 	connect(capture_btn, &QPushButton::clicked, this, &IRLSafetyControlWidget::onCaptureTrainingFrame);
 	connect(label_btn, &QPushButton::clicked, this, &IRLSafetyControlWidget::onLabelImages);
 	connect(train_btn, &QPushButton::clicked, this, &IRLSafetyControlWidget::onTrainModel);
-	connect(walkthrough_btn, &QPushButton::clicked, this, &IRLSafetyControlWidget::onShowWalkthrough);
+	if (walkthrough_btn)
+		connect(walkthrough_btn, &QPushButton::clicked, this, &IRLSafetyControlWidget::onShowWalkthrough);
 	connect(support_btn, &QPushButton::clicked, this, &IRLSafetyControlWidget::onSupportDevelopment);
+	connect(censor_log_btn, &QPushButton::clicked, this, &IRLSafetyControlWidget::onShowCensorLog);
 
 	connect(&refresh_timer, &QTimer::timeout, this, &IRLSafetyControlWidget::refreshUi);
 	refresh_timer.start(750);
 
+	applyCompactChrome();
 	rebuildFilterList();
 	refreshUi();
+}
+
+void IRLSafetyControlWidget::applyCompactChrome()
+{
+	if (!compact_)
+		return;
+
+	setObjectName(QStringLiteral("irlsafetyCompactRoot"));
+	if (training_group)
+		training_group->hide();
+	if (resource_group)
+		resource_group->hide();
+	if (model_group)
+		model_group->hide();
+	if (privacy_label)
+		privacy_label->hide();
+	if (region_label)
+		region_label->hide();
+	if (support_btn)
+		support_btn->hide();
+	if (ocr_status)
+		ocr_status->hide();
+	if (model_status)
+		model_status->hide();
+	if (overlay_status)
+		overlay_status->hide();
+	if (vcam_status)
+		vcam_status->hide();
+	if (vcam_start_btn && vcam_stop_btn) {
+		vcam_start_btn->hide();
+		vcam_stop_btn->hide();
+	}
+}
+
+QString IRLSafetyControlWidget::formatResourceLine(const irlsafety_runtime_status &status) const
+{
+	const QString tier = loadTierLabel(status.load_tier);
+	const QString ep = QString::fromUtf8(status.detector_ep[0] ? status.detector_ep : "CPU");
+
+	if (!status.protection_enabled)
+		return tr("IRLSAFETYPlus.Dock.ResourceOff");
+
+	if (status.detector_ready) {
+		return tr("IRLSAFETYPlus.Dock.ResourceLine")
+			.arg(status.last_yolo_ms, 0, 'f', 1)
+			.arg(ep)
+			.arg(status.approx_scans_per_min)
+			.arg(status.overlay_count)
+			.arg(tier);
+	}
+
+	return tr("IRLSAFETYPlus.Dock.ResourceNoModel").arg(status.approx_scans_per_min).arg(tier);
 }
 
 IRLSafetyControlWidget::~IRLSafetyControlWidget()
@@ -338,67 +425,95 @@ void IRLSafetyControlWidget::refreshUi()
 	filter = currentFilter();
 
 	if (filters.count == 0) {
-		ocr_status->setText(tr("IRLSAFETYPlus.Dock.NoFiltersHint"));
-		model_status->clear();
-		overlay_status->clear();
-		model_path->clear();
-		reload_btn->setEnabled(false);
-		capture_btn->setEnabled(false);
+		if (resource_metrics)
+			resource_metrics->setText(tr("IRLSAFETYPlus.Dock.NoFiltersHint"));
+		if (ocr_status)
+			ocr_status->setText(tr("IRLSAFETYPlus.Dock.NoFiltersHint"));
+		if (model_status)
+			model_status->clear();
+		if (overlay_status)
+			overlay_status->clear();
+		if (model_path)
+			model_path->clear();
+		if (reload_btn)
+			reload_btn->setEnabled(false);
+		if (capture_btn)
+			capture_btn->setEnabled(false);
+		if (censor_log_btn)
+			censor_log_btn->setEnabled(false);
 		return;
 	}
 
-	reload_btn->setEnabled(filter != nullptr);
-	capture_btn->setEnabled(true);
+	if (reload_btn)
+		reload_btn->setEnabled(filter != nullptr);
+	if (capture_btn)
+		capture_btn->setEnabled(true);
+	if (censor_log_btn)
+		censor_log_btn->setEnabled(filter != nullptr);
 	syncTogglesFromStatus();
 
 	if (!filter || irlsafety_control_get_status(filter, &status) != 0)
 		return;
 
-	if (status.ocr_available) {
-		const char *busy = status.ocr_busy ? "IRLSAFETYPlus.Dock.OcrBusy" : "IRLSAFETYPlus.Dock.OcrReady";
-		ocr_status->setText(QStringLiteral("<span style='color:%1'>●</span> %2<br><span style='color:#aaa;font-size:11px'>%3</span>")
-					    .arg(statusColor(true), tr(busy), QString::fromUtf8(status.ocr_backend)));
-	} else {
-		ocr_status->setText(
-			QStringLiteral("<span style='color:%1'>●</span> %2<br><span style='color:#aaa;font-size:11px'>%3</span>")
-				.arg(statusColor(false), tr("IRLSAFETYPlus.Dock.OcrUnavailable"),
-				     QString::fromUtf8(status.ocr_backend[0] ? status.ocr_backend
-									       : status.ocr_backend_status)));
-	}
-	ocr_status->setTextFormat(Qt::RichText);
+	if (resource_metrics)
+		resource_metrics->setText(formatResourceLine(status));
 
-	if (status.detector_ready) {
-		model_status->setText(QStringLiteral("<span style='color:%1'>●</span> %2")
-					      .arg(statusColor(true), tr("IRLSAFETYPlus.Dock.ModelReady")));
-	} else if (status.model_file_exists) {
-		model_status->setText(QStringLiteral("<span style='color:%1'>●</span> %3<br><span style='color:#ccc'>%2</span>")
-					      .arg(statusColor(false), QString::fromUtf8(status.detector_message),
-						   tr("IRLSAFETYPlus.Dock.ModelNotLoaded")));
-	} else {
-		model_status->setText(QStringLiteral("<span style='color:%1'>●</span> %2")
-					      .arg(statusColor(false), tr("IRLSAFETYPlus.Dock.ModelMissing")));
-	}
-	model_status->setTextFormat(Qt::RichText);
+	if (ocr_status) {
+		if (status.ocr_available) {
+			const char *busy = status.ocr_busy ? "IRLSAFETYPlus.Dock.OcrBusy" : "IRLSAFETYPlus.Dock.OcrReady";
+			ocr_status->setText(QStringLiteral("<span style='color:%1'>●</span> %2<br><span style='color:#aaa;font-size:11px'>%3</span>")
+						    .arg(statusColor(true), tr(busy), QString::fromUtf8(status.ocr_backend)));
+		} else {
+			ocr_status->setText(
+				QStringLiteral("<span style='color:%1'>●</span> %2<br><span style='color:#aaa;font-size:11px'>%3</span>")
+					.arg(statusColor(false), tr("IRLSAFETYPlus.Dock.OcrUnavailable"),
+					     QString::fromUtf8(status.ocr_backend[0] ? status.ocr_backend
+										       : status.ocr_backend_status)));
+		}
+		ocr_status->setTextFormat(Qt::RichText);
 
-	overlay_status->setText(tr("IRLSAFETYPlus.Dock.OverlayCount").arg(status.overlay_count));
-	const bool vcam_supported = irlsafety_virtual_cam_supported();
-	const bool vcam_running = irlsafety_virtual_cam_get_state() == IRLSAFETY_VCAM_RUNNING;
-	if (vcam_supported) {
-		const char *dot_color = vcam_running ? "#3ecf8e" : "#8ab4f8";
-		vcam_status->setText(QStringLiteral("<span style='color:%1'>●</span> %2")
-					     .arg(dot_color, QString::fromUtf8(irlsafety_virtual_cam_status_message())));
-	} else {
-		vcam_status->setText(tr("IRLSAFETYPlus.Dock.VirtualCamPlanned"));
+		if (model_status) {
+			if (status.detector_ready) {
+				model_status->setText(QStringLiteral("<span style='color:%1'>●</span> %2")
+							      .arg(statusColor(true), tr("IRLSAFETYPlus.Dock.ModelReady")));
+			} else if (status.model_file_exists) {
+				model_status->setText(QStringLiteral("<span style='color:%1'>●</span> %3<br><span style='color:#ccc'>%2</span>")
+							      .arg(statusColor(false), QString::fromUtf8(status.detector_message),
+								   tr("IRLSAFETYPlus.Dock.ModelNotLoaded")));
+			} else {
+				model_status->setText(QStringLiteral("<span style='color:%1'>●</span> %2")
+							      .arg(statusColor(false), tr("IRLSAFETYPlus.Dock.ModelMissing")));
+			}
+			model_status->setTextFormat(Qt::RichText);
+		}
+
+		if (overlay_status)
+			overlay_status->setText(tr("IRLSAFETYPlus.Dock.OverlayCount").arg(status.overlay_count));
+
+		const bool vcam_supported = irlsafety_virtual_cam_supported();
+		const bool vcam_running = irlsafety_virtual_cam_get_state() == IRLSAFETY_VCAM_RUNNING;
+		if (vcam_status) {
+			if (vcam_supported) {
+				const char *dot_color = vcam_running ? "#3ecf8e" : "#8ab4f8";
+				vcam_status->setText(QStringLiteral("<span style='color:%1'>●</span> %2")
+							     .arg(dot_color, QString::fromUtf8(irlsafety_virtual_cam_status_message())));
+			} else {
+				vcam_status->setText(tr("IRLSAFETYPlus.Dock.VirtualCamPlanned"));
+			}
+			vcam_status->setTextFormat(Qt::RichText);
+		}
+		if (vcam_start_btn && vcam_stop_btn) {
+			vcam_start_btn->setEnabled(vcam_supported && !vcam_running);
+			vcam_stop_btn->setEnabled(vcam_supported && vcam_running);
+		}
 	}
-	vcam_status->setTextFormat(Qt::RichText);
-	if (vcam_start_btn && vcam_stop_btn) {
-		vcam_start_btn->setEnabled(vcam_supported && !vcam_running);
-		vcam_stop_btn->setEnabled(vcam_supported && vcam_running);
+
+	if (model_path) {
+		if (status.protection_enabled)
+			model_path->setText(QString::fromUtf8(status.model_path));
+		else
+			model_path->setText(tr("IRLSAFETYPlus.Dock.ProtectionOff"));
 	}
-	if (status.protection_enabled)
-		model_path->setText(QString::fromUtf8(status.model_path));
-	else
-		model_path->setText(tr("IRLSAFETYPlus.Dock.ProtectionOff"));
 }
 
 void IRLSafetyControlWidget::onFilterChanged(int index)
@@ -530,6 +645,11 @@ void IRLSafetyControlWidget::onStopVirtualCam()
 void IRLSafetyControlWidget::onShowWalkthrough()
 {
 	irlsafety_onboarding_show();
+}
+
+void IRLSafetyControlWidget::onShowCensorLog()
+{
+	irlsafety_censor_log_show(this, currentFilter());
 }
 
 void IRLSafetyControlWidget::onLabelImages()

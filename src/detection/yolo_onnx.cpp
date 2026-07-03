@@ -5,6 +5,7 @@
 
 #include "yolo_onnx.h"
 
+#include "../irlsafety_runtime.h"
 #include "../onnx/ort_ep.h"
 #include "yolo_preprocess.h"
 
@@ -49,6 +50,7 @@ struct yolo_onnx_context {
 	char model_path[1024];
 	char status[256];
 	char active_ep[32];
+	float last_inference_ms = 0.0f;
 	bool loaded = false;
 	bool prefer_gpu = true;
 	int num_classes = 0;
@@ -250,6 +252,18 @@ const char *yolo_onnx_status_message(const yolo_onnx_context *ctx)
 	return ctx->status[0] ? ctx->status : "Unknown";
 }
 
+float yolo_onnx_last_inference_ms(const yolo_onnx_context *ctx)
+{
+	return ctx ? ctx->last_inference_ms : 0.0f;
+}
+
+const char *yolo_onnx_active_ep(const yolo_onnx_context *ctx)
+{
+	if (!ctx || ctx->active_ep[0] == '\0')
+		return "CPU";
+	return ctx->active_ep;
+}
+
 int detect_regions(yolo_onnx_context *ctx, const irlsafety_frame_view *frame,
 		   const irlsafety_detection_config *config, irlsafety_region_list *out_regions)
 {
@@ -283,6 +297,11 @@ int detect_regions(yolo_onnx_context *ctx, const irlsafety_frame_view *frame,
 		std::lock_guard<std::mutex> lock(ctx->mutex);
 		yolo_letterbox letterbox{};
 		std::vector<YoloCandidate> candidates;
+#ifdef _WIN32
+		const ULONGLONG infer_start = GetTickCount64();
+#else
+		const uint64_t infer_start = irlsafety_monotonic_ms();
+#endif
 
 		if (yolo_frame_to_tensor(frame, ctx->input_tensor.data(), IRLSAFETY_YOLO_INPUT_SIZE,
 					 IRLSAFETY_YOLO_INPUT_SIZE, &letterbox) != 0)
@@ -296,6 +315,11 @@ int detect_regions(yolo_onnx_context *ctx, const irlsafety_frame_view *frame,
 		const char *input_names[] = {ctx->input_name.c_str()};
 		const char *output_names[] = {ctx->output_name.c_str()};
 		auto outputs = ctx->session->Run(Ort::RunOptions{nullptr}, input_names, &input_tensor, 1, output_names, 1);
+#ifdef _WIN32
+		ctx->last_inference_ms = (float)(GetTickCount64() - infer_start);
+#else
+		ctx->last_inference_ms = (float)(irlsafety_monotonic_ms() - infer_start);
+#endif
 		float *output_data = outputs[0].GetTensorMutableData<float>();
 		auto out_shape = outputs[0].GetTensorTypeAndShapeInfo().GetShape();
 

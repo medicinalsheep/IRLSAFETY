@@ -13,6 +13,7 @@ set(
   src/irlsafety_types.c
   src/irlsafety_geometry.c
   src/irlsafety_shutdown.c
+  src/censor_log.c
   src/frame_sample.c
   src/virtual_cam/virtual_cam_stub.c
   src/blur/blur_compositor.c

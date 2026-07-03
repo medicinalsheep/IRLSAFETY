@@ -109,3 +109,20 @@ QWidget#irlsafetyPanelChrome {
     border: 1px solid #2a2f3a;
     border-radius: 12px;
 }
+
+QWidget#irlsafetyCompactRoot {
+    font-size: 12px;
+}
+
+QWidget#irlsafetyCompactRoot QGroupBox {
+    margin-top: 8px;
+    padding: 8px 8px 6px 8px;
+}
+
+QWidget#irlsafetyCompactRoot QPushButton {
+    padding: 5px 10px;
+}
+
+QWidget#irlsafetyCompactRoot QCheckBox {
+    font-size: 12px;
+}

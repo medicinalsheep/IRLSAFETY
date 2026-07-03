@@ -7,6 +7,7 @@
 
 #include "blur/blur_compositor.h"
 #include "blur/overlay_image.h"
+#include "censor_log.h"
 #include "detection/yolo_onnx.h"
 #include "irlsafety_control.h"
 #include "ocr/ocr_backend.h"
@@ -22,6 +23,7 @@
 #include "region_tracker.h"
 
 #include <plugin-support.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -54,6 +56,8 @@ struct irlsafety_pipeline {
 	uint64_t last_tick_frame;
 	uint64_t last_tracker_update_frame;
 	irlsafety_hybrid_delay_runtime hybrid_delay;
+	irlsafety_censor_log censor_log;
+	uint64_t detection_run_count;
 	irlsafety_region_list last_secured_regions;
 	uint64_t last_secured_frame;
 	int escalation_level;
@@ -196,6 +200,57 @@ static bool settings_need_detection(const irlsafety_filter_settings *settings)
 	return irlsafety_settings_detection_enabled(settings);
 }
 
+static uint8_t pipeline_estimate_load_tier(const irlsafety_filter_settings *settings)
+{
+	int score = 0;
+
+	if (!settings)
+		return 0;
+
+	if (irlsafety_settings_detection_enabled(settings))
+		score += 2;
+	if (settings->cat_screen_text)
+		score += 3;
+	if (settings->cat_custom_pii)
+		score += 2;
+	if (settings->cat_sensitive_patterns)
+		score += 1;
+	if (settings->ocr_detail >= 2)
+		score += 2;
+	if (settings->frame_skip > 0 && settings->frame_skip <= 3)
+		score += 2;
+	else if (settings->frame_skip > 0 && settings->frame_skip <= 6)
+		score += 1;
+
+	if (score >= 6)
+		return 2;
+	if (score >= 3)
+		return 1;
+	return 0;
+}
+
+static uint32_t pipeline_estimate_scans_per_min(const irlsafety_filter_settings *settings)
+{
+	uint32_t scans = 0;
+
+	if (!settings || settings->frame_skip < 1)
+		return 0;
+
+	if (irlsafety_settings_detection_enabled(settings))
+		scans += (uint32_t)(60.0f * 30.0f / (float)settings->frame_skip + 0.5f);
+
+	if (settings->cat_screen_text || settings->cat_custom_pii || settings->cat_sensitive_patterns) {
+		uint32_t ocr_interval = settings->frame_skip;
+		if (settings->ocr_detail >= 2)
+			ocr_interval = settings->frame_skip < 2 ? 1 : settings->frame_skip / 2;
+		if (ocr_interval < 1)
+			ocr_interval = 1;
+		scans += (uint32_t)(60.0f * 30.0f / (float)ocr_interval + 0.5f);
+	}
+
+	return scans;
+}
+
 static irlsafety_detection_config build_detection_config(const irlsafety_filter_settings *settings)
 {
 	irlsafety_detection_config config;
@@ -295,6 +350,7 @@ irlsafety_pipeline *irlsafety_pipeline_create(void)
 
 	irlsafety_settings_apply_defaults(&pipeline->settings);
 	irlsafety_hybrid_delay_runtime_init(&pipeline->hybrid_delay);
+	irlsafety_censor_log_init(&pipeline->censor_log);
 	return pipeline;
 }
 
@@ -398,12 +454,21 @@ void irlsafety_pipeline_get_runtime_status(const irlsafety_pipeline *pipeline, s
 	out->frame_count = frame_count;
 	out->ocr_busy = pipeline->ocr_in_flight;
 	out->overlay_count = (uint32_t)pipeline->overlay_tracker.count;
+	out->frame_skip = settings->frame_skip;
+	out->detection_run_count = pipeline->detection_run_count;
+	out->load_tier = pipeline_estimate_load_tier(settings);
+	out->approx_scans_per_min = pipeline_estimate_scans_per_min(settings);
 
 	strncpy(out->model_path, settings->model_path, sizeof(out->model_path) - 1);
 	out->model_path[sizeof(out->model_path) - 1] = '\0';
 
 	if (pipeline->detector) {
+		const char *ep = yolo_onnx_active_ep(pipeline->detector);
+
 		out->detector_ready = yolo_onnx_is_ready(pipeline->detector);
+		out->last_yolo_ms = yolo_onnx_last_inference_ms(pipeline->detector);
+		strncpy(out->detector_ep, ep ? ep : "CPU", sizeof(out->detector_ep) - 1);
+		out->detector_ep[sizeof(out->detector_ep) - 1] = '\0';
 		strncpy(out->detector_message, yolo_onnx_status_message(pipeline->detector),
 			sizeof(out->detector_message) - 1);
 		out->detector_message[sizeof(out->detector_message) - 1] = '\0';
@@ -481,12 +546,35 @@ static void process_ocr_hits(irlsafety_pipeline *pipeline, const irlsafety_filte
 					pipeline->ocr_submit_frame);
 	}
 
-	if (pipeline->fresh_regions.count > 0)
+	if (pipeline->fresh_regions.count > 0) {
+		char detail[96];
+
+		snprintf(detail, sizeof(detail), "OCR %zu region(s)", pipeline->fresh_regions.count);
+		irlsafety_censor_log_push(&pipeline->censor_log, pipeline->ocr_submit_frame, IRLSAFETY_CENSOR_OCR,
+					  (uint32_t)pipeline->fresh_regions.count, detail);
 		pipeline_mark_secured(pipeline, pipeline->ocr_submit_frame, &pipeline->fresh_regions);
+	}
 
 	if (log_frame)
 		irlsafety_log(IRLSAFETY_LOG_INFO, "IRLSAFETY+: tracking %zu overlay region(s) after detection",
 			pipeline->overlay_tracker.count);
+}
+
+size_t irlsafety_pipeline_copy_censor_log(const irlsafety_pipeline *pipeline, irlsafety_censor_log_entry *out,
+					  size_t max_entries)
+{
+	if (!pipeline)
+		return 0;
+
+	return irlsafety_censor_log_copy_recent(&pipeline->censor_log, out, max_entries);
+}
+
+void irlsafety_pipeline_clear_censor_log(irlsafety_pipeline *pipeline)
+{
+	if (!pipeline)
+		return;
+
+	irlsafety_censor_log_clear(&pipeline->censor_log);
 }
 
 void irlsafety_pipeline_poll_detection(irlsafety_pipeline *pipeline, const irlsafety_filter_settings *settings,
@@ -615,6 +703,14 @@ int irlsafety_pipeline_submit_detection(irlsafety_pipeline *pipeline, irlsafety_
 				irlsafety_log(IRLSAFETY_LOG_WARNING, "IRLSAFETY+: Object detection failed (%s)",
 					yolo_onnx_status_message(pipeline->detector));
 		} else {
+			pipeline->detection_run_count++;
+			if (pipeline->detection_regions.count > 0) {
+				char detail[96];
+
+				snprintf(detail, sizeof(detail), "YOLO %zu region(s)", pipeline->detection_regions.count);
+				irlsafety_censor_log_push(&pipeline->censor_log, frame_index, IRLSAFETY_CENSOR_DETECT,
+							  (uint32_t)pipeline->detection_regions.count, detail);
+			}
 			if (log_frame && pipeline->detection_regions.count > 0)
 				irlsafety_log(IRLSAFETY_LOG_INFO, "IRLSAFETY+: Object detection — %zu region(s)",
 					pipeline->detection_regions.count);

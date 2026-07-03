@@ -70,6 +70,34 @@ int irlsafety_filter_get_runtime_status(obs_source_t *filter, irlsafety_runtime_
 	return 0;
 }
 
+size_t irlsafety_filter_copy_censor_log(obs_source_t *filter, irlsafety_censor_log_entry *out, size_t max_entries)
+{
+	struct pii_filter_data *data;
+
+	if (!filter)
+		return 0;
+
+	data = pii_filter_from_source(filter);
+	if (!data || !data->pipeline)
+		return 0;
+
+	return irlsafety_pipeline_copy_censor_log(data->pipeline, out, max_entries);
+}
+
+void irlsafety_filter_clear_censor_log(obs_source_t *filter)
+{
+	struct pii_filter_data *data;
+
+	if (!filter)
+		return;
+
+	data = pii_filter_from_source(filter);
+	if (!data || !data->pipeline)
+		return;
+
+	irlsafety_pipeline_clear_censor_log(data->pipeline);
+}
+
 int irlsafety_filter_reload_model(obs_source_t *filter)
 {
 	struct pii_filter_data *data;
@@ -102,6 +130,19 @@ int irlsafety_filter_reload_model(obs_source_t *filter)
 {
 	UNUSED_PARAMETER(filter);
 	return -1;
+}
+
+size_t irlsafety_filter_copy_censor_log(obs_source_t *filter, irlsafety_censor_log_entry *out, size_t max_entries)
+{
+	UNUSED_PARAMETER(filter);
+	UNUSED_PARAMETER(out);
+	UNUSED_PARAMETER(max_entries);
+	return 0;
+}
+
+void irlsafety_filter_clear_censor_log(obs_source_t *filter)
+{
+	UNUSED_PARAMETER(filter);
 }
 #endif
 

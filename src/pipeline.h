@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "censor_log.h"
 #include "custom_pii.h"
 #include "filter_settings.h"
 #include "irlsafety_types.h"
@@ -75,6 +76,10 @@ bool irlsafety_pipeline_needs_urgent_scan(const irlsafety_pipeline *pipeline);
  */
 bool irlsafety_pipeline_should_drop_frame(const irlsafety_pipeline *pipeline,
 					  const irlsafety_filter_settings *settings);
+
+size_t irlsafety_pipeline_copy_censor_log(const irlsafety_pipeline *pipeline, irlsafety_censor_log_entry *out,
+					  size_t max_entries);
+void irlsafety_pipeline_clear_censor_log(irlsafety_pipeline *pipeline);
 
 #ifdef __cplusplus
 }

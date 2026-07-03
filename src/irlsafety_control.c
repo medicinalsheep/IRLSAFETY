@@ -142,6 +142,22 @@ int irlsafety_control_get_status(obs_source_t *filter, irlsafety_runtime_status 
 	return irlsafety_filter_get_runtime_status(filter, out);
 }
 
+size_t irlsafety_control_get_censor_log(obs_source_t *filter, irlsafety_censor_log_entry *out, size_t max_entries)
+{
+	if (!filter)
+		return 0;
+
+	return irlsafety_filter_copy_censor_log(filter, out, max_entries);
+}
+
+void irlsafety_control_clear_censor_log(obs_source_t *filter)
+{
+	if (!filter)
+		return;
+
+	irlsafety_filter_clear_censor_log(filter);
+}
+
 int irlsafety_control_set_bool_setting(obs_source_t *filter, const char *key, bool value)
 {
 	irlsafety_setting_patch patch = {.key = key, .value = value};
