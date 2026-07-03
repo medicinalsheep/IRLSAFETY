@@ -233,18 +233,12 @@ static void *pii_filter_create(obs_data_t *settings, obs_source_t *source)
 		return NULL;
 	}
 
-#ifndef IRLSAFETY_TEST_BUILD
-	obs_enter_graphics();
-	filter->gpu = irlsafety_gpu_frame_create(source);
-	obs_leave_graphics();
-
-	if (!filter->gpu) {
-		pii_filter_destroy(filter);
-		return NULL;
-	}
-#endif
-
 	pii_filter_apply_settings(filter, settings);
+
+#ifndef IRLSAFETY_TEST_BUILD
+	/* Defer GPU objects until first render — filter has no target at create time. */
+	filter->gpu = NULL;
+#endif
 	return filter;
 }
 
@@ -496,6 +490,14 @@ static void pii_filter_video_render(void *data, gs_effect_t *effect)
 	if (target_flags & OBS_SOURCE_ASYNC) {
 		obs_source_skip_video_filter(filter->context);
 		return;
+	}
+
+	if (!filter->gpu) {
+		filter->gpu = irlsafety_gpu_frame_create(filter->context);
+		if (!filter->gpu) {
+			obs_source_skip_video_filter(filter->context);
+			return;
+		}
 	}
 
 	if (!irlsafety_gpu_frame_begin_frame(filter->gpu, &cx, &cy)) {

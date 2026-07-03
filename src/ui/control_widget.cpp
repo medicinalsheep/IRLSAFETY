@@ -328,6 +328,9 @@ void IRLSafetyControlWidget::refreshUi()
 	obs_source_t *filter = currentFilter();
 	size_t previous_count = filters.count;
 
+	if (irlsafety_is_shutting_down())
+		return;
+
 	irlsafety_control_refresh_filters(&filters);
 	if (filters.count != previous_count || filter_combo->count() != (int)filters.count)
 		rebuildFilterList();

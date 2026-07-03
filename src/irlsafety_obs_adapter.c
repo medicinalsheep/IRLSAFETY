@@ -14,7 +14,11 @@
 #include <math.h>
 #include <obs-module.h>
 #include <plugin-support.h>
+#include <util/bmem.h>
 #include <util/config-file.h>
+
+#include <stdlib.h>
+#include <string.h>
 
 #ifdef IRLSAFETY_HAS_FRONTEND_API
 #include <obs-frontend-api.h>
@@ -28,8 +32,18 @@ static void obs_log_bridge(int level, const char *message, void *userdata)
 
 static char *obs_bundled_path_resolver(const char *relative, void *userdata)
 {
+	char *obs_path;
+	char *copy;
+
 	(void)userdata;
-	return obs_module_file(relative);
+
+	obs_path = obs_module_file(relative);
+	if (!obs_path)
+		return NULL;
+
+	copy = strdup(obs_path);
+	bfree(obs_path);
+	return copy;
 }
 
 #ifdef IRLSAFETY_HAS_FRONTEND_API
