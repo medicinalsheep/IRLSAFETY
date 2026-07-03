@@ -26,6 +26,8 @@ public:
 	explicit IRLSafetyControlWidget(QWidget *parent = nullptr, bool compact = false);
 	~IRLSafetyControlWidget() override;
 
+	void startPeriodicRefresh();
+
 private slots:
 	void refreshUi();
 	void onFilterChanged(int index);

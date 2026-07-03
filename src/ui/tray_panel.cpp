@@ -27,6 +27,8 @@ class IRLSafetyPanelWindow : public QMainWindow {
 	Q_OBJECT
 
 public:
+	IRLSafetyControlWidget *controlWidget() const { return control_widget_; }
+
 	explicit IRLSafetyPanelWindow(QWidget *parent = nullptr) : QMainWindow(parent)
 	{
 		setWindowTitle(QStringLiteral("IRLSAFETY+"));
@@ -67,8 +69,12 @@ public:
 		title_layout->addWidget(hide_btn);
 		layout->addWidget(title_bar);
 
-		layout->addWidget(new IRLSafetyControlWidget(central, true), 1);
+		control_widget_ = new IRLSafetyControlWidget(central, true);
+		layout->addWidget(control_widget_, 1);
 	}
+
+private:
+	IRLSafetyControlWidget *control_widget_ = nullptr;
 };
 
 static QSystemTrayIcon *g_tray_icon = nullptr;
@@ -82,6 +88,9 @@ extern "C" void irlsafety_tray_panel_show(void)
 	g_panel_window->show();
 	g_panel_window->raise();
 	g_panel_window->activateWindow();
+
+	if (IRLSafetyControlWidget *widget = g_panel_window->controlWidget())
+		widget->startPeriodicRefresh();
 }
 
 extern "C" void irlsafety_tray_panel_register(void)
@@ -93,6 +102,9 @@ extern "C" void irlsafety_tray_panel_register(void)
 		return;
 
 	QWidget *main_window = static_cast<QWidget *>(obs_frontend_get_main_window());
+	if (!main_window)
+		return;
+
 	g_panel_window = new IRLSafetyPanelWindow(main_window);
 
 	g_tray_icon = new QSystemTrayIcon(main_window);
@@ -100,7 +112,6 @@ extern "C" void irlsafety_tray_panel_register(void)
 	g_tray_icon->setToolTip(QStringLiteral("IRLSAFETY+ — Local privacy protection"));
 
 	auto *menu = new QMenu(g_panel_window);
-	menu->setStyleSheet(g_panel_window->styleSheet());
 	auto *open_action = menu->addAction(QString::fromUtf8(obs_module_text("IRLSAFETYPlus.Tray.OpenPanel")));
 	auto *walkthrough_action = menu->addAction(QString::fromUtf8(obs_module_text("IRLSAFETYPlus.Tray.Walkthrough")));
 	menu->addSeparator();

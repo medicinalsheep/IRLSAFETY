@@ -275,9 +275,21 @@ IRLSafetyControlWidget::IRLSafetyControlWidget(QWidget *parent, bool compact) : 
 	connect(censor_log_btn, &QPushButton::clicked, this, &IRLSafetyControlWidget::onShowCensorLog);
 
 	connect(&refresh_timer, &QTimer::timeout, this, &IRLSafetyControlWidget::refreshUi);
-	refresh_timer.start(750);
 
 	applyCompactChrome();
+	if (!compact_) {
+		refresh_timer.start(750);
+		rebuildFilterList();
+		refreshUi();
+	}
+}
+
+void IRLSafetyControlWidget::startPeriodicRefresh()
+{
+	if (refresh_timer.isActive())
+		return;
+
+	refresh_timer.start(750);
 	rebuildFilterList();
 	refreshUi();
 }

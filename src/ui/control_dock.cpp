@@ -54,6 +54,9 @@ extern "C" void irlsafety_control_dock_register(void)
 		return;
 
 	QWidget *main_window = static_cast<QWidget *>(obs_frontend_get_main_window());
+	if (!main_window)
+		return;
+
 	obs_frontend_push_ui_translation(obs_module_get_string);
 	g_control_dock = new IRLSafetyControlDock(main_window);
 	obs_frontend_add_dock_by_id("irlsafety_plus_control", obs_module_text("IRLSAFETYPlus.Dock.Title"),
