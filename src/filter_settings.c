@@ -24,12 +24,12 @@ void irlsafety_filter_settings_set_defaults(struct obs_data *settings)
 	obs_data_set_default_bool(settings, IRLSAFETY_SET_CAT_STREET_SIGNS, true);
 	obs_data_set_default_bool(settings, IRLSAFETY_SET_CAT_SHIPPING_LABELS, true);
 	obs_data_set_default_bool(settings, IRLSAFETY_SET_CAT_ID_DOCUMENTS, true);
-	obs_data_set_default_bool(settings, IRLSAFETY_SET_CAT_SCREEN_TEXT, true);
+	obs_data_set_default_bool(settings, IRLSAFETY_SET_CAT_SCREEN_TEXT, false);
 	obs_data_set_default_bool(settings, IRLSAFETY_SET_CAT_CUSTOM_PII, true);
 	obs_data_set_default_bool(settings, IRLSAFETY_SET_CAT_SENSITIVE_PATTERNS, false);
 
 	obs_data_set_default_double(settings, IRLSAFETY_SET_CONFIDENCE, 0.35);
-	obs_data_set_default_int(settings, IRLSAFETY_SET_FRAME_SKIP, 3);
+	obs_data_set_default_int(settings, IRLSAFETY_SET_FRAME_SKIP, 6);
 	obs_data_set_default_int(settings, IRLSAFETY_SET_CENSOR_MODE, IRLSAFETY_CENSOR_BOX);
 	obs_data_set_default_int(settings, IRLSAFETY_SET_CENSOR_COLOR, 0xFF000000);
 	obs_data_set_default_string(settings, IRLSAFETY_SET_CENSOR_OVERLAY, "");
@@ -102,11 +102,11 @@ static void irlsafety_filter_apply_defaults_struct(irlsafety_filter_settings *ou
 	out->cat_street_signs = true;
 	out->cat_shipping_labels = true;
 	out->cat_id_documents = true;
-	out->cat_screen_text = true;
+	out->cat_screen_text = false;
 	out->cat_custom_pii = true;
 	out->cat_sensitive_patterns = false;
 	out->confidence_threshold = 0.35f;
-	out->frame_skip = 3;
+	out->frame_skip = 6;
 	out->ocr_detail = 0;
 	out->blur_strength = 24.0f;
 	out->censor_mode = IRLSAFETY_CENSOR_BOX;
@@ -144,7 +144,7 @@ void irlsafety_filter_settings_load(struct obs_data *settings, irlsafety_filter_
 	out->cat_license_plates = settings_get_bool(settings, IRLSAFETY_SET_CAT_LICENSE_PLATES, true);
 	out->cat_shipping_labels = settings_get_bool(settings, IRLSAFETY_SET_CAT_SHIPPING_LABELS, true);
 	out->cat_id_documents = settings_get_bool(settings, IRLSAFETY_SET_CAT_ID_DOCUMENTS, true);
-	out->cat_screen_text = settings_get_bool(settings, IRLSAFETY_SET_CAT_SCREEN_TEXT, true);
+	out->cat_screen_text = settings_get_bool(settings, IRLSAFETY_SET_CAT_SCREEN_TEXT, false);
 	out->cat_sensitive_patterns = settings_get_bool(settings, IRLSAFETY_SET_CAT_SENSITIVE_PATTERNS, false);
 	out->cat_custom_pii = settings_get_bool(settings, IRLSAFETY_SET_CAT_CUSTOM_PII, true);
 

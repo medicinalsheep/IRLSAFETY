@@ -5,6 +5,7 @@
 
 #include "pii-filter.h"
 
+#include "detection/yolo_preprocess.h"
 #include "frame_convert.h"
 #include "irlsafety_paths.h"
 #include "filter_settings.h"
@@ -103,6 +104,49 @@ int irlsafety_filter_reload_model(obs_source_t *filter)
 	return -1;
 }
 #endif
+
+static bool pii_filter_should_submit_scan(struct pii_filter_data *filter)
+{
+	bool need_ocr;
+	bool need_detect;
+
+	if (!filter || !filter->pipeline)
+		return false;
+
+	need_ocr = irlsafety_pipeline_needs_ocr(filter->pipeline, &filter->settings);
+	need_detect = irlsafety_filter_detection_enabled(&filter->settings);
+
+	if (!need_ocr && !need_detect)
+		return false;
+
+	if (need_ocr && irlsafety_pipeline_ocr_busy(filter->pipeline) && !need_detect)
+		return false;
+
+	return true;
+}
+
+static uint32_t pii_filter_readback_max_width(const struct pii_filter_data *filter)
+{
+	bool need_ocr;
+	bool need_detect;
+
+	if (!filter || !filter->pipeline)
+		return 0;
+
+	need_ocr = irlsafety_pipeline_needs_ocr(filter->pipeline, &filter->settings);
+	need_detect = irlsafety_filter_detection_enabled(&filter->settings);
+
+	if (need_ocr) {
+		if (filter->settings.ocr_detail == 2)
+			return 0;
+		return irlsafety_ocr_max_width_for_detail(filter->settings.ocr_detail);
+	}
+
+	if (need_detect)
+		return IRLSAFETY_YOLO_INPUT_SIZE;
+
+	return 0;
+}
 
 static bool pii_filter_target_is_heavy(struct pii_filter_data *filter)
 {
@@ -382,7 +426,7 @@ static struct obs_source_frame *pii_filter_video(void *data, struct obs_source_f
 	if ((irlsafety_pipeline_needs_urgent_scan(filter->pipeline) ||
 	     irlsafety_filter_should_run_detection(&filter->settings, filter->frame_count,
 						   pii_filter_target_is_heavy(filter))) &&
-	    !irlsafety_pipeline_ocr_busy(filter->pipeline))
+	    pii_filter_should_submit_scan(filter))
 		irlsafety_pipeline_submit_detection(filter->pipeline, &view, &filter->settings, filter->frame_count,
 						    view.width, view.height);
 
@@ -463,9 +507,8 @@ static void pii_filter_video_render(void *data, gs_effect_t *effect)
 
 	if ((irlsafety_pipeline_needs_urgent_scan(filter->pipeline) ||
 	     irlsafety_filter_should_run_detection(&filter->settings, filter->frame_count, false)) &&
-	    !irlsafety_pipeline_ocr_busy(filter->pipeline)) {
-		uint32_t ocr_max_width = irlsafety_ocr_max_width_for_detail(filter->settings.ocr_detail);
-		uint32_t readback_width = filter->settings.ocr_detail == 2 ? 0 : ocr_max_width;
+	    pii_filter_should_submit_scan(filter)) {
+		uint32_t readback_width = pii_filter_readback_max_width(filter);
 
 		if (irlsafety_gpu_frame_readback_ocr(filter->gpu, &view, cx, cy, readback_width) == 0) {
 			irlsafety_pipeline_submit_detection(filter->pipeline, &view, &filter->settings,

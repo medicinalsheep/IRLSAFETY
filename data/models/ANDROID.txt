@@ -1,0 +1,40 @@
+IRLSAFETY+ — Android (planned)
+================================
+
+STATUS TODAY (v0.7)
+-------------------
+There is no Android app yet. IRLSAFETY+ is a Windows OBS plugin.
+
+USE YOUR PHONE WITH OBS ON A PC (works now)
+-------------------------------------------
+1. On the phone: Larix Broadcaster, NDI HX Camera, or SRT streaming app
+2. On the PC: OBS → add NDI / SRT source
+3. Add IRLSAFETY+ filter on that source
+4. Stream or record as usual — detection runs on the PC
+
+See PLATFORMS.txt for the full adapter matrix.
+
+ANDROID APP (roadmap)
+---------------------
+Planned as a standalone camera protection app (not an OBS plugin):
+
+  v0.8  Extract libirlsafety core (shared with Windows)
+  v1.0  Android alpha — camera preview + plate/mail/ID detection
+  v1.1  On-device OCR (same ONNX stack as Windows child OCR)
+
+MVP scope:
+  - Rear/front camera live preview
+  - Local YOLO detection (irlsafety-detect.onnx)
+  - Solid-box censorship
+  - 100% on-device — no cloud
+
+Out of scope for first Android release:
+  - OBS integration (OBS does not host plugins on Android)
+  - Full-screen OCR on other apps
+  - On-phone training pipeline
+
+Technical design: docs/DESIGN-android-v1.md in the repo.
+
+PRIVACY
+-------
+Same as Windows: inference stays on your device. No account required.

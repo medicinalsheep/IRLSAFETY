@@ -4,7 +4,8 @@ setlocal EnableExtensions
 REM Creates a portable IRLSAFETY+ v0.1.0 test package (zip-ready folder).
 
 set "ROOT=%~dp0.."
-set "VERSION=0.7.0"
+for /f "delims=" %%V in ('powershell -NoProfile -Command "(Get-Content '%ROOT%\buildspec.json' -Raw | ConvertFrom-Json).version"') do set "VERSION=%%V"
+if not defined VERSION set "VERSION=0.7.1"
 set "PKG_NAME=IRLSAFETY+-v%VERSION%-win64"
 set "OUT_DIR=%ROOT%\release\%PKG_NAME%"
 set "SRC_DLL=%ROOT%\build_x64\rundir\RelWithDebInfo\irlsafety-plus.dll"

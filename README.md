@@ -4,7 +4,7 @@
 
 | | |
 |---|---|
-| **Version** | 0.7.0 |
+| **Version** | 0.7.1 |
 | **Platform** | Windows 10/11 x64 |
 | **OBS** | 31.x / 32.x (64-bit) |
 | **Author** | [medicinalsheep](https://github.com/medicinalsheep) |
@@ -20,7 +20,7 @@ Design, training summary, and full attribution: **[CREDITS.md](CREDITS.md)** · 
 ## Private tester install (GitHub Release)
 
 1. Open [Releases](https://github.com/medicinalsheep/IRLSAFETY/releases) on this repo
-2. Download **`IRLSAFETY+-v0.7.0-win64.zip`** from the latest release (when published)
+2. Download **`IRLSAFETY+-v0.7.1-win64.zip`** from the latest release (when published)
 3. Extract the folder
 4. Right-click **`install-from-package.bat`** → **Run as administrator**
 5. Restart OBS
@@ -33,7 +33,7 @@ scripts\build-windows.bat
 scripts\package-v0.1.bat
 ```
 
-Package output: `release\IRLSAFETY+-v0.7.0-win64\`
+Package output: `release\IRLSAFETY+-v0.7.1-win64\`
 
 ---
 
@@ -67,11 +67,12 @@ Package output: `release\IRLSAFETY+-v0.7.0-win64\`
 | Setting | Default |
 |---------|---------|
 | License Plates / Signs / Mail / IDs | **ON** |
+| Screen Text | **OFF** (enable when you need full-screen OCR) |
 | Censor Style | **Solid Box** |
 | Angled Cover | **ON** |
 | Sensitive Numbers | **OFF** (Advanced) |
 | Confidence | **0.35** |
-| Scan Every N Frames | **3** |
+| Scan Every N Frames | **6** |
 | Stream Delay | **1.5s** baseline |
 | Escalated Secure Mode | ON |
 

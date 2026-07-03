@@ -5,6 +5,7 @@
 !/.github
 !/build-aux
 !/cmake
+!/docs
 !/data
 !/src
 !/tests

@@ -42,6 +42,9 @@ int irlsafety_pipeline_submit_detection(irlsafety_pipeline *pipeline, irlsafety_
 
 bool irlsafety_pipeline_ocr_busy(const irlsafety_pipeline *pipeline);
 
+/* True when OCR would run (screen text, sensitive patterns, or custom PII keywords). */
+bool irlsafety_pipeline_needs_ocr(const irlsafety_pipeline *pipeline, const irlsafety_filter_settings *settings);
+
 /*
  * Convenience: poll then optionally submit (non-blocking).
  * output_width/height are the full display size; frame may be a downscaled OCR buffer.

@@ -39,11 +39,11 @@ $notes = @"
 ## IRLSAFETY+ $Tag
 
 ### Highlights
+- **Performance** - Screen Text OFF by default; detection-only GPU readback at 640px; YOLO runs while OCR busy
+- **Defaults** - Scan every 6 frames (was 3); less CPU/GPU load for new installs
 - **4-class detection model** bundled (irlsafety-detect.onnx: plates, signs, mail labels, IDs)
-- **Mail & Shipping Labels** and **IDs & Licenses** categories enabled by default
-- **Angled cover** - quad-masked censor for tilted packages and OBB-trained models
-- **Training pipeline** - JWCOM2 kit scripts, real-world props, staging ingest, warm-start retrain
-- **Settings migration** - v0.7 defaults apply cleanly on upgrade
+- **libirlsafety core** extracted (v0.8 P1) - shared static lib for future Android/standalone
+- **Angled cover** - quad-masked censor for tilted packages
 
 ### Model (irlsafety_v07)
 - 100-epoch warm-start training, mAP50 ~0.98

@@ -178,7 +178,9 @@ int yolo_onnx_load_model(yolo_onnx_context *ctx, const char *model_path, bool pr
 
 	try {
 		Ort::SessionOptions options;
-		options.SetIntraOpNumThreads(prefer_gpu ? 4 : 2);
+		/* Cap threads — fewer spikes on the OBS video/render thread (CPU EP). */
+		options.SetIntraOpNumThreads(2);
+		options.SetInterOpNumThreads(1);
 		options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
 		(void)prefer_gpu;
 

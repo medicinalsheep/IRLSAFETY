@@ -1,26 +1,17 @@
-set(_irlsafety_core_sources
-    ../src/pipeline.c
-    ../src/region_tracker.c
-    ../src/hybrid_delay.c
-    ../src/filter_settings.c
-    ../src/custom_pii.c
-    ../src/irlsafety_types.c
-    ../src/irlsafety_geometry.c
-    ../src/irlsafety_paths.c
-    ../src/irlsafety_shutdown.c
-    ../src/frame_sample.c
-    ../src/virtual_cam/virtual_cam_stub.c
-    ../src/detection/yolo_onnx_stub.c
-    ../src/detection/yolo_preprocess.c
-    ../src/ocr/ocr_engine.c
-    ../src/ocr/pii_match.c
-    ../src/ocr/pii_patterns.c
-    ../src/ocr/ocr_frame_util.c
-    ../src/ocr/ocr_stub.c
-    ../src/blur/blur_compositor.c
-    ../src/blur/overlay_image.c)
+# Test builds compile libirlsafety sources with IRLSAFETY_TEST_BUILD (see cmake/libirlsafety.cmake).
 
-add_executable(test_pipeline_stubs test_pipeline_stubs.c mocks/obs-mock.c ${_irlsafety_core_sources})
+set(_irlsafety_test_core_sources)
+foreach(_src IN LISTS IRLSAFETY_LIB_SOURCES)
+  if(_src STREQUAL "src/detection/yolo_onnx.cpp")
+    list(APPEND _irlsafety_test_core_sources "${CMAKE_CURRENT_SOURCE_DIR}/../src/detection/yolo_onnx_stub.c")
+  elseif(_src MATCHES "^src/ocr/ocr_(windows|child)")
+    list(APPEND _irlsafety_test_core_sources "${CMAKE_CURRENT_SOURCE_DIR}/../src/ocr/ocr_stub.c")
+  else()
+    list(APPEND _irlsafety_test_core_sources "${CMAKE_CURRENT_SOURCE_DIR}/../${_src}")
+  endif()
+endforeach()
+
+add_executable(test_pipeline_stubs test_pipeline_stubs.c mocks/obs-mock.c ${_irlsafety_test_core_sources})
 target_compile_definitions(test_pipeline_stubs PRIVATE IRLSAFETY_TEST_BUILD)
 target_include_directories(
   test_pipeline_stubs PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/mocks" "${CMAKE_CURRENT_SOURCE_DIR}/../src")
@@ -33,7 +24,7 @@ set(_irlsafety_obs_test_sources
     ../src/plugin-main.c
     ../src/pii-filter.c
     ../src/frame_convert.c
-    ${_irlsafety_core_sources})
+    ${_irlsafety_test_core_sources})
 
 add_executable(test_obs_filter ${_irlsafety_obs_test_sources})
 target_compile_definitions(test_obs_filter PRIVATE IRLSAFETY_TEST_BUILD)

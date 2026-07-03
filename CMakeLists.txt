@@ -15,15 +15,20 @@ include(compilerconfig)
 include(defaults)
 include(helpers)
 
+if(IRLSAFETY_ENABLE_ONNX AND OS_WINDOWS)
+  include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/onnxruntime.cmake")
+endif()
+
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/libirlsafety.cmake")
+
 add_library(${CMAKE_PROJECT_NAME} MODULE)
 
 find_package(libobs REQUIRED)
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE OBS::libobs)
+
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE libirlsafety)
 
 if(ENABLE_FRONTEND_API)
   find_package(obs-frontend-api REQUIRED)
-  target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE OBS::obs-frontend-api)
-  target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE IRLSAFETY_HAS_FRONTEND_API=1)
 endif()
 
 if(ENABLE_QT)
@@ -39,77 +44,24 @@ if(ENABLE_QT)
   )
 endif()
 
-set(_irlsafety_ocr_sources src/ocr/ocr_engine.c src/ocr/pii_match.c src/ocr/pii_patterns.c src/ocr/ocr_frame_util.c)
-
-if(IRLSAFETY_OCR_BACKEND STREQUAL "child" AND IRLSAFETY_ENABLE_ONNX AND OS_WINDOWS)
-  list(APPEND _irlsafety_ocr_sources src/ocr/ocr_child_onnx.cpp)
-elseif(IRLSAFETY_OCR_BACKEND STREQUAL "stub")
-  list(APPEND _irlsafety_ocr_sources src/ocr/ocr_stub.c)
-elseif(OS_WINDOWS)
-  list(APPEND _irlsafety_ocr_sources src/ocr/ocr_windows.cpp)
-else()
-  list(APPEND _irlsafety_ocr_sources src/ocr/ocr_stub.c)
-endif()
-
-set(_irlsafety_detection_sources src/detection/yolo_preprocess.c)
-
-if(IRLSAFETY_ENABLE_ONNX AND OS_WINDOWS)
-  include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/onnxruntime.cmake")
-  list(APPEND _irlsafety_detection_sources src/detection/yolo_onnx.cpp)
-else()
-  list(APPEND _irlsafety_detection_sources src/detection/yolo_onnx_stub.c)
-endif()
-
-set(_irlsafety_core_sources
+set(_irlsafety_plugin_sources
     src/plugin-main.c
     src/pii-filter.c
-    src/pipeline.c
-    src/region_tracker.c
-    src/filter_settings.c
-    src/filter_property_ui.c
-    src/custom_pii.c
     src/frame_convert.c
-    src/frame_sample.c
     src/gpu_frame.c
-    src/irlsafety_types.c
-    src/irlsafety_geometry.c
-    src/irlsafety_paths.c
-    src/irlsafety_shutdown.c
     src/irlsafety_control.c
-    src/hybrid_delay.c
-    src/virtual_cam/virtual_cam_stub.c
-    src/blur/blur_compositor.c
-    src/blur/overlay_image.c
-    ${_irlsafety_detection_sources}
-    ${_irlsafety_ocr_sources})
+    src/filter_property_ui.c)
 
 if(ENABLE_FRONTEND_API AND ENABLE_QT)
-  list(APPEND _irlsafety_core_sources src/ui/control_dock.cpp src/ui/onboarding_dialog.cpp)
+  list(APPEND _irlsafety_plugin_sources src/ui/control_dock.cpp src/ui/onboarding_dialog.cpp)
   target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE IRLSAFETY_HAS_CONTROL_DOCK=1)
 endif()
 
-target_sources(${CMAKE_PROJECT_NAME} PRIVATE ${_irlsafety_core_sources})
+target_sources(${CMAKE_PROJECT_NAME} PRIVATE ${_irlsafety_plugin_sources})
 
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
-if(OS_WINDOWS)
-  if(IRLSAFETY_OCR_BACKEND STREQUAL "child" AND IRLSAFETY_ENABLE_ONNX)
-    set_source_files_properties(src/ocr/ocr_child_onnx.cpp PROPERTIES LANGUAGE CXX)
-  else()
-    set_source_files_properties(src/ocr/ocr_windows.cpp PROPERTIES LANGUAGE CXX)
-  endif()
-  target_compile_features(${CMAKE_PROJECT_NAME} PRIVATE cxx_std_20)
-  target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE windowsapp)
-endif()
-
-if(IRLSAFETY_OCR_BACKEND STREQUAL "child" AND IRLSAFETY_ENABLE_ONNX AND OS_WINDOWS)
-  target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE IRLSAFETY_OCR_BACKEND_CHILD=1)
-endif()
-
 if(IRLSAFETY_ENABLE_ONNX AND OS_WINDOWS)
-  set_source_files_properties(src/detection/yolo_onnx.cpp PROPERTIES LANGUAGE CXX)
-  target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE IRLSAFETY_ENABLE_ONNX=1)
-  target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE onnxruntime)
   file(GLOB _ort_runtime_dlls "${IRLSAFETY_ONNXRUNTIME_DLL_DIR}/*.dll")
   add_custom_command(
     TARGET ${CMAKE_PROJECT_NAME}

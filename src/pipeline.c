@@ -560,6 +560,16 @@ bool irlsafety_pipeline_ocr_busy(const irlsafety_pipeline *pipeline)
 	return pipeline && pipeline->ocr_in_flight;
 }
 
+bool irlsafety_pipeline_needs_ocr(const irlsafety_pipeline *pipeline, const irlsafety_filter_settings *settings)
+{
+	const irlsafety_filter_settings *active = settings ? settings : (pipeline ? &pipeline->settings : NULL);
+
+	if (!pipeline || !active)
+		return false;
+
+	return settings_need_ocr(active, &pipeline->custom_pii);
+}
+
 int irlsafety_pipeline_submit_detection(irlsafety_pipeline *pipeline, irlsafety_frame_view *frame,
 					const irlsafety_filter_settings *settings, uint64_t frame_index,
 					uint32_t output_width, uint32_t output_height)
@@ -575,9 +585,6 @@ int irlsafety_pipeline_submit_detection(irlsafety_pipeline *pipeline, irlsafety_
 		return -1;
 
 	if (!active->enable_all || pipeline->shutting_down || irlsafety_is_shutting_down())
-		return 0;
-
-	if (pipeline->ocr_in_flight)
 		return 0;
 
 	if (frame->width == 0 || frame->height == 0)
@@ -634,6 +641,9 @@ int irlsafety_pipeline_submit_detection(irlsafety_pipeline *pipeline, irlsafety_
 	if (!need_ocr)
 		return 0;
 
+	if (pipeline->ocr_in_flight)
+		return 0;
+
 	if (!ocr_backend_available()) {
 		if (log_frame)
 			obs_log(LOG_WARNING, "IRLSAFETY+: Windows OCR is unavailable on this system");
@@ -683,7 +693,8 @@ int irlsafety_pipeline_detect_frame(irlsafety_pipeline *pipeline, irlsafety_fram
 	if (!irlsafety_filter_should_run_detection(active, frame_index, heavy_source))
 		return 0;
 
-	if (irlsafety_pipeline_ocr_busy(pipeline))
+	if (irlsafety_pipeline_ocr_busy(pipeline) && irlsafety_pipeline_needs_ocr(pipeline, active) &&
+	    !irlsafety_filter_detection_enabled(active))
 		return 0;
 
 	return irlsafety_pipeline_submit_detection(pipeline, frame, settings, frame_index, output_width, output_height);
