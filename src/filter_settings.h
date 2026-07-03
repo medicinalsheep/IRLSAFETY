@@ -37,6 +37,7 @@ extern "C" {
 #define IRLSAFETY_SET_SHOW_PREVIEW "show_preview"
 #define IRLSAFETY_SET_ENABLE_LOGGING "enable_logging"
 #define IRLSAFETY_SET_PREFER_GPU "prefer_gpu"
+#define IRLSAFETY_SET_USE_CHILD_OCR "use_child_ocr"
 #define IRLSAFETY_SET_CUSTOM_PII_INLINE "custom_pii_inline"
 #define IRLSAFETY_SET_CUSTOM_PII_FILE "custom_pii_file"
 #define IRLSAFETY_SET_MODEL_PATH "model_path"
@@ -80,6 +81,7 @@ typedef struct irlsafety_filter_settings {
 	bool show_preview;
 	bool enable_logging;
 	bool prefer_gpu;
+	bool use_child_ocr;
 	char custom_pii_inline[4096];
 	char custom_pii_file[1024];
 	char model_path[1024];

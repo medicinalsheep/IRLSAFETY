@@ -71,7 +71,7 @@ bool obs_module_load(void)
 	obs_log(LOG_INFO, "IRLSAFETY+ loaded (version %s)", PLUGIN_VERSION);
 #if IRLSAFETY_HAS_OCR_PROBE
 	{
-#if defined(IRLSAFETY_OCR_BACKEND_CHILD)
+#if defined(IRLSAFETY_OCR_HAS_CHILD)
 		char det_model[1024];
 		char rec_model[1024];
 
@@ -79,11 +79,6 @@ bool obs_module_load(void)
 		irlsafety_resolve_model_path("models/irlsafety-ocr-rec.onnx", NULL, rec_model, sizeof(rec_model));
 		ocr_backend_configure_models(det_model[0] != '\0' ? det_model : NULL,
 					     rec_model[0] != '\0' ? rec_model : NULL);
-#else
-		char ocr_model[1024];
-
-		irlsafety_resolve_model_path("models/irlsafety-ocr.onnx", NULL, ocr_model, sizeof(ocr_model));
-		ocr_backend_configure(ocr_model[0] != '\0' ? ocr_model : NULL);
 #endif
 		obs_log(LOG_INFO, "IRLSAFETY+: %s — %s", ocr_backend_name(), ocr_backend_status_message());
 	}

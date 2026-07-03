@@ -282,5 +282,7 @@ See `data/models/PLATFORMS.txt`.
 6. ~~**P5** `child` OCR + ONNX on non-Windows CMake paths~~ — done (`cmake/onnxruntime_detect.cmake`)
 7. ~~**P6** Windows virtual camera module~~ — done (OBS Virtual Cam hooks + tray controls)
 8. ~~**Tray panel** dark-mode UI~~ — done (`tray_panel.cpp`, `data/ui/dark_theme.qss`)
-9. **P7** next: ONNX Runtime abstraction — CPU/NNAPI/DML EP selection
-10. **P10** (Android): after P9 — `android/` Gradle + NDK JNI bridge
+9. ~~**P7** ONNX Runtime abstraction — CPU/NNAPI/DML EP selection~~ — done (`src/onnx/ort_ep.cpp`)
+10. ~~**P8** child OCR dual-backend toggle on Windows~~ — done (`ocr_router.cpp`, `use_child_ocr` setting)
+11. ~~**P9** frozen `irlsafety.h` C API~~ — done (`src/irlsafety.h`, API version 1)
+12. **P10** (Android): next — `android/` Gradle + NDK JNI bridge

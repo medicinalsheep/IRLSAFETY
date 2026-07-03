@@ -70,6 +70,7 @@ void irlsafety_filter_apply_property_tooltips(struct obs_properties *props, stru
 	set_tip_on(advanced, IRLSAFETY_SET_CAT_SENSITIVE_PATTERNS, "IRLSAFETYPlus.CatSensitivePatterns.Tooltip");
 	set_tip_on(advanced, "hybrid_delay_audio_note", "IRLSAFETYPlus.HybridDelayAudioNote.Tooltip");
 	set_tip_on(advanced, IRLSAFETY_SET_PREFER_GPU, "IRLSAFETYPlus.PreferGpu.Tooltip");
+	set_tip_on(advanced, IRLSAFETY_SET_USE_CHILD_OCR, "IRLSAFETYPlus.UseChildOcr.Tooltip");
 	set_tip_on(advanced, IRLSAFETY_SET_SHOW_PREVIEW, "IRLSAFETYPlus.ShowPreview.Tooltip");
 	set_tip_on(advanced, IRLSAFETY_SET_ENABLE_LOGGING, "IRLSAFETYPlus.EnableLogging.Tooltip");
 	set_tip_on(advanced, IRLSAFETY_SET_MODEL_PATH, "IRLSAFETYPlus.ModelPath.Tooltip");

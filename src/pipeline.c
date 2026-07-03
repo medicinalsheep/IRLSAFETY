@@ -343,6 +343,7 @@ int irlsafety_pipeline_update_settings(irlsafety_pipeline *pipeline, const irlsa
 		return -1;
 
 	pipeline->settings = *settings;
+	ocr_backend_set_use_child(settings->use_child_ocr);
 	memset(&pipeline->custom_pii, 0, sizeof(pipeline->custom_pii));
 	irlsafety_region_tracker_clear(&pipeline->overlay_tracker);
 	irlsafety_hybrid_delay_runtime_reset(&pipeline->hybrid_delay);

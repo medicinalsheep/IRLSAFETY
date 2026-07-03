@@ -5,12 +5,14 @@
 
 #include "yolo_onnx.h"
 
+#include "../onnx/ort_ep.h"
 #include "yolo_preprocess.h"
 
 #include <onnxruntime_c_api.h>
 #include <onnxruntime_cxx_api.h>
 
 #include <algorithm>
+#include <cstdio>
 #include <cmath>
 #include <cstring>
 #include <memory>
@@ -46,6 +48,7 @@ struct yolo_onnx_context {
 	std::mutex mutex;
 	char model_path[1024];
 	char status[256];
+	char active_ep[32];
 	bool loaded = false;
 	bool prefer_gpu = true;
 	int num_classes = 0;
@@ -178,11 +181,12 @@ int yolo_onnx_load_model(yolo_onnx_context *ctx, const char *model_path, bool pr
 
 	try {
 		Ort::SessionOptions options;
-		/* Cap threads — fewer spikes on the OBS video/render thread (CPU EP). */
-		options.SetIntraOpNumThreads(2);
-		options.SetInterOpNumThreads(1);
-		options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
-		(void)prefer_gpu;
+		irlsafety_ort_session_opts ort_cfg;
+		char ep_name[32];
+
+		irlsafety_ort_default_session_opts(&ort_cfg);
+		ort_cfg.prefer_gpu = prefer_gpu;
+		irlsafety_ort_apply_session_opts(options, &ort_cfg, ep_name, sizeof(ep_name));
 
 		std::wstring wide_path;
 		{
@@ -221,7 +225,9 @@ int yolo_onnx_load_model(yolo_onnx_context *ctx, const char *model_path, bool pr
 
 		ctx->input_tensor.resize(3 * IRLSAFETY_YOLO_INPUT_SIZE * IRLSAFETY_YOLO_INPUT_SIZE);
 		ctx->loaded = true;
-		set_status(ctx, "Detection model loaded");
+		strncpy(ctx->active_ep, ep_name, sizeof(ctx->active_ep) - 1);
+		ctx->active_ep[sizeof(ctx->active_ep) - 1] = '\0';
+		snprintf(ctx->status, sizeof(ctx->status), "Detection model loaded (%s)", ctx->active_ep);
 		return 0;
 	} catch (const Ort::Exception &ex) {
 		set_status(ctx, ex.what());

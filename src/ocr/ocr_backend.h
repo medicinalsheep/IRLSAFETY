@@ -14,6 +14,10 @@
 extern "C" {
 #endif
 
+/* Select child ONNX OCR when built (P8 dual-backend Windows releases). */
+void ocr_backend_set_use_child(bool use_child);
+bool ocr_backend_using_child(void);
+
 /* Optional: set ONNX model path before first use (child OCR backend). */
 void ocr_backend_configure(const char *model_path);
 

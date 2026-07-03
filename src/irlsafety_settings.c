@@ -40,6 +40,7 @@ void irlsafety_settings_apply_defaults(irlsafety_filter_settings *out)
 	out->cover_while_typing = false;
 	out->test_effect = false;
 	out->prefer_gpu = true;
+	out->use_child_ocr = false;
 }
 
 float irlsafety_settings_effective_partial_threshold(const irlsafety_filter_settings *settings)

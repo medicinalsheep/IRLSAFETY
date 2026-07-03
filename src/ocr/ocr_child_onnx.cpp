@@ -7,6 +7,7 @@
  */
 
 #include "ocr_backend.h"
+#include "../onnx/ort_ep.h"
 
 #include <algorithm>
 #include <atomic>
@@ -163,8 +164,12 @@ static std::wstring path_to_wide(const char *path)
 static std::unique_ptr<Ort::Session> load_session(const char *path)
 {
 	Ort::SessionOptions options;
-	options.SetIntraOpNumThreads(2);
-	options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
+	irlsafety_ort_session_opts ort_cfg;
+	char ep_name[32];
+
+	irlsafety_ort_default_session_opts(&ort_cfg);
+	ort_cfg.prefer_gpu = false;
+	irlsafety_ort_apply_session_opts(options, &ort_cfg, ep_name, sizeof(ep_name));
 
 #ifdef _WIN32
 	std::wstring wide = path_to_wide(path);
@@ -591,7 +596,7 @@ static void ensure_worker(void)
 	});
 }
 
-extern "C" void ocr_backend_configure_models(const char *det_path, const char *rec_path)
+extern "C" void ocr_child_configure_models(const char *det_path, const char *rec_path)
 {
 	std::lock_guard<std::mutex> lock(g_mutex);
 
@@ -618,17 +623,17 @@ extern "C" void ocr_backend_configure_models(const char *det_path, const char *r
 	try_load_model_locked();
 }
 
-extern "C" void ocr_backend_configure(const char *model_path)
+extern "C" void ocr_child_configure(const char *model_path)
 {
-	ocr_backend_configure_models(model_path, nullptr);
+	ocr_child_configure_models(model_path, nullptr);
 }
 
-extern "C" const char *ocr_backend_name(void)
+extern "C" const char *ocr_child_name(void)
 {
 	return "IRLSAFETY Child OCR (ONNX)";
 }
 
-extern "C" bool ocr_backend_available(void)
+extern "C" bool ocr_child_available(void)
 {
 	std::lock_guard<std::mutex> lock(g_mutex);
 	try_load_model_locked();
@@ -636,7 +641,7 @@ extern "C" bool ocr_backend_available(void)
 	return g_model_ready.load(std::memory_order_acquire);
 }
 
-extern "C" void ocr_backend_shutdown(void)
+extern "C" void ocr_child_shutdown(void)
 {
 	if (g_worker_running.exchange(false)) {
 		g_work_cv.notify_all();
@@ -660,18 +665,18 @@ extern "C" void ocr_backend_shutdown(void)
 	set_status("Child OCR stopped");
 }
 
-extern "C" uint32_t ocr_backend_last_error(void)
+extern "C" uint32_t ocr_child_last_error(void)
 {
 	return g_model_ready.load(std::memory_order_acquire) ? 0u : 1u;
 }
 
-extern "C" int ocr_backend_submit(const uint8_t *bgra, uint32_t width, uint32_t height, uint32_t stride,
+extern "C" int ocr_child_submit(const uint8_t *bgra, uint32_t width, uint32_t height, uint32_t stride,
 				  uint64_t *out_job_id)
 {
 	if (!bgra || width == 0 || height == 0)
 		return -1;
 
-	if (!ocr_backend_available())
+	if (!ocr_child_available())
 		return -1;
 
 	const uint64_t job_id = g_next_job_id.fetch_add(1, std::memory_order_relaxed);
@@ -698,7 +703,7 @@ extern "C" int ocr_backend_submit(const uint8_t *bgra, uint32_t width, uint32_t 
 	return 0;
 }
 
-extern "C" int ocr_backend_poll(uint64_t job_id, irlsafety_ocr_hit_list *out_hits)
+extern "C" int ocr_child_poll(uint64_t job_id, irlsafety_ocr_hit_list *out_hits)
 {
 	if (!out_hits)
 		return -1;
@@ -712,7 +717,7 @@ extern "C" int ocr_backend_poll(uint64_t job_id, irlsafety_ocr_hit_list *out_hit
 	return g_completed_job->result == 0 ? 1 : -1;
 }
 
-extern "C" int ocr_backend_recognize(const uint8_t *bgra, uint32_t width, uint32_t height, uint32_t stride,
+extern "C" int ocr_child_recognize(const uint8_t *bgra, uint32_t width, uint32_t height, uint32_t stride,
 				     irlsafety_ocr_hit_list *out_hits)
 {
 	uint64_t job_id = 0;
@@ -720,7 +725,7 @@ extern "C" int ocr_backend_recognize(const uint8_t *bgra, uint32_t width, uint32
 	if (!out_hits)
 		return -1;
 
-	if (ocr_backend_submit(bgra, width, height, stride, &job_id) != 0)
+	if (ocr_child_submit(bgra, width, height, stride, &job_id) != 0)
 		return -1;
 
 	{
@@ -737,7 +742,7 @@ extern "C" int ocr_backend_recognize(const uint8_t *bgra, uint32_t width, uint32
 	}
 }
 
-extern "C" const char *ocr_backend_status_message(void)
+extern "C" const char *ocr_child_status_message(void)
 {
 	std::lock_guard<std::mutex> lock(g_mutex);
 	return g_status;

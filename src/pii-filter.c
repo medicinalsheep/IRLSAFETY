@@ -368,6 +368,7 @@ static obs_properties_t *pii_filter_properties(void *unused)
 	obs_properties_add_text(advanced, "hybrid_delay_audio_note",
 				obs_module_text("IRLSAFETYPlus.HybridDelayAudioNote"), OBS_TEXT_INFO);
 	obs_properties_add_bool(advanced, IRLSAFETY_SET_PREFER_GPU, obs_module_text("IRLSAFETYPlus.PreferGpu"));
+	obs_properties_add_bool(advanced, IRLSAFETY_SET_USE_CHILD_OCR, obs_module_text("IRLSAFETYPlus.UseChildOcr"));
 	obs_properties_add_bool(advanced, IRLSAFETY_SET_SHOW_PREVIEW, obs_module_text("IRLSAFETYPlus.ShowPreview"));
 	obs_properties_add_bool(advanced, IRLSAFETY_SET_ENABLE_LOGGING, obs_module_text("IRLSAFETYPlus.EnableLogging"));
 	obs_properties_add_path(advanced, IRLSAFETY_SET_MODEL_PATH, obs_module_text("IRLSAFETYPlus.ModelPath"),

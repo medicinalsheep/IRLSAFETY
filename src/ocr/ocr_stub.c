@@ -5,6 +5,16 @@
 
 #include "ocr_backend.h"
 
+void ocr_backend_set_use_child(bool use_child)
+{
+	(void)use_child;
+}
+
+bool ocr_backend_using_child(void)
+{
+	return false;
+}
+
 void ocr_backend_configure(const char *model_path)
 {
 	(void)model_path;

@@ -41,6 +41,7 @@ void irlsafety_filter_settings_set_defaults(struct obs_data *settings)
 	obs_data_set_default_bool(settings, IRLSAFETY_SET_SHOW_PREVIEW, false);
 	obs_data_set_default_bool(settings, IRLSAFETY_SET_ENABLE_LOGGING, false);
 	obs_data_set_default_bool(settings, IRLSAFETY_SET_PREFER_GPU, true);
+	obs_data_set_default_bool(settings, IRLSAFETY_SET_USE_CHILD_OCR, false);
 
 	obs_data_set_default_string(settings, IRLSAFETY_SET_CUSTOM_PII_INLINE, "");
 	obs_data_set_default_string(settings, IRLSAFETY_SET_CUSTOM_PII_FILE, "");
@@ -144,6 +145,7 @@ void irlsafety_filter_settings_load(struct obs_data *settings, irlsafety_filter_
 	out->show_preview = settings_get_bool(settings, IRLSAFETY_SET_SHOW_PREVIEW, false);
 	out->enable_logging = settings_get_bool(settings, IRLSAFETY_SET_ENABLE_LOGGING, false);
 	out->prefer_gpu = settings_get_bool(settings, IRLSAFETY_SET_PREFER_GPU, true);
+	out->use_child_ocr = settings_get_bool(settings, IRLSAFETY_SET_USE_CHILD_OCR, false);
 
 	copy_string_field(out->custom_pii_inline, sizeof(out->custom_pii_inline),
 			  obs_data_get_string(settings, IRLSAFETY_SET_CUSTOM_PII_INLINE));

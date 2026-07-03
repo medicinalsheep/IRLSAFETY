@@ -248,19 +248,19 @@ static void ensure_ocr_worker(void)
 	});
 }
 
-extern "C" const char *ocr_backend_name(void)
+extern "C" const char *ocr_win_name(void)
 {
 	return "Windows OCR (local)";
 }
 
-extern "C" const char *ocr_backend_status_message(void)
+extern "C" const char *ocr_win_status_message(void)
 {
 	if (g_winrt_ready.load(std::memory_order_acquire))
 		return "Windows.Media.Ocr ready";
 	return "Windows OCR initializing or unavailable";
 }
 
-extern "C" bool ocr_backend_available(void)
+extern "C" bool ocr_win_available(void)
 {
 	ensure_ocr_worker();
 
@@ -273,18 +273,18 @@ extern "C" bool ocr_backend_available(void)
 	return g_winrt_ready.load(std::memory_order_acquire);
 }
 
-extern "C" void ocr_backend_configure(const char *model_path)
+extern "C" void ocr_win_configure(const char *model_path)
 {
 	(void)model_path;
 }
 
-extern "C" void ocr_backend_configure_models(const char *det_path, const char *rec_path)
+extern "C" void ocr_win_configure_models(const char *det_path, const char *rec_path)
 {
 	(void)det_path;
 	(void)rec_path;
 }
 
-extern "C" void ocr_backend_shutdown(void)
+extern "C" void ocr_win_shutdown(void)
 {
 	if (!g_worker_running.exchange(false))
 		return;
@@ -298,7 +298,7 @@ extern "C" void ocr_backend_shutdown(void)
 	g_completed_job.reset();
 }
 
-extern "C" uint32_t ocr_backend_last_error(void)
+extern "C" uint32_t ocr_win_last_error(void)
 {
 	return g_last_hresult.load(std::memory_order_relaxed);
 }
@@ -326,7 +326,7 @@ static int copy_pixels_to_job(OcrWorkItem &job, const uint8_t *bgra, uint32_t wi
 	return 0;
 }
 
-extern "C" int ocr_backend_submit(const uint8_t *bgra, uint32_t width, uint32_t height, uint32_t stride,
+extern "C" int ocr_win_submit(const uint8_t *bgra, uint32_t width, uint32_t height, uint32_t stride,
 				  uint64_t *out_job_id)
 {
 	if (!bgra || width == 0 || height == 0)
@@ -360,7 +360,7 @@ extern "C" int ocr_backend_submit(const uint8_t *bgra, uint32_t width, uint32_t 
 	return 0;
 }
 
-extern "C" int ocr_backend_poll(uint64_t job_id, irlsafety_ocr_hit_list *out_hits)
+extern "C" int ocr_win_poll(uint64_t job_id, irlsafety_ocr_hit_list *out_hits)
 {
 	if (!out_hits)
 		return -1;
@@ -374,7 +374,7 @@ extern "C" int ocr_backend_poll(uint64_t job_id, irlsafety_ocr_hit_list *out_hit
 	return g_completed_job->result == 0 ? 1 : -1;
 }
 
-extern "C" int ocr_backend_recognize(const uint8_t *bgra, uint32_t width, uint32_t height, uint32_t stride,
+extern "C" int ocr_win_recognize(const uint8_t *bgra, uint32_t width, uint32_t height, uint32_t stride,
 				    irlsafety_ocr_hit_list *out_hits)
 {
 	uint64_t job_id = 0;
@@ -382,7 +382,7 @@ extern "C" int ocr_backend_recognize(const uint8_t *bgra, uint32_t width, uint32
 	if (!out_hits)
 		return -1;
 
-	if (ocr_backend_submit(bgra, width, height, stride, &job_id) != 0)
+	if (ocr_win_submit(bgra, width, height, stride, &job_id) != 0)
 		return -1;
 
 	{
