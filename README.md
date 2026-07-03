@@ -75,7 +75,7 @@ Package output: `release\IRLSAFETY+-v0.7.0-win64\`
 | Stream Delay | **1.5s** baseline |
 | Escalated Secure Mode | ON |
 
-Bundled `irlsafety-detect.onnx` may still be **2-class** (plates + signs) until you retrain. See `data/models/TRAINING_SESSION.txt`.
+Bundled `irlsafety-detect.onnx` is **4-class** (plates, signs, mail, IDs) from the `irlsafety_v07` training run. See `data/models/TRAINING_SESSION.txt` to add more mail/ID frames.
 
 ---
 

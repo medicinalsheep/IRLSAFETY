@@ -39,16 +39,27 @@ $notes = @"
 ## IRLSAFETY+ $Tag
 
 ### Highlights
-- Trained detection model bundled (irlsafety-detect.onnx - US license plates + street signs)
-- OBS exit crash fix - graceful shutdown on close
-- Privacy-first defaults - solid black box, 25% overlap, lower confidence, longer hybrid delay
+- **4-class detection model** bundled (irlsafety-detect.onnx: plates, signs, mail labels, IDs)
+- **Mail & Shipping Labels** and **IDs & Licenses** categories enabled by default
+- **Angled cover** - quad-masked censor for tilted packages and OBB-trained models
+- **Training pipeline** - JWCOM2 kit scripts, real-world props, staging ingest, warm-start retrain
+- **Settings migration** - v0.7 defaults apply cleanly on upgrade
+
+### Model (irlsafety_v07)
+- 100-epoch warm-start training, mAP50 ~0.98
+- Classes: license_plate, street_sign, shipping_label, id_document
 
 ### Install
-1. Download $AssetName below
+1. Download **$AssetName** below
 2. Extract the folder
-3. Right-click install-from-package.bat and Run as administrator
+3. Right-click **install-from-package.bat** and Run as administrator
 4. Restart OBS
-5. Remove and re-add the filter on existing sources to pick up new defaults
+5. Add filter, enable categories, Control dock -> **Reload Model**
+6. Remove and re-add the filter on existing sources to pick up new defaults
+
+### Quick test
+- Hold a shipping label or ID prop to camera (see training/props/ in the package)
+- Enable **Debug Logging** - look for Object detection region hits in the log
 "@
 Set-Content -Path $notesFile -Value $notes -Encoding UTF8
 
