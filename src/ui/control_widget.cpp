@@ -343,6 +343,9 @@ QString IRLSafetyControlWidget::formatResourceLine(const irlsafety_runtime_statu
 			.arg(tier);
 	}
 
+	if (status.model_file_exists)
+		return tr("IRLSAFETYPlus.Dock.ResourceModelFound").arg(status.approx_scans_per_min).arg(tier);
+
 	return tr("IRLSAFETYPlus.Dock.ResourceNoModel").arg(status.approx_scans_per_min).arg(tier);
 }
 
