@@ -1,4 +1,4 @@
 license_plate
 street_sign
-document
-face
+shipping_label
+id_document

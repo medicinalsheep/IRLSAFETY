@@ -9,28 +9,37 @@ PRIVACY
 
 RELEASE MODEL (bundled in official packages)
 ------------------------------------------
-  irlsafety-detect.onnx   (~12 MB YOLOv8n, US plates + signs, v0.6.1+ trained weights)
+  irlsafety-detect.onnx   (~12 MB YOLOv8n)
+
+  v0.6.x bundles: US license_plate + street_sign (2 classes)
+  v0.7+ training:  4 classes — add shipping_label + id_document locally
 
 Place your model here as:
 
   irlsafety-detect.onnx
 
-Class indices:
+Class indices (v0.7 training taxonomy):
   0 = license_plate
   1 = street_sign
-  2 = document
-  3 = face
+  2 = shipping_label   (UPS, FedEx, Amazon, USPS, parcels)
+  3 = id_document      (driver license, state ID)
 
-LOCAL TRAINING (recommended)
-----------------------------
-  scripts\setup-training.ps1
-  data\models\TRAINING.txt
+LOCAL TRAINING
+--------------
+  scripts\train-model.ps1
+  scripts\train-model.ps1 -Device 0 -OBB    (angled labels)
 
-Label with LabelImg on your PC. Train with YOLOv8n. Export ONNX. Done.
+Guides:
+  TRAINING.txt           — full pipeline
+  TRAINING_SESSION.txt   — mail + ID capture checklist
+  LAPTOP_TRAINING.txt    — JWCOM2 kit + JWCOM4 RAM disk workflow
 
-CHILD OCR MODELS (optional — v0.7)
-----------------------------------
-  scripts\fetch-ocr-models.ps1   downloads irlsafety-ocr-det.onnx + irlsafety-ocr-rec.onnx
+JWCOM2 playground kit (GPU laptop):
+  X:\irlsafety-training-kit\  — START_HERE.txt, JWCOM2-RUN.txt, jwcom2-*.ps1
+
+CHILD OCR MODELS (optional)
+---------------------------
+  scripts\fetch-ocr-models.ps1
   Build with -DIRLSAFETY_OCR_BACKEND=child to use instead of Windows OCR.
 
 USER GUIDES (Control dock -> Resources)
@@ -39,10 +48,9 @@ USER GUIDES (Control dock -> Resources)
   PII_STRATEGY.txt   — cards, tracking, ID numbers, training roadmap
   PLATFORMS.txt      — OBS, Discord, Zoom, GoPro, VLC compatibility
   VIRTUAL_CAMERA.txt — protected output for non-OBS apps (planned)
-  TRAINING.txt       — train license plates + street signs locally
 
 INSTALL TO OBS
 --------------
   %ProgramFiles%\obs-studio\data\obs-plugins\irlsafety-plus\models\irlsafety-detect.onnx
 
-Enable License Plates / Street Signs in filter settings.
+Enable detection categories in filter settings, then Reload Model in Control dock.

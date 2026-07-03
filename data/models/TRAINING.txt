@@ -1,92 +1,88 @@
-IRLSAFETY+ — Train US License Plates & Street Signs (100% local)
-================================================================
+IRLSAFETY+ — Train Detection Model (100% local)
+==============================================
 
 GOAL
 ----
 Produce:  data/models/irlsafety-detect.onnx
-Classes (v0.6 release model):  0 = license_plate   1 = street_sign
-Future classes: see classes_roadmap.txt (shipping_label, payment_card, id_document)
 
-QUICK START (one command)
--------------------------
-From the repo OR after install (Control dock -> Train US Model):
+Classes (v0.7):
+  0 = license_plate
+  1 = street_sign
+  2 = shipping_label   (UPS, FedEx, Amazon, USPS, DHL, parcels, padded mailers)
+  3 = id_document      (driver license, state ID, passport page)
+
+The bundled model may only include classes 0–1 until you retrain with mail/ID frames.
+
+QUICK START
+-----------
+From the repo OR Control dock -> Train Detection Model:
 
   scripts\train-model.ps1
 
-This will:
-  1. Install Python deps (ultralytics, onnx, pillow) — local only
-  2. Download US bootstrap data if you have few labels:
-       - LISA Traffic Signs (UCSD) — typical US road signs
-       - HuggingFace license-plate boxes (optional download)
-  3. Train YOLOv8n on your PC
-  4. Export ONNX and copy to OBS models folder
+Angled labels / tilted packages (optional, better Angled Cover in OBS):
+
+  python data\training\train_irlsafety.py --training-dir <folder> --models-dir data\models --obb
 
 REQUIREMENTS
 ------------
-  - Python 3.10+ (Add to PATH during install)
+  - Python 3.10+
   - NVIDIA GPU recommended (CPU works, slower)
-  - ~2 GB disk for bootstrap data
-
-OPTIONAL: FAST TRAINING DISK
-----------------------------
-  set IRLSAFETY_TRAINING_ROOT=Z:\irlsafety-training
-  scripts\train-model.ps1
-
-  Use a local RAM disk or fast network share for datasets + runs (advanced).
+  - LabelImg for axis-aligned boxes (standard YOLO)
+  - For OBB: CVAT, Roboflow export, or any tool that outputs YOLO-OBB xywhr labels
 
 STEP BY STEP
 ------------
 1) Setup (once)
      scripts\setup-training.ps1
 
-2) Bootstrap US starter images (recommended first time)
+2) Bootstrap US starter images (plates + signs)
      scripts\fetch-us-bootstrap.ps1
 
-3) Add YOUR stream frames (critical for your camera angle)
-     OBS -> Docks -> IRLSAFETY+ Control -> Capture Frame for Training
+3) Capture YOUR frames (critical)
+     OBS -> IRLSAFETY+ Control -> Capture Frame for Training
      Saves to:  %APPDATA%\obs-studio\plugin_config\irlsafety-plus\training\images\train
 
-4) Label boxes (offline, LabelImg)
+   For mail/ID training, capture:
+     - Packages with UPS / FedEx / Amazon / USPS labels visible
+     - Driver licenses and IDs at angles you stream (tilted, hand-held)
+     - Varied lighting, distances, and backgrounds
+
+4) Label boxes (LabelImg — offline)
      scripts\label-images.ps1
 
-     Class names MUST be:
+     Class names MUST match classes.txt exactly:
        license_plate
        street_sign
+       shipping_label
+       id_document
+
+     Tips:
+       - Draw tight boxes around the full label or ID card, not the whole package
+       - Include partial labels at frame edges
+       - Label multiple carriers under shipping_label (one class for all carriers)
+       - Aim for 50+ labeled shipping_label frames and 30+ id_document frames minimum
 
 5) Train + export
      scripts\train-model.ps1
 
-6) Test in OBS
-     Enable License Plates + Street Signs
-     Control dock -> Reload Model
-     Debug Logging ON — log should show: Object detection — N region(s)
+   For angled OBB model (pairs with Angled Cover in filter settings):
+     python <plugin>\training\train_irlsafety.py --training-dir <folder> --models-dir <models> --obb --epochs 80
 
-WHY ADD YOUR OWN FRAMES?
-------------------------
-Bootstrap data teaches generic US signs/plates. Your GoPro angle, lighting,
-and state plate styles need frames from YOUR setup — capture while streaming.
+6) Test in OBS
+     Enable Mail & Shipping Labels + IDs & Licenses
+     Control dock -> Reload Model
+     Angled Cover: ON (default)
+     Debug Logging ON — log should show detection regions
 
 PRIVACY
 -------
   - No cloud training. No uploads by this plugin.
   - Bootstrap downloads public research datasets to your disk only.
-  - Do not upload stream frames to Roboflow if privacy matters.
+  - Keep training images on your PC; do not upload stream frames if privacy matters.
 
 TROUBLESHOOTING
 ---------------
-  "Not enough labeled data" -> run fetch-us-bootstrap.ps1, then label-images.ps1
-  Model loads but no detections -> add more val frames from your actual stream
-  COCO model rejected in log -> you need a CUSTOM trained onnx, not yolov8n COCO
-
-NEXT DATASETS (strategic)
--------------------------
-  shipping_label  — UPS/FedEx/USPS/Amazon labels on packages (unboxing, mail)
-  payment_card    — physical cards + on-screen card entry UIs
-  id_document     — licenses, passports, account confirmation screens
-
-  Until YOLO classes ship, enable "Sensitive Numbers" in filter categories —
-  catches cards, tracking numbers, SSN-style IDs, and long numeric sequences via OCR.
-
-  Full plan: models/PII_STRATEGY.txt
-
-Control dock buttons: Label Images | Train US Model
+  "Not enough labeled data" -> run fetch-us-bootstrap.ps1, add mail/ID captures, re-label
+  Mail/ID not detected -> bundled model is 2-class; retrain with shipping_label + id_document labels
+  Angled cover not rotating -> train with --obb and OBB-format labels
+  COCO model rejected in log -> use a CUSTOM trained onnx, not stock yolov8n COCO

@@ -32,6 +32,7 @@ struct YoloCandidate {
 	float h;
 	float confidence;
 	int class_id;
+	float angle_rad;
 };
 
 struct yolo_onnx_context {
@@ -48,6 +49,7 @@ struct yolo_onnx_context {
 	bool loaded = false;
 	bool prefer_gpu = true;
 	int num_classes = 0;
+	bool obb_mode = false;
 };
 
 static void set_status(yolo_onnx_context *ctx, const char *message)
@@ -68,10 +70,10 @@ static bool class_enabled(const irlsafety_detection_config *config, int class_id
 		return config->license_plates;
 	case IRLSAFETY_YOLO_CLASS_STREET_SIGN:
 		return config->street_signs;
-	case IRLSAFETY_YOLO_CLASS_DOCUMENT:
-		return config->documents;
-	case IRLSAFETY_YOLO_CLASS_FACE:
-		return config->faces;
+	case IRLSAFETY_YOLO_CLASS_SHIPPING_LABEL:
+		return config->shipping_labels;
+	case IRLSAFETY_YOLO_CLASS_ID_DOCUMENT:
+		return config->id_documents;
 	default:
 		return false;
 	}
@@ -201,10 +203,19 @@ int yolo_onnx_load_model(yolo_onnx_context *ctx, const char *model_path, bool pr
 			ctx->output_shape = ctx->session->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape();
 		}
 
-		if (ctx->output_shape.size() == 3 && ctx->output_shape[1] > 4)
-			ctx->num_classes = (int)ctx->output_shape[1] - 4;
-		else
+		if (ctx->output_shape.size() == 3 && ctx->output_shape[1] > 4) {
+			int channels = (int)ctx->output_shape[1];
+			if (channels == 7 || channels == 9 || channels == 11) {
+				ctx->obb_mode = true;
+				ctx->num_classes = channels - 5;
+			} else {
+				ctx->obb_mode = false;
+				ctx->num_classes = channels - 4;
+			}
+		} else {
 			ctx->num_classes = 1;
+			ctx->obb_mode = false;
+		}
 
 		ctx->input_tensor.resize(3 * IRLSAFETY_YOLO_INPUT_SIZE * IRLSAFETY_YOLO_INPUT_SIZE);
 		ctx->loaded = true;
@@ -239,7 +250,7 @@ int detect_regions(yolo_onnx_context *ctx, const irlsafety_frame_view *frame,
 
 	out_regions->count = 0;
 
-	if (!config->license_plates && !config->street_signs && !config->documents && !config->faces)
+	if (!config->license_plates && !config->street_signs && !config->shipping_labels && !config->id_documents)
 		return 0;
 
 	if (!ctx->loaded)
@@ -285,7 +296,9 @@ int detect_regions(yolo_onnx_context *ctx, const irlsafety_frame_view *frame,
 
 		int64_t channels = out_shape[1];
 		int64_t anchors = out_shape[2];
-		int num_classes = (int)channels - 4;
+		int num_classes = ctx->num_classes;
+		int angle_channel = ctx->obb_mode ? (4 + num_classes) : -1;
+
 		if (num_classes < 1)
 			return -1;
 
@@ -296,6 +309,7 @@ int detect_regions(yolo_onnx_context *ctx, const irlsafety_frame_view *frame,
 			float h = output_data[3 * anchors + i];
 			int best_class = 0;
 			float best_score = 0.0f;
+			float angle_rad = 0.0f;
 
 			for (int c = 0; c < num_classes; c++) {
 				float score = output_data[(4 + c) * anchors + i];
@@ -310,7 +324,10 @@ int detect_regions(yolo_onnx_context *ctx, const irlsafety_frame_view *frame,
 			if (!class_enabled(config, best_class))
 				continue;
 
-			candidates.push_back({cx, cy, w, h, best_score, best_class});
+			if (angle_channel >= 0)
+				angle_rad = output_data[angle_channel * anchors + i];
+
+			candidates.push_back({cx, cy, w, h, best_score, best_class, angle_rad});
 		}
 
 		nms_candidates(candidates, 0.45f);
@@ -324,13 +341,16 @@ int detect_regions(yolo_onnx_context *ctx, const irlsafety_frame_view *frame,
 			float pad_y;
 
 			yolo_unmap_box(cand.cx, cand.cy, cand.w, cand.h, &letterbox, &rect);
-			pad_x = rect.width * 0.18f;
-			pad_y = rect.height * 0.22f;
+			pad_x = rect.width * 0.05f;
+			pad_y = rect.height * 0.05f;
 			rect.x -= pad_x;
 			rect.y -= pad_y;
 			rect.width += pad_x * 2.0f;
 			rect.height += pad_y * 2.0f;
 			rect.confidence = cand.confidence;
+			rect.rotation_deg = 0.0f;
+			if (config->angled_cover && ctx->obb_mode && fabsf(cand.angle_rad) > 0.01f)
+				rect.rotation_deg = cand.angle_rad * (180.0f / 3.14159265f);
 			out_regions->regions[out_regions->count++] = rect;
 		}
 

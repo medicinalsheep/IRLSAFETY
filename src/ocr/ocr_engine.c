@@ -221,7 +221,7 @@ int ocr_regions_for_custom_pii(ocr_engine_context *ctx, const irlsafety_frame_vi
 	if (ocr_recognize_hits(ctx, frame, &hits, &scale_x, &scale_y) != 0)
 		return 0;
 
-	return irlsafety_match_custom_pii_hits(&hits, custom_pii, scale_x, scale_y, 0.0f, 0.50f, out_regions);
+	return irlsafety_match_custom_pii_hits(&hits, custom_pii, scale_x, scale_y, 0.50f, out_regions);
 }
 
 int ocr_regions(ocr_engine_context *ctx, const irlsafety_frame_view *frame, const irlsafety_region_list *hint_regions,
@@ -241,5 +241,5 @@ int ocr_regions(ocr_engine_context *ctx, const irlsafety_frame_view *frame, cons
 	if (ocr_recognize_hits(ctx, frame, &hits, &scale_x, &scale_y) != 0)
 		return 0;
 
-	return irlsafety_regions_from_screen_text_hits(&hits, scale_x, scale_y, 0.30f, out_regions);
+	return irlsafety_regions_from_screen_text_hits(&hits, scale_x, scale_y, out_regions);
 }

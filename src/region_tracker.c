@@ -136,37 +136,6 @@ void irlsafety_region_tracker_scale(irlsafety_region_tracker *tracker, uint32_t 
 	tracker->frame_height = new_height;
 }
 
-void irlsafety_regions_apply_overlap(irlsafety_region_list *regions, float overlap_ratio)
-{
-	size_t i;
-	float ratio = overlap_ratio;
-
-	if (!regions)
-		return;
-
-	if (ratio < 0.0f)
-		ratio = 0.0f;
-	if (ratio > 0.95f)
-		ratio = 0.95f;
-
-	for (i = 0; i < regions->count; i++) {
-		irlsafety_rect *rect = &regions->regions[i];
-		float pad_x = rect->width * ratio;
-		float pad_y = rect->height * ratio;
-		float angled = (rect->width > rect->height ? rect->width : rect->height) * ratio * 0.35f;
-
-		rect->x -= pad_x + angled;
-		rect->y -= pad_y + angled;
-		rect->width += (pad_x + angled) * 2.0f;
-		rect->height += (pad_y + angled) * 2.0f;
-
-		if (rect->x < 0.0f)
-			rect->x = 0.0f;
-		if (rect->y < 0.0f)
-			rect->y = 0.0f;
-	}
-}
-
 void irlsafety_region_tracker_update(irlsafety_region_tracker *tracker, const irlsafety_region_list *detected,
 				     uint32_t frame_width, uint32_t frame_height, int frames_since_update)
 {

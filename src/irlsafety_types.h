@@ -32,6 +32,8 @@ typedef struct irlsafety_rect {
 	float width;
 	float height;
 	float confidence;
+	/* Degrees clockwise from horizontal. 0 = axis-aligned box. */
+	float rotation_deg;
 } irlsafety_rect;
 
 typedef struct irlsafety_region_list {

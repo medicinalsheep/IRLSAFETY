@@ -9,11 +9,11 @@ and anything OCR can read — 100% on your PC.
 THREE LAYERS (use all three)
 ----------------------------
 1. YOLO detection (irlsafety-detect.onnx)
-   - Finds objects before OCR: license plates, street signs
+   - Finds objects before OCR: plates, signs, shipping labels, IDs (when trained)
    - Lightweight YOLOv8n (~12 MB) ships in release packages
    - Train on YOUR frames for your camera angle
 
-2. OCR + Sensitive Patterns (ON by default)
+2. OCR + Sensitive Patterns (OFF by default in v0.7 — enable in Advanced)
    - Credit cards (Luhn-valid 13–19 digit runs)
    - Shipping tracking (UPS 1Z…, USPS/FedEx long numeric, Amazon TBA…)
    - SSN-style ###-##-####
@@ -25,31 +25,27 @@ THREE LAYERS (use all three)
    - Names, emails, handles, addresses you add manually
    - Partial match + typing mode for chat overlays
 
-RELEASE MODEL (v0.6+)
----------------------
+RELEASE MODEL
+-------------
   data/models/irlsafety-detect.onnx
 
-  Bundled in official releases after training on US plates + signs.
-  ~12 MB YOLOv8n — CPU-friendly, optional GPU later.
-  Classes today: 0=license_plate  1=street_sign
+  Bundled releases may ship 2-class (plates + signs) until you retrain locally.
+  ~12 MB YOLOv8n — DirectML/CUDA on Windows when available.
 
-TRAINING ROADMAP (your next datasets)
--------------------------------------
-Phase 2 — Shipping & packaging (v0.8 model)
-  Class 2: shipping_label
-  Capture: unboxing streams, mail on desk, Amazon/UPS/FedEx labels
-  Label full label region (barcode + address block)
-  Combine with Sensitive Patterns for text OCR on labels
+TRAINING TAXONOMY (v0.7)
+--------------------------
+  0 = license_plate
+  1 = street_sign
+  2 = shipping_label   (UPS, FedEx, Amazon, USPS, mail parcels)
+  3 = id_document      (driver license, state ID)
 
-Phase 3 — Payment & identity surfaces (v0.9 model)
-  Class 3: payment_card
-  Class 4: id_document
-  Capture: wallet shots, receipts, ID cards on desk (use fake props for training)
-  Never upload real PII — blur before capture or use stock/training props
+  See TRAINING_SESSION.txt for capture checklist.
+  Use train-model.ps1 -OBB for angled label coverage (Angled Cover in filter).
 
-Phase 4 — Faces (optional)
-  Class 5: face
-  For bystanders / ID photos when you enable the category
+OPTIONAL FUTURE CLASSES
+-----------------------
+  payment_card — OCR + Sensitive Patterns often sufficient today
+  face         — optional; not in v0.7 UI
 
 See data/training/classes_roadmap.txt for LabelImg class names.
 
@@ -65,7 +61,7 @@ TUNING IN OBS
   Sensitive Patterns ON + Screen Text OFF = numbers only (less CPU)
   Sensitive Patterns ON + Screen Text ON = full desktop protection
   OCR Detail = Maximum for small receipt/label text
-  Overlay Overlap = 5–10% if digits leak at box edges
+  Angled Cover ON when using an OBB-trained model for tilted labels
 
 PRIVACY
 -------

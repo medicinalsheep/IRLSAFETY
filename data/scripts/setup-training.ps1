@@ -32,7 +32,7 @@ Write-Host "Privacy: all training stays on THIS machine." -ForegroundColor Green
 Write-Host ""
 
 foreach ($dir in @($TrainingDir, $ModelsDir)) {
-    foreach ($sub in @("images\train", "images\val", "labels\train", "labels\val", "raw")) {
+    foreach ($sub in @("images\train", "images\val", "images\staging", "labels\train", "labels\val", "labels\staging", "raw")) {
         $path = Join-Path $dir $sub
         if (-not (Test-Path $path)) {
             New-Item -ItemType Directory -Path $path -Force | Out-Null
@@ -42,7 +42,7 @@ foreach ($dir in @($TrainingDir, $ModelsDir)) {
 }
 
 if ((Test-Path (Join-Path (Split-Path $PluginRoot -Parent) "CMakeLists.txt")) -and $RepoTraining) {
-    foreach ($sub in @("images\train", "images\val", "labels\train", "labels\val", "raw")) {
+    foreach ($sub in @("images\train", "images\val", "images\staging", "labels\train", "labels\val", "labels\staging", "raw")) {
         $path = Join-Path $RepoTraining $sub
         if (-not (Test-Path $path)) { New-Item -ItemType Directory -Path $path -Force | Out-Null }
     }

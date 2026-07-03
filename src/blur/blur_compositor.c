@@ -6,6 +6,7 @@
 #include "blur_compositor.h"
 
 #include "../frame_sample.h"
+#include "../irlsafety_geometry.h"
 #include "overlay_image.h"
 
 #include <math.h>
@@ -40,6 +41,107 @@ static void clamp_rect(irlsafety_rect *rect, uint32_t frame_w, uint32_t frame_h)
 		rect->width = 1.0f;
 	if (rect->height < 1.0f)
 		rect->height = 1.0f;
+}
+
+typedef enum irlsafety_fill_shape {
+	IRLSAFETY_FILL_RECT = 0,
+	IRLSAFETY_FILL_ELLIPSE = 1,
+	IRLSAFETY_FILL_CLOUD = 2,
+} irlsafety_fill_shape;
+
+typedef struct cloud_blob {
+	float cx;
+	float cy;
+	float radius;
+} cloud_blob;
+
+static const cloud_blob k_cloud_blobs[] = {
+	{0.34f, 0.58f, 0.30f}, {0.52f, 0.50f, 0.36f}, {0.70f, 0.56f, 0.28f},
+	{0.46f, 0.70f, 0.30f}, {0.26f, 0.64f, 0.22f}, {0.60f, 0.34f, 0.24f},
+};
+
+static bool point_in_cloud(float nx, float ny)
+{
+	size_t i;
+
+	for (i = 0; i < sizeof(k_cloud_blobs) / sizeof(k_cloud_blobs[0]); i++) {
+		float dx = nx - k_cloud_blobs[i].cx;
+		float dy = ny - k_cloud_blobs[i].cy;
+		float r = k_cloud_blobs[i].radius;
+
+		if ((dx * dx + dy * dy) <= (r * r))
+			return true;
+	}
+
+	return false;
+}
+
+static bool point_in_shape(float fx, float fy, const irlsafety_rect *rect, irlsafety_fill_shape shape)
+{
+	float corners[8];
+	float cx = rect->x + rect->width * 0.5f;
+	float cy = rect->y + rect->height * 0.5f;
+	float rx = rect->width * 0.5f;
+	float ry = rect->height * 0.5f;
+
+	if (irlsafety_rect_has_rotation(rect)) {
+		irlsafety_rect_corners(rect, corners);
+		return irlsafety_point_in_quad(fx, fy, corners);
+	}
+
+	if (shape == IRLSAFETY_FILL_RECT)
+		return true;
+
+	if (rx < 1.0f)
+		rx = 1.0f;
+	if (ry < 1.0f)
+		ry = 1.0f;
+
+	if (shape == IRLSAFETY_FILL_ELLIPSE) {
+		float dx = (fx - cx) / rx;
+		float dy = (fy - cy) / ry;
+		return (dx * dx + dy * dy) <= 1.0f;
+	}
+
+	if (rect->width > 0.0f && rect->height > 0.0f) {
+		float nx = (fx - rect->x) / rect->width;
+		float ny = (fy - rect->y) / rect->height;
+		return point_in_cloud(nx, ny);
+	}
+
+	return false;
+}
+
+static void rect_iteration_bounds(const irlsafety_rect *rect, uint32_t frame_w, uint32_t frame_h, uint32_t *x0,
+				  uint32_t *y0, uint32_t *x1, uint32_t *y1)
+{
+	float bounds_x;
+	float bounds_y;
+	float bounds_w;
+	float bounds_h;
+	float corners[8];
+
+	if (!rect || !x0 || !y0 || !x1 || !y1)
+		return;
+
+	if (irlsafety_rect_has_rotation(rect)) {
+		irlsafety_rect_corners(rect, corners);
+		irlsafety_quad_bounds(corners, &bounds_x, &bounds_y, &bounds_w, &bounds_h);
+		*x0 = (uint32_t)bounds_x;
+		*y0 = (uint32_t)bounds_y;
+		*x1 = *x0 + (uint32_t)bounds_w + 1u;
+		*y1 = *y0 + (uint32_t)bounds_h + 1u;
+	} else {
+		*x0 = (uint32_t)rect->x;
+		*y0 = (uint32_t)rect->y;
+		*x1 = *x0 + (uint32_t)rect->width;
+		*y1 = *y0 + (uint32_t)rect->height;
+	}
+
+	if (*x1 > frame_w)
+		*x1 = frame_w;
+	if (*y1 > frame_h)
+		*y1 = frame_h;
 }
 
 /* OBS color: AARRGGBB in hex, stored as little-endian bytes (vec4_from_rgba). */
@@ -82,13 +184,14 @@ static void rgb_to_yuv(uint8_t r, uint8_t g, uint8_t b, uint8_t *y, uint8_t *u, 
 }
 
 static void box_blur_plane(uint8_t *plane, uint32_t linesize, uint32_t frame_w, uint32_t frame_h, uint32_t x, uint32_t y,
-			   uint32_t w, uint32_t h, int radius)
+			   uint32_t w, uint32_t h, int radius, const irlsafety_rect *shape, float scale_x, float scale_y)
 {
 	uint32_t x0 = x;
 	uint32_t y0 = y;
 	uint32_t x1 = x + w;
 	uint32_t y1 = y + h;
 	uint8_t *tmp;
+	bool use_mask = shape && irlsafety_rect_has_rotation(shape);
 
 	if (x1 > frame_w)
 		x1 = frame_w;
@@ -105,6 +208,13 @@ static void box_blur_plane(uint8_t *plane, uint32_t linesize, uint32_t frame_w, 
 		for (uint32_t col = x0; col < x1; col++) {
 			int sum = 0;
 			int count = 0;
+
+			if (use_mask) {
+				float fx = ((float)col + 0.5f) * scale_x;
+				float fy = ((float)row + 0.5f) * scale_y;
+				if (!point_in_shape(fx, fy, shape, IRLSAFETY_FILL_RECT))
+					continue;
+			}
 
 			for (int ky = -(int)radius; ky <= radius; ky++) {
 				int sy = (int)row + ky;
@@ -123,13 +233,23 @@ static void box_blur_plane(uint8_t *plane, uint32_t linesize, uint32_t frame_w, 
 		}
 	}
 
-	for (uint32_t row = y0; row < y1; row++)
-		memcpy(plane + row * linesize + x0, tmp + (row - y0) * (x1 - x0), x1 - x0);
+	for (uint32_t row = y0; row < y1; row++) {
+		for (uint32_t col = x0; col < x1; col++) {
+			if (use_mask) {
+				float fx = ((float)col + 0.5f) * scale_x;
+				float fy = ((float)row + 0.5f) * scale_y;
+				if (!point_in_shape(fx, fy, shape, IRLSAFETY_FILL_RECT))
+					continue;
+			}
+			plane[row * linesize + col] = tmp[(row - y0) * (x1 - x0) + (col - x0)];
+		}
+	}
 
 	free(tmp);
 }
 
-static void blur_rect_bgra(irlsafety_frame_view *frame, const irlsafety_rect *rect, int radius)
+static void blur_rect_bgra(irlsafety_frame_view *frame, const irlsafety_rect *rect, const irlsafety_rect *shape,
+			   int radius)
 {
 	uint32_t x = (uint32_t)rect->x;
 	uint32_t y = (uint32_t)rect->y;
@@ -141,6 +261,9 @@ static void blur_rect_bgra(irlsafety_frame_view *frame, const irlsafety_rect *re
 	for (uint32_t row = y; row < y + h && row < frame->height; row++) {
 		for (int pass = 0; pass < 3; pass++) {
 			for (uint32_t col = x; col < x + w && col < frame->width; col++) {
+				if (shape && !point_in_shape((float)col + 0.5f, (float)row + 0.5f, shape,
+							     IRLSAFETY_FILL_RECT))
+					continue;
 				int sum = 0;
 				int count = 0;
 				for (int ky = -radius; ky <= radius; ky++) {
@@ -181,7 +304,8 @@ static void fill_pixel_rgba(uint8_t *plane, uint32_t linesize, uint32_t x, uint3
 	px[3] = a;
 }
 
-static void blur_rect_rgba(irlsafety_frame_view *frame, const irlsafety_rect *rect, int radius)
+static void blur_rect_rgba(irlsafety_frame_view *frame, const irlsafety_rect *rect, const irlsafety_rect *shape,
+			   int radius)
 {
 	uint32_t x = (uint32_t)rect->x;
 	uint32_t y = (uint32_t)rect->y;
@@ -193,6 +317,9 @@ static void blur_rect_rgba(irlsafety_frame_view *frame, const irlsafety_rect *re
 	for (uint32_t row = y; row < y + h && row < frame->height; row++) {
 		for (int pass = 0; pass < 3; pass++) {
 			for (uint32_t col = x; col < x + w && col < frame->width; col++) {
+				if (shape && !point_in_shape((float)col + 0.5f, (float)row + 0.5f, shape,
+							     IRLSAFETY_FILL_RECT))
+					continue;
 				int sum = 0;
 				int count = 0;
 				for (int ky = -radius; ky <= radius; ky++) {
@@ -213,81 +340,32 @@ static void blur_rect_rgba(irlsafety_frame_view *frame, const irlsafety_rect *re
 	}
 }
 
-typedef enum irlsafety_fill_shape {
-	IRLSAFETY_FILL_RECT = 0,
-	IRLSAFETY_FILL_ELLIPSE = 1,
-	IRLSAFETY_FILL_CLOUD = 2,
-} irlsafety_fill_shape;
-
-typedef struct cloud_blob {
-	float cx;
-	float cy;
-	float radius;
-} cloud_blob;
-
-static const cloud_blob k_cloud_blobs[] = {
-	{0.34f, 0.58f, 0.30f}, {0.52f, 0.50f, 0.36f}, {0.70f, 0.56f, 0.28f},
-	{0.46f, 0.70f, 0.30f}, {0.26f, 0.64f, 0.22f}, {0.60f, 0.34f, 0.24f},
-};
-
-static bool point_in_cloud(float nx, float ny)
-{
-	size_t i;
-
-	for (i = 0; i < sizeof(k_cloud_blobs) / sizeof(k_cloud_blobs[0]); i++) {
-		float dx = nx - k_cloud_blobs[i].cx;
-		float dy = ny - k_cloud_blobs[i].cy;
-		float r = k_cloud_blobs[i].radius;
-
-		if ((dx * dx + dy * dy) <= (r * r))
-			return true;
-	}
-
-	return false;
-}
-
-static bool point_in_shape(float fx, float fy, const irlsafety_rect *rect, irlsafety_fill_shape shape)
-{
-	float cx = rect->x + rect->width * 0.5f;
-	float cy = rect->y + rect->height * 0.5f;
-	float rx = rect->width * 0.5f;
-	float ry = rect->height * 0.5f;
-
-	if (shape == IRLSAFETY_FILL_RECT)
-		return true;
-
-	if (rx < 1.0f)
-		rx = 1.0f;
-	if (ry < 1.0f)
-		ry = 1.0f;
-
-	if (shape == IRLSAFETY_FILL_ELLIPSE) {
-		float dx = (fx - cx) / rx;
-		float dy = (fy - cy) / ry;
-		return (dx * dx + dy * dy) <= 1.0f;
-	}
-
-	if (rect->width > 0.0f && rect->height > 0.0f) {
-		float nx = (fx - rect->x) / rect->width;
-		float ny = (fy - rect->y) / rect->height;
-		return point_in_cloud(nx, ny);
-	}
-
-	return false;
-}
-
 static void fill_rect_packed(irlsafety_frame_view *frame, const irlsafety_rect *rect, uint32_t color,
 			     irlsafety_fill_shape shape, bool rgba_order)
 {
 	uint8_t r, g, b, a;
 	uint32_t x0, y0, x1, y1;
+	float bounds_x;
+	float bounds_y;
+	float bounds_w;
+	float bounds_h;
+	float corners[8];
 
 	color_bytes_from_obs(color, &r, &g, &b, &a);
 
-	x0 = (uint32_t)rect->x;
-	y0 = (uint32_t)rect->y;
-	x1 = x0 + (uint32_t)rect->width;
-	y1 = y0 + (uint32_t)rect->height;
+	if (irlsafety_rect_has_rotation(rect)) {
+		irlsafety_rect_corners(rect, corners);
+		irlsafety_quad_bounds(corners, &bounds_x, &bounds_y, &bounds_w, &bounds_h);
+		x0 = (uint32_t)bounds_x;
+		y0 = (uint32_t)bounds_y;
+		x1 = x0 + (uint32_t)bounds_w + 1u;
+		y1 = y0 + (uint32_t)bounds_h + 1u;
+	} else {
+		x0 = (uint32_t)rect->x;
+		y0 = (uint32_t)rect->y;
+		x1 = x0 + (uint32_t)rect->width;
+		y1 = y0 + (uint32_t)rect->height;
+	}
 	if (x1 > frame->width)
 		x1 = frame->width;
 	if (y1 > frame->height)
@@ -347,20 +425,19 @@ static void fill_rect_i420(irlsafety_frame_view *frame, const irlsafety_rect *re
 			   irlsafety_fill_shape shape)
 {
 	uint8_t b, g, r, a, y, u, v;
+	uint32_t x0, y0, x1, y1;
 
 	color_bytes_from_obs(color, &r, &g, &b, &a);
 	rgb_to_yuv(r, g, b, &y, &u, &v);
 
-	fill_rect_yuv_plane(frame->planes[0], frame->linesize[0], frame->width, frame->height, (uint32_t)rect->x,
-			    (uint32_t)rect->y, (uint32_t)rect->width, (uint32_t)rect->height, y, rect, shape, 1.0f,
-			    1.0f);
+	rect_iteration_bounds(rect, frame->width, frame->height, &x0, &y0, &x1, &y1);
+	fill_rect_yuv_plane(frame->planes[0], frame->linesize[0], frame->width, frame->height, x0, y0, x1 - x0,
+			    y1 - y0, y, rect, shape, 1.0f, 1.0f);
 	if (frame->plane_count >= 3) {
-		fill_rect_yuv_plane(frame->planes[1], frame->linesize[1], frame->width / 2, frame->height / 2,
-				    (uint32_t)rect->x / 2, (uint32_t)rect->y / 2, (uint32_t)rect->width / 2,
-				    (uint32_t)rect->height / 2, u, rect, shape, 2.0f, 2.0f);
-		fill_rect_yuv_plane(frame->planes[2], frame->linesize[2], frame->width / 2, frame->height / 2,
-				    (uint32_t)rect->x / 2, (uint32_t)rect->y / 2, (uint32_t)rect->width / 2,
-				    (uint32_t)rect->height / 2, v, rect, shape, 2.0f, 2.0f);
+		fill_rect_yuv_plane(frame->planes[1], frame->linesize[1], frame->width / 2, frame->height / 2, x0 / 2,
+				    y0 / 2, (x1 - x0) / 2, (y1 - y0) / 2, u, rect, shape, 2.0f, 2.0f);
+		fill_rect_yuv_plane(frame->planes[2], frame->linesize[2], frame->width / 2, frame->height / 2, x0 / 2,
+				    y0 / 2, (x1 - x0) / 2, (y1 - y0) / 2, v, rect, shape, 2.0f, 2.0f);
 	}
 }
 
@@ -373,14 +450,7 @@ static void fill_rect_packed_yuv(irlsafety_frame_view *frame, const irlsafety_re
 	color_bytes_from_obs(color, &r, &g, &b, &a);
 	irlsafety_rgb_to_yuv601(r, g, b, &y, &u, &v);
 
-	x0 = (uint32_t)rect->x;
-	y0 = (uint32_t)rect->y;
-	x1 = x0 + (uint32_t)rect->width;
-	y1 = y0 + (uint32_t)rect->height;
-	if (x1 > frame->width)
-		x1 = frame->width;
-	if (y1 > frame->height)
-		y1 = frame->height;
+	rect_iteration_bounds(rect, frame->width, frame->height, &x0, &y0, &x1, &y1);
 
 	for (uint32_t row = y0; row < y1; row++) {
 		uint8_t *line = frame->planes[0] + row * frame->linesize[0];
@@ -396,7 +466,8 @@ static void fill_rect_packed_yuv(irlsafety_frame_view *frame, const irlsafety_re
 	}
 }
 
-static void blur_rect_packed_yuv(irlsafety_frame_view *frame, const irlsafety_rect *rect, int radius, bool uyvy)
+static void blur_rect_packed_yuv(irlsafety_frame_view *frame, const irlsafety_rect *rect, const irlsafety_rect *shape,
+				 int radius, bool uyvy)
 {
 	uint32_t x0 = (uint32_t)rect->x;
 	uint32_t y0 = (uint32_t)rect->y;
@@ -435,6 +506,10 @@ static void blur_rect_packed_yuv(irlsafety_frame_view *frame, const irlsafety_re
 			int sum = 0;
 			int count = 0;
 
+			if (shape && !point_in_shape((float)x0 + (float)col + 0.5f, (float)y0 + (float)row + 0.5f, shape,
+						     IRLSAFETY_FILL_RECT))
+				continue;
+
 			for (int ky = -radius; ky <= radius; ky++) {
 				int sy = (int)row + ky;
 				if (sy < 0 || sy >= (int)rh)
@@ -456,8 +531,12 @@ static void blur_rect_packed_yuv(irlsafety_frame_view *frame, const irlsafety_re
 		uint8_t *line = frame->planes[0] + row * frame->linesize[0];
 
 		for (uint32_t col = x0; col < x1; col++) {
-			uint8_t y_val = tmp[(row - y0) * rw + (col - x0)];
+			uint8_t y_val;
 
+			if (shape && !point_in_shape((float)col + 0.5f, (float)row + 0.5f, shape, IRLSAFETY_FILL_RECT))
+				continue;
+
+			y_val = tmp[(row - y0) * rw + (col - x0)];
 			if (uyvy)
 				irlsafety_uyvy_write_pixel(line, col, y_val, 128, 128);
 			else
@@ -476,14 +555,16 @@ static void fill_rect_nv12(irlsafety_frame_view *frame, const irlsafety_rect *re
 	color_bytes_from_obs(color, &r, &g, &b, &a);
 	rgb_to_yuv(r, g, b, &y, &u, &v);
 
-	fill_rect_yuv_plane(frame->planes[0], frame->linesize[0], frame->width, frame->height, (uint32_t)rect->x,
-			    (uint32_t)rect->y, (uint32_t)rect->width, (uint32_t)rect->height, y, rect, shape, 1.0f,
-			    1.0f);
+	uint32_t x0, y0, x1, y1;
+
+	rect_iteration_bounds(rect, frame->width, frame->height, &x0, &y0, &x1, &y1);
+	fill_rect_yuv_plane(frame->planes[0], frame->linesize[0], frame->width, frame->height, x0, y0, x1 - x0,
+			    y1 - y0, y, rect, shape, 1.0f, 1.0f);
 	if (frame->plane_count >= 2) {
-		uint32_t x0 = (uint32_t)rect->x & ~1u;
-		uint32_t y0 = (uint32_t)rect->y & ~1u;
-		uint32_t x1 = (x0 + (uint32_t)rect->width + 1u) & ~1u;
-		uint32_t y1 = (y0 + (uint32_t)rect->height + 1u) & ~1u;
+		x0 &= ~1u;
+		y0 &= ~1u;
+		x1 = (x1 + 1u) & ~1u;
+		y1 = (y1 + 1u) & ~1u;
 
 		for (uint32_t row = y0 / 2; row < y1 / 2 && row < frame->height / 2; row++) {
 			for (uint32_t col = x0 / 2; col < x1 / 2 && col < frame->width / 2; col++) {
@@ -499,6 +580,28 @@ static void fill_rect_nv12(irlsafety_frame_view *frame, const irlsafety_rect *re
 	}
 }
 
+static void draw_line_bgra(uint8_t *plane, uint32_t linesize, uint32_t frame_w, uint32_t frame_h, float x0, float y0,
+			 float x1, float y1, const uint8_t *color)
+{
+	float dx = x1 - x0;
+	float dy = y1 - y0;
+	float steps = fabsf(dx) > fabsf(dy) ? fabsf(dx) : fabsf(dy);
+	uint32_t i;
+
+	if (steps < 1.0f)
+		steps = 1.0f;
+
+	for (i = 0; i <= (uint32_t)steps; i++) {
+		float t = (float)i / steps;
+		uint32_t x = (uint32_t)(x0 + dx * t);
+		uint32_t y = (uint32_t)(y0 + dy * t);
+
+		if (x >= frame_w || y >= frame_h)
+			continue;
+		memcpy(plane + y * linesize + x * 4, color, 4);
+	}
+}
+
 static void draw_preview_outline(irlsafety_frame_view *frame, const irlsafety_rect *rect)
 {
 	uint32_t x0 = (uint32_t)rect->x;
@@ -508,6 +611,23 @@ static void draw_preview_outline(irlsafety_frame_view *frame, const irlsafety_re
 	const uint8_t outline_bgra[4] = {0, 255, 0, 255};
 	const uint8_t outline_rgba[4] = {0, 255, 0, 255};
 	const uint8_t *outline = (frame->format == IRLSAFETY_FORMAT_RGBA) ? outline_rgba : outline_bgra;
+	float corners[8];
+	size_t edge;
+
+	if (irlsafety_rect_has_rotation(rect)) {
+		if (frame->format != IRLSAFETY_FORMAT_RGBA && frame->format != IRLSAFETY_FORMAT_BGRA &&
+		    frame->format != IRLSAFETY_FORMAT_BGRX)
+			return;
+
+		irlsafety_rect_corners(rect, corners);
+		for (edge = 0; edge < 4; edge++) {
+			size_t next = (edge + 1) % 4;
+			draw_line_bgra(frame->planes[0], frame->linesize[0], frame->width, frame->height,
+				       corners[edge * 2], corners[edge * 2 + 1], corners[next * 2],
+				       corners[next * 2 + 1], outline);
+		}
+		return;
+	}
 
 	if (x1 > frame->width)
 		x1 = frame->width;
@@ -539,47 +659,58 @@ static void draw_preview_outline(irlsafety_frame_view *frame, const irlsafety_re
 static void blur_region(irlsafety_frame_view *frame, const irlsafety_rect *region, int radius)
 {
 	irlsafety_rect rect = *region;
+	const irlsafety_rect *shape = NULL;
+	float corners[8];
+
+	if (irlsafety_rect_has_rotation(region)) {
+		irlsafety_rect_corners(region, corners);
+		irlsafety_quad_bounds(corners, &rect.x, &rect.y, &rect.width, &rect.height);
+		shape = region;
+	}
 
 	clamp_rect(&rect, frame->width, frame->height);
 
 	switch (frame->format) {
 	case IRLSAFETY_FORMAT_RGBA:
-		blur_rect_rgba(frame, &rect, radius);
+		blur_rect_rgba(frame, &rect, shape, radius);
 		break;
 	case IRLSAFETY_FORMAT_BGRA:
 	case IRLSAFETY_FORMAT_BGRX:
-		blur_rect_bgra(frame, &rect, radius);
+		blur_rect_bgra(frame, &rect, shape, radius);
 		break;
 	case IRLSAFETY_FORMAT_I420:
 		box_blur_plane(frame->planes[0], frame->linesize[0], frame->width, frame->height, (uint32_t)rect.x,
-			       (uint32_t)rect.y, (uint32_t)rect.width, (uint32_t)rect.height, radius);
+			       (uint32_t)rect.y, (uint32_t)rect.width, (uint32_t)rect.height, radius, shape, 1.0f,
+			       1.0f);
 		if (frame->plane_count >= 3) {
 			box_blur_plane(frame->planes[1], frame->linesize[1], frame->width / 2, frame->height / 2,
 				       (uint32_t)rect.x / 2, (uint32_t)rect.y / 2, (uint32_t)rect.width / 2,
-				       (uint32_t)rect.height / 2, radius / 2);
+				       (uint32_t)rect.height / 2, radius / 2, shape, 2.0f, 2.0f);
 			box_blur_plane(frame->planes[2], frame->linesize[2], frame->width / 2, frame->height / 2,
 				       (uint32_t)rect.x / 2, (uint32_t)rect.y / 2, (uint32_t)rect.width / 2,
-				       (uint32_t)rect.height / 2, radius / 2);
+				       (uint32_t)rect.height / 2, radius / 2, shape, 2.0f, 2.0f);
 		}
 		break;
 	case IRLSAFETY_FORMAT_NV12:
 		box_blur_plane(frame->planes[0], frame->linesize[0], frame->width, frame->height, (uint32_t)rect.x,
-			       (uint32_t)rect.y, (uint32_t)rect.width, (uint32_t)rect.height, radius);
+			       (uint32_t)rect.y, (uint32_t)rect.width, (uint32_t)rect.height, radius, shape, 1.0f,
+			       1.0f);
 		if (frame->plane_count >= 2) {
 			box_blur_plane(frame->planes[1], frame->linesize[1], frame->width, frame->height / 2,
 				       (uint32_t)rect.x, (uint32_t)rect.y / 2, (uint32_t)rect.width,
-				       (uint32_t)rect.height / 2, radius / 2);
+				       (uint32_t)rect.height / 2, radius / 2, shape, 1.0f, 2.0f);
 		}
 		break;
 	case IRLSAFETY_FORMAT_YUY2:
-		blur_rect_packed_yuv(frame, &rect, radius, false);
+		blur_rect_packed_yuv(frame, &rect, shape, radius, false);
 		break;
 	case IRLSAFETY_FORMAT_UYVY:
-		blur_rect_packed_yuv(frame, &rect, radius, true);
+		blur_rect_packed_yuv(frame, &rect, shape, radius, true);
 		break;
 	default:
 		box_blur_plane(frame->planes[0], frame->linesize[0], frame->width, frame->height, (uint32_t)rect.x,
-			       (uint32_t)rect.y, (uint32_t)rect.width, (uint32_t)rect.height, radius);
+			       (uint32_t)rect.y, (uint32_t)rect.width, (uint32_t)rect.height, radius, shape, 1.0f,
+			       1.0f);
 		break;
 	}
 }

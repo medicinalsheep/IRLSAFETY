@@ -5,6 +5,7 @@ set(_irlsafety_core_sources
     ../src/filter_settings.c
     ../src/custom_pii.c
     ../src/irlsafety_types.c
+    ../src/irlsafety_geometry.c
     ../src/irlsafety_paths.c
     ../src/irlsafety_shutdown.c
     ../src/frame_sample.c

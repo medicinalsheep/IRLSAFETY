@@ -262,28 +262,7 @@ bool irlsafety_text_has_sensitive_pattern(const char *text)
 	return irlsafety_sensitive_pattern_classify(text) != IRLSAFETY_PATTERN_NONE;
 }
 
-static void expand_rect(irlsafety_rect *rect, float overlap_ratio)
-{
-	float pad_x;
-	float pad_y;
-
-	if (!rect || overlap_ratio <= 0.0f)
-		return;
-
-	pad_x = rect->width * overlap_ratio;
-	pad_y = rect->height * overlap_ratio;
-	rect->x -= pad_x * 0.5f;
-	rect->y -= pad_y * 0.5f;
-	rect->width += pad_x;
-	rect->height += pad_y;
-
-	if (rect->width < IRLSAFETY_MIN_REGION_PX)
-		rect->width = IRLSAFETY_MIN_REGION_PX;
-	if (rect->height < IRLSAFETY_MIN_REGION_PX)
-		rect->height = IRLSAFETY_MIN_REGION_PX;
-}
-
-static void add_hit_region(const irlsafety_ocr_hit *hit, float scale_x, float scale_y, float overlap_ratio,
+static void add_hit_region(const irlsafety_ocr_hit *hit, float scale_x, float scale_y,
 			   irlsafety_region_list *out_regions)
 {
 	irlsafety_rect rect;
@@ -297,12 +276,11 @@ static void add_hit_region(const irlsafety_ocr_hit *hit, float scale_x, float sc
 	rect.height = hit->height * scale_y;
 	rect.confidence = 1.0f;
 
-	expand_rect(&rect, overlap_ratio);
 	out_regions->regions[out_regions->count++] = rect;
 }
 
 int irlsafety_match_sensitive_pattern_hits(const irlsafety_ocr_hit_list *hits, float scale_x, float scale_y,
-					   float overlay_overlap, irlsafety_region_list *out_regions)
+					   irlsafety_region_list *out_regions)
 {
 	size_t i;
 
@@ -318,7 +296,7 @@ int irlsafety_match_sensitive_pattern_hits(const irlsafety_ocr_hit_list *hits, f
 		if (!irlsafety_text_has_sensitive_pattern(hit->text))
 			continue;
 
-		add_hit_region(hit, scale_x, scale_y, overlay_overlap, out_regions);
+		add_hit_region(hit, scale_x, scale_y, out_regions);
 	}
 
 	return 0;

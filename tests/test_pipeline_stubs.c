@@ -15,6 +15,8 @@
 #include "pipeline.h"
 #include "hybrid_delay.h"
 #include "region_tracker.h"
+#include "irlsafety_geometry.h"
+#include "obs-mock.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -70,7 +72,7 @@ static int test_match_email_line_hit(void)
 	strcpy(pii.entries[0], "user@example.com");
 	pii.count = 1;
 
-	TEST_ASSERT(irlsafety_match_custom_pii_hits(&hits, &pii, 1.0f, 1.0f, 0.30f, 1.0f, &regions) == 0);
+	TEST_ASSERT(irlsafety_match_custom_pii_hits(&hits, &pii, 1.0f, 1.0f, 1.0f, &regions) == 0);
 	TEST_ASSERT(regions.count == 1);
 	return 0;
 }
@@ -97,7 +99,7 @@ static int test_cover_while_typing(void)
 	hits.count = 1;
 
 	TEST_ASSERT(irlsafety_filter_effective_partial_threshold(&settings) <= 0.02f);
-	TEST_ASSERT(irlsafety_match_custom_pii_hits(&hits, &pii, 1.0f, 1.0f, 0.30f,
+	TEST_ASSERT(irlsafety_match_custom_pii_hits(&hits, &pii, 1.0f, 1.0f,
 						    irlsafety_filter_effective_partial_threshold(&settings),
 						    &regions) == 0);
 	TEST_ASSERT(regions.count == 1);
@@ -121,14 +123,14 @@ static int test_partial_pii_threshold(void)
 	hits.count = 1;
 
 	TEST_ASSERT(irlsafety_keyword_coverage_ratio(hits.hits[0].text, pii.entries[0]) >= 0.50f);
-	TEST_ASSERT(irlsafety_match_custom_pii_hits(&hits, &pii, 1.0f, 1.0f, 0.0f, 0.50f, &regions) == 0);
+	TEST_ASSERT(irlsafety_match_custom_pii_hits(&hits, &pii, 1.0f, 1.0f, 0.50f, &regions) == 0);
 	TEST_ASSERT(regions.count == 1);
 	TEST_ASSERT(regions.regions[0].width > 70.0f);
 
 	strcpy(hits.hits[0].text, "John");
 	regions.count = 0;
 	TEST_ASSERT(irlsafety_keyword_coverage_ratio(hits.hits[0].text, pii.entries[0]) < 0.50f);
-	TEST_ASSERT(irlsafety_match_custom_pii_hits(&hits, &pii, 1.0f, 1.0f, 0.0f, 0.50f, &regions) == 0);
+	TEST_ASSERT(irlsafety_match_custom_pii_hits(&hits, &pii, 1.0f, 1.0f, 0.50f, &regions) == 0);
 	TEST_ASSERT(regions.count == 0);
 	return 0;
 }
@@ -149,7 +151,7 @@ static int test_match_custom_pii_hits(void)
 	strcpy(pii.entries[0], "John Smith");
 	pii.count = 1;
 
-	TEST_ASSERT(irlsafety_match_custom_pii_hits(&hits, &pii, 1.0f, 1.0f, 0.30f, 1.0f, &regions) == 0);
+	TEST_ASSERT(irlsafety_match_custom_pii_hits(&hits, &pii, 1.0f, 1.0f, 1.0f, &regions) == 0);
 	TEST_ASSERT(regions.count == 1);
 	TEST_ASSERT(regions.regions[0].width > 80.0f);
 	return 0;
@@ -311,7 +313,7 @@ static int test_sensitive_patterns(void)
 	hits.hits[0].height = 20.0f;
 	hits.count = 1;
 
-	TEST_ASSERT(irlsafety_match_sensitive_pattern_hits(&hits, 1.0f, 1.0f, 0.0f, &regions) == 0);
+	TEST_ASSERT(irlsafety_match_sensitive_pattern_hits(&hits, 1.0f, 1.0f, &regions) == 0);
 	TEST_ASSERT(regions.count == 1);
 	return 0;
 }
@@ -352,8 +354,49 @@ static int test_yuy2_frame_read_and_censor(void)
 	return 0;
 }
 
+static int test_settings_migration_v07(void)
+{
+	obs_data_t *settings = obs_data_create();
+	irlsafety_filter_settings loaded;
+
+	obs_data_set_bool(settings, IRLSAFETY_SET_ENABLE_ALL, true);
+	obs_data_set_bool(settings, IRLSAFETY_SET_CAT_LICENSE_PLATES, true);
+	obs_data_set_bool(settings, IRLSAFETY_SET_CAT_STREET_SIGNS, false);
+
+	irlsafety_filter_settings_load(settings, &loaded);
+	TEST_ASSERT(loaded.cat_shipping_labels == true);
+	TEST_ASSERT(loaded.cat_id_documents == true);
+	TEST_ASSERT(loaded.angled_cover == true);
+	TEST_ASSERT(loaded.cat_sensitive_patterns == false);
+	TEST_ASSERT(loaded.cat_street_signs == false);
+
+	obs_data_set_bool(settings, IRLSAFETY_SET_CAT_DOCUMENTS, true);
+	irlsafety_filter_settings_load(settings, &loaded);
+	TEST_ASSERT(loaded.cat_id_documents == true);
+	TEST_ASSERT(loaded.cat_shipping_labels == true);
+
+	obs_data_release(settings);
+	return 0;
+}
+
+static int test_geometry_quad(void)
+{
+	irlsafety_rect rect = {.x = 10.0f, .y = 20.0f, .width = 100.0f, .height = 40.0f, .rotation_deg = 30.0f};
+	float corners[8];
+
+	irlsafety_rect_corners(&rect, corners);
+	TEST_ASSERT(irlsafety_rect_has_rotation(&rect) == true);
+	TEST_ASSERT(irlsafety_point_in_quad(60.0f, 40.0f, corners) == true);
+	TEST_ASSERT(irlsafety_point_in_quad(5.0f, 5.0f, corners) == false);
+	return 0;
+}
+
 int main(void)
 {
+	if (test_settings_migration_v07() != 0)
+		return 1;
+	if (test_geometry_quad() != 0)
+		return 1;
 	if (test_yuy2_frame_read_and_censor() != 0)
 		return 1;
 	if (test_ci_contains() != 0)

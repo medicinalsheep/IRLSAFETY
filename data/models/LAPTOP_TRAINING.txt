@@ -1,0 +1,125 @@
+IRLSAFETY+ — JWCOM2 Training (GROKS Playground Kit)
+===================================================
+
+MACHINES
+--------
+  JWCOM4  192.168.1.11  — OBS stream, RAM disk dataset (Z:\irlsafety-training)
+  JWCOM2  GPU laptop    — label + train (X:\irlsafety-training-kit)
+
+Dataset share:  \\192.168.1.11\R\irlsafety-training
+Kit folder:     X:\irlsafety-training-kit
+                (\\JWCOM2\GROKS playground\irlsafety-training-kit)
+
+Nothing uploads to the cloud.
+
+
+ONE-TIME SETUP (JWCOM2)
+-----------------------
+  1. cd X:\irlsafety-training-kit
+  2. RUN-SETUP.bat   OR   .\jwcom2-setup.ps1
+
+  This installs Python deps, sets IRLSAFETY_TRAINING_ROOT, checks GPU + dataset.
+
+  Test dataset access:
+    dir \\192.168.1.11\R\irlsafety-training
+
+
+ONE-TIME SETUP (JWCOM4 — before capture)
+----------------------------------------
+  setx IRLSAFETY_TRAINING_ROOT Z:\irlsafety-training
+  Restart OBS
+
+  Captures land in:  Z:\irlsafety-training\images\staging
+
+
+TRAINING PROPS (print on JWCOM4)
+--------------------------------
+  Props folder:  Z:\irlsafety-training\props\
+  (official DMV samples + real 4x6 carrier labels)
+
+  Rebuild from JWCOM2 if needed:
+    cd X:\irlsafety-training-kit
+    .\jwcom2-build-props.ps1
+
+  Print licenses on cardstock; print labels 4x6 and tape to boxes/mailers.
+  See props\PROPS_GUIDE.txt and props\SOURCES.json.
+
+
+v0.7 SESSION — FULL WORKFLOW
+----------------------------
+
+  A) JWCOM4 — capture with printed props
+     - Control dock → Capture Frame (→ images/staging)
+     - See guides\TRAINING_SESSION.txt for shot list
+
+  B) JWCOM2 — label + train
+     cd X:\irlsafety-training-kit
+
+     .\jwcom2-prep.ps1                  # audit counts (mail/ID targets)
+     .\jwcom2-label.ps1                 # LabelImg — label staging first if captures waiting
+     .\jwcom2-prep.ps1 -Ingest          # move staging → train (after labeling staging)
+     .\jwcom2-prep.ps1 -RequireV07      # gate: 50+ shipping_label, 30+ id_document
+     .\jwcom2-train.ps1 -RequireV07 -WarmStart -SkipBootstrap -Device 0 -Epochs 100
+
+  C) JWCOM4 — deploy
+     Copy models\irlsafety-detect.onnx to OBS plugin models\
+     Control dock → Reload Model
+     Enable Mail & Shipping Labels + IDs & Licenses
+
+
+CLASSES (LabelImg — exact names)
+--------------------------------
+  license_plate
+  street_sign
+  shipping_label     ← all carriers (UPS, FedEx, Amazon, USPS, DHL)
+  id_document        ← driver license, state ID
+
+  Draw TIGHT boxes on the label or card only.
+
+
+CURRENT DATASET BASELINE
+------------------------
+  Plates/signs: 800 train + 200 val (trained — mAP50 ~99%)
+  Mail/ID:      add via this session (0 → 50+ / 30+ boxes)
+  Warm-start uses:  runs\irlsafety_us\weights\best.pt on RAM disk
+
+
+JWCOM2 SCRIPTS (kit root)
+-------------------------
+  jwcom2-setup.ps1       One-time Python + env setup
+  jwcom2-build-props.ps1 Download DMV specimens + build 4x6 labels
+  jwcom2-prep.ps1        Audit dataset (-Ingest, -RequireV07)
+  jwcom2-label.ps1       Open LabelImg on RAM disk
+  jwcom2-train.ps1       Train + export ONNX
+
+  START_HERE.txt         Quick startup card
+  GROK-PASTE-THIS.txt    Paste block for Grok sessions
+
+
+OPTIONAL FLAGS
+--------------
+  Faster training runs (local SSD):
+    .\jwcom2-train.ps1 -RequireV07 -WarmStart -SkipBootstrap -Device 0 `
+      -RunsLocal C:\temp\irlsafety-runs
+
+  Angled OBB pass (after OBB labels exist):
+    .\jwcom2-train.ps1 -OBB -RequireV07 -WarmStart -SkipBootstrap -Device 0
+
+
+TROUBLESHOOTING
+---------------
+  Cannot reach \\192.168.1.11\R\...  → JWCOM4 on? RAM disk share up?
+  -RequireV07 blocks train            → label more mail/ID, re-run prep
+  LabelImg missing                    → python -m pip install labelImg
+  Captures not on RAM disk            → setx on JWCOM4 + restart OBS
+  Training slow over network          → use -RunsLocal on a local folder
+
+
+QUICK COPY-PASTE (JWCOM2 PowerShell)
+------------------------------------
+  cd X:\irlsafety-training-kit
+  .\jwcom2-prep.ps1
+  .\jwcom2-label.ps1
+  .\jwcom2-prep.ps1 -Ingest
+  .\jwcom2-prep.ps1 -RequireV07
+  .\jwcom2-train.ps1 -RequireV07 -WarmStart -SkipBootstrap -Device 0

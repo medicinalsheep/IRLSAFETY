@@ -65,12 +65,25 @@ Re-train on your own GoPro/IRL frames with the Control dock or `scripts/train-mo
 
 ---
 
+## v0.7.0 (plugin — in progress)
+
+| | |
+|---|---|
+| **Detection taxonomy** | 4 classes: `license_plate`, `street_sign`, `shipping_label`, `id_document` |
+| **Angled cover** | Low-poly quad censor for OBB-trained models |
+| **Settings** | Simplified Protection UI; overlap padding removed |
+| **Training** | `train-model.ps1 -Device 0 -OBB`; RAM-disk / laptop guides |
+
+Bundled ONNX may remain 2-class until the next local training run completes.
+
+---
+
 ## Development contributions
 
 | Contribution | Notes |
 |--------------|-------|
 | **medicinalsheep** | Architecture, pipeline, OBS plugin, training pipeline, US model |
-| **Grok Build (beta)** | AI-assisted design, implementation, and iteration during v0.6.x development |
+| **Grok Build (beta)** | AI-assisted design, implementation, and iteration (v0.6–v0.7) |
 | **OBS Plugin Template** | CMake/build scaffold ([obs-plugintemplate](https://github.com/obsproject/obs-plugintemplate)) |
 | **Community references** | Patterns informed by [obs-detect](https://github.com/occ-ai/obs-detect) and [obs-ocr](https://github.com/occ-ai/obs-ocr) |
 

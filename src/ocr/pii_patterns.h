@@ -31,7 +31,7 @@ bool irlsafety_text_has_sensitive_pattern(const char *text);
 
 /* Map OCR hits to censor regions for built-in sensitive patterns. */
 int irlsafety_match_sensitive_pattern_hits(const irlsafety_ocr_hit_list *hits, float scale_x, float scale_y,
-					     float overlay_overlap, irlsafety_region_list *out_regions);
+					   irlsafety_region_list *out_regions);
 
 #ifdef __cplusplus
 }

@@ -5,10 +5,16 @@
 
 #include "overlay_image.h"
 
+#include "../irlsafety_geometry.h"
 #include "../irlsafety_paths.h"
 
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 #define STBI_WINDOWS_UTF8
 #define STBI_ONLY_PNG
@@ -114,6 +120,28 @@ static inline uint8_t blend_channel(uint8_t dst, uint8_t src, uint8_t alpha)
 	return (uint8_t)(((uint16_t)dst * (255 - alpha) + (uint16_t)src * alpha) / 255);
 }
 
+static void overlay_write_pixel(irlsafety_frame_view *frame, uint32_t x, uint32_t y, const uint8_t *src)
+{
+	uint8_t *dst;
+	uint8_t alpha = src[3];
+
+	if (alpha == 0)
+		return;
+
+	dst = frame->planes[0] + (size_t)y * frame->linesize[0] + (size_t)x * 4;
+
+	if (frame->format == IRLSAFETY_FORMAT_RGBA) {
+		dst[0] = blend_channel(dst[0], src[0], alpha);
+		dst[1] = blend_channel(dst[1], src[1], alpha);
+		dst[2] = blend_channel(dst[2], src[2], alpha);
+	} else {
+		dst[0] = blend_channel(dst[0], src[2], alpha);
+		dst[1] = blend_channel(dst[1], src[1], alpha);
+		dst[2] = blend_channel(dst[2], src[0], alpha);
+	}
+	dst[3] = 255;
+}
+
 void irlsafety_overlay_apply_region_bgra(const irlsafety_overlay_image *overlay, irlsafety_frame_view *frame,
 					 const irlsafety_rect *region)
 {
@@ -121,6 +149,13 @@ void irlsafety_overlay_apply_region_bgra(const irlsafety_overlay_image *overlay,
 	uint32_t y0;
 	uint32_t x1;
 	uint32_t y1;
+	float corners[8];
+	float cx;
+	float cy;
+	float hw;
+	float hh;
+	float cos_a;
+	float sin_a;
 
 	if (!overlay || !overlay->rgba || overlay->width == 0 || overlay->height == 0 || !frame || !region ||
 	    !frame->planes[0])
@@ -129,6 +164,79 @@ void irlsafety_overlay_apply_region_bgra(const irlsafety_overlay_image *overlay,
 	if (frame->format != IRLSAFETY_FORMAT_BGRA && frame->format != IRLSAFETY_FORMAT_BGRX &&
 	    frame->format != IRLSAFETY_FORMAT_RGBA)
 		return;
+
+	if (region->width < 1.0f || region->height < 1.0f)
+		return;
+
+	if (irlsafety_rect_has_rotation(region)) {
+		float bounds_x;
+		float bounds_y;
+		float bounds_w;
+		float bounds_h;
+		float rad;
+
+		irlsafety_rect_corners(region, corners);
+		irlsafety_quad_bounds(corners, &bounds_x, &bounds_y, &bounds_w, &bounds_h);
+		x0 = bounds_x < 0.0f ? 0u : (uint32_t)bounds_x;
+		y0 = bounds_y < 0.0f ? 0u : (uint32_t)bounds_y;
+		x1 = (uint32_t)(bounds_x + bounds_w) + 1u;
+		y1 = (uint32_t)(bounds_y + bounds_h) + 1u;
+
+		cx = region->x + region->width * 0.5f;
+		cy = region->y + region->height * 0.5f;
+		hw = region->width * 0.5f;
+		hh = region->height * 0.5f;
+		rad = -region->rotation_deg * (float)(M_PI / 180.0);
+		cos_a = cosf(rad);
+		sin_a = sinf(rad);
+
+		if (x1 > frame->width)
+			x1 = frame->width;
+		if (y1 > frame->height)
+			y1 = frame->height;
+		if (x0 >= x1 || y0 >= y1)
+			return;
+
+		for (uint32_t y = y0; y < y1; y++) {
+			for (uint32_t x = x0; x < x1; x++) {
+				float px = (float)x + 0.5f;
+				float py = (float)y + 0.5f;
+				float dx;
+				float dy;
+				float lx;
+				float ly;
+				float u;
+				float v;
+				uint32_t sx;
+				uint32_t sy;
+				const uint8_t *src;
+
+				if (!irlsafety_point_in_quad(px, py, corners))
+					continue;
+
+				dx = px - cx;
+				dy = py - cy;
+				lx = dx * cos_a - dy * sin_a;
+				ly = dx * sin_a + dy * cos_a;
+
+				u = (lx + hw) / region->width;
+				v = (ly + hh) / region->height;
+				if (u < 0.0f || u > 1.0f || v < 0.0f || v > 1.0f)
+					continue;
+
+				sx = (uint32_t)(u * (float)overlay->width);
+				sy = (uint32_t)(v * (float)overlay->height);
+				if (sx >= overlay->width)
+					sx = overlay->width - 1;
+				if (sy >= overlay->height)
+					sy = overlay->height - 1;
+
+				src = overlay->rgba + ((size_t)sy * overlay->width + sx) * 4;
+				overlay_write_pixel(frame, x, y, src);
+			}
+		}
+		return;
+	}
 
 	x0 = region->x < 0.0f ? 0u : (uint32_t)region->x;
 	y0 = region->y < 0.0f ? 0u : (uint32_t)region->y;
@@ -151,30 +259,13 @@ void irlsafety_overlay_apply_region_bgra(const irlsafety_overlay_image *overlay,
 		for (uint32_t x = x0; x < x1; x++) {
 			float u = ((float)x - region->x) / region->width;
 			uint32_t sx = (uint32_t)(u * (float)overlay->width);
-			uint8_t *dst;
 			const uint8_t *src;
-			uint8_t alpha;
 
 			if (sx >= overlay->width)
 				sx = overlay->width - 1;
 
 			src = overlay->rgba + ((size_t)sy * overlay->width + sx) * 4;
-			alpha = src[3];
-			if (alpha == 0)
-				continue;
-
-			dst = frame->planes[0] + (size_t)y * frame->linesize[0] + (size_t)x * 4;
-
-			if (frame->format == IRLSAFETY_FORMAT_RGBA) {
-				dst[0] = blend_channel(dst[0], src[0], alpha);
-				dst[1] = blend_channel(dst[1], src[1], alpha);
-				dst[2] = blend_channel(dst[2], src[2], alpha);
-			} else {
-				dst[0] = blend_channel(dst[0], src[2], alpha);
-				dst[1] = blend_channel(dst[1], src[1], alpha);
-				dst[2] = blend_channel(dst[2], src[0], alpha);
-			}
-			dst[3] = 255;
+			overlay_write_pixel(frame, x, y, src);
 		}
 	}
 }

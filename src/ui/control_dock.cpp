@@ -119,15 +119,18 @@ IRLSafetyControlDock::IRLSafetyControlDock(QWidget *parent) : QFrame(parent)
 	cat_plates->setToolTip(tr("IRLSAFETYPlus.CatLicensePlates.Tooltip"));
 	cat_signs = new QCheckBox(tr("IRLSAFETYPlus.CatStreetSigns"));
 	cat_signs->setToolTip(tr("IRLSAFETYPlus.CatStreetSigns.Tooltip"));
+	cat_mail = new QCheckBox(tr("IRLSAFETYPlus.CatShippingLabels"));
+	cat_mail->setToolTip(tr("IRLSAFETYPlus.CatShippingLabels.Tooltip"));
+	cat_ids = new QCheckBox(tr("IRLSAFETYPlus.CatIdDocuments"));
+	cat_ids->setToolTip(tr("IRLSAFETYPlus.CatIdDocuments.Tooltip"));
 	cat_screen = new QCheckBox(tr("IRLSAFETYPlus.CatScreenText"));
 	cat_screen->setToolTip(tr("IRLSAFETYPlus.CatScreenText.Tooltip"));
-	cat_sensitive = new QCheckBox(tr("IRLSAFETYPlus.CatSensitivePatterns"));
-	cat_sensitive->setToolTip(tr("IRLSAFETYPlus.CatSensitivePatterns.Tooltip"));
 	toggle_layout->addWidget(enable_all);
 	toggle_layout->addWidget(cat_plates);
 	toggle_layout->addWidget(cat_signs);
+	toggle_layout->addWidget(cat_mail);
+	toggle_layout->addWidget(cat_ids);
 	toggle_layout->addWidget(cat_screen);
-	toggle_layout->addWidget(cat_sensitive);
 	layout->addWidget(toggle_group);
 
 	auto *model_group = new QGroupBox(tr("IRLSAFETYPlus.Dock.ModelGroup"));
@@ -176,8 +179,13 @@ IRLSafetyControlDock::IRLSafetyControlDock(QWidget *parent) : QFrame(parent)
 	capture_hint->setStyleSheet(QStringLiteral("color: #aaaaaa; font-size: 11px;"));
 	train_layout->addWidget(capture_hint);
 
+	auto *guide_row = new QHBoxLayout();
 	auto *guide_btn = new QPushButton(tr("IRLSAFETYPlus.Dock.OpenTrainingGuide"));
-	train_layout->addWidget(guide_btn);
+	auto *session_btn = new QPushButton(tr("IRLSAFETYPlus.Dock.OpenTrainingSession"));
+	session_btn->setToolTip(tr("IRLSAFETYPlus.Dock.OpenTrainingSession.Tooltip"));
+	guide_row->addWidget(guide_btn);
+	guide_row->addWidget(session_btn);
+	train_layout->addLayout(guide_row);
 	layout->addWidget(train_group);
 
 	auto *resource_group = new QGroupBox(tr("IRLSAFETYPlus.Dock.ResourcesGroup"));
@@ -205,13 +213,15 @@ IRLSafetyControlDock::IRLSafetyControlDock(QWidget *parent) : QFrame(parent)
 	connect(enable_all, &QCheckBox::toggled, this, &IRLSafetyControlDock::onEnableAllToggled);
 	connect(cat_plates, &QCheckBox::toggled, this, &IRLSafetyControlDock::onCategoryToggled);
 	connect(cat_signs, &QCheckBox::toggled, this, &IRLSafetyControlDock::onCategoryToggled);
+	connect(cat_mail, &QCheckBox::toggled, this, &IRLSafetyControlDock::onCategoryToggled);
+	connect(cat_ids, &QCheckBox::toggled, this, &IRLSafetyControlDock::onCategoryToggled);
 	connect(cat_screen, &QCheckBox::toggled, this, &IRLSafetyControlDock::onCategoryToggled);
-	connect(cat_sensitive, &QCheckBox::toggled, this, &IRLSafetyControlDock::onCategoryToggled);
 	connect(reload_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onReloadModel);
 	connect(browse_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onBrowseModel);
 	connect(models_folder_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onOpenModelsFolder);
 	connect(training_folder_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onOpenTrainingFolder);
 	connect(guide_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onOpenTrainingGuide);
+	connect(session_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onOpenTrainingSession);
 	connect(ocr_guide_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onOpenOcrGuide);
 	connect(platforms_guide_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onOpenPlatformsGuide);
 	connect(vcam_guide_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onOpenVirtualCamGuide);
@@ -274,27 +284,31 @@ void IRLSafetyControlDock::syncTogglesFromStatus()
 		enable_all->setEnabled(false);
 		cat_plates->setEnabled(false);
 		cat_signs->setEnabled(false);
+		cat_mail->setEnabled(false);
+		cat_ids->setEnabled(false);
 		cat_screen->setEnabled(false);
-		cat_sensitive->setEnabled(false);
 		return;
 	}
 
 	enable_all->setEnabled(true);
 	cat_plates->setEnabled(true);
 	cat_signs->setEnabled(true);
+	cat_mail->setEnabled(true);
+	cat_ids->setEnabled(true);
 	cat_screen->setEnabled(true);
-	cat_sensitive->setEnabled(true);
 
 	const QSignalBlocker b1(enable_all);
 	const QSignalBlocker b2(cat_plates);
 	const QSignalBlocker b3(cat_signs);
-	const QSignalBlocker b4(cat_screen);
-	const QSignalBlocker b5(cat_sensitive);
+	const QSignalBlocker b4(cat_mail);
+	const QSignalBlocker b5(cat_ids);
+	const QSignalBlocker b6(cat_screen);
 	enable_all->setChecked(status.protection_enabled);
 	cat_plates->setChecked(status.cat_license_plates);
 	cat_signs->setChecked(status.cat_street_signs);
+	cat_mail->setChecked(status.cat_shipping_labels);
+	cat_ids->setChecked(status.cat_id_documents);
 	cat_screen->setChecked(status.cat_screen_text);
-	cat_sensitive->setChecked(status.cat_sensitive_patterns);
 }
 
 void IRLSafetyControlDock::refreshUi()
@@ -394,10 +408,12 @@ void IRLSafetyControlDock::onCategoryToggled(bool checked)
 		key = IRLSAFETY_SET_CAT_LICENSE_PLATES;
 	else if (box == cat_signs)
 		key = IRLSAFETY_SET_CAT_STREET_SIGNS;
+	else if (box == cat_mail)
+		key = IRLSAFETY_SET_CAT_SHIPPING_LABELS;
+	else if (box == cat_ids)
+		key = IRLSAFETY_SET_CAT_ID_DOCUMENTS;
 	else if (box == cat_screen)
 		key = IRLSAFETY_SET_CAT_SCREEN_TEXT;
-	else if (box == cat_sensitive)
-		key = IRLSAFETY_SET_CAT_SENSITIVE_PATTERNS;
 
 	if (key)
 		irlsafety_control_set_bool_setting(filter, key, checked);
@@ -454,6 +470,11 @@ void IRLSafetyControlDock::onOpenTrainingFolder()
 void IRLSafetyControlDock::onOpenTrainingGuide()
 {
 	irlsafety_control_open_models_guide("TRAINING.txt");
+}
+
+void IRLSafetyControlDock::onOpenTrainingSession()
+{
+	irlsafety_control_open_models_guide("TRAINING_SESSION.txt");
 }
 
 void IRLSafetyControlDock::onOpenOcrGuide()

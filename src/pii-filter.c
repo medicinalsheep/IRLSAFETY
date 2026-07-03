@@ -251,17 +251,16 @@ static obs_properties_t *pii_filter_properties(void *unused)
 	obs_properties_add_bool(props, IRLSAFETY_SET_TEST_EFFECT, obs_module_text("IRLSAFETYPlus.TestEffect"));
 
 	categories = obs_properties_create();
-	obs_properties_add_bool(categories, IRLSAFETY_SET_CAT_STREET_SIGNS,
-				obs_module_text("IRLSAFETYPlus.CatStreetSigns"));
 	obs_properties_add_bool(categories, IRLSAFETY_SET_CAT_LICENSE_PLATES,
 				obs_module_text("IRLSAFETYPlus.CatLicensePlates"));
-	obs_properties_add_bool(categories, IRLSAFETY_SET_CAT_DOCUMENTS,
-				obs_module_text("IRLSAFETYPlus.CatDocuments"));
-	obs_properties_add_bool(categories, IRLSAFETY_SET_CAT_FACES, obs_module_text("IRLSAFETYPlus.CatFaces"));
+	obs_properties_add_bool(categories, IRLSAFETY_SET_CAT_STREET_SIGNS,
+				obs_module_text("IRLSAFETYPlus.CatStreetSigns"));
+	obs_properties_add_bool(categories, IRLSAFETY_SET_CAT_SHIPPING_LABELS,
+				obs_module_text("IRLSAFETYPlus.CatShippingLabels"));
+	obs_properties_add_bool(categories, IRLSAFETY_SET_CAT_ID_DOCUMENTS,
+				obs_module_text("IRLSAFETYPlus.CatIdDocuments"));
 	obs_properties_add_bool(categories, IRLSAFETY_SET_CAT_SCREEN_TEXT,
 				obs_module_text("IRLSAFETYPlus.CatScreenText"));
-	obs_properties_add_bool(categories, IRLSAFETY_SET_CAT_SENSITIVE_PATTERNS,
-				obs_module_text("IRLSAFETYPlus.CatSensitivePatterns"));
 	obs_properties_add_bool(categories, IRLSAFETY_SET_CAT_CUSTOM_PII,
 				obs_module_text("IRLSAFETYPlus.CatCustomPii"));
 	obs_properties_add_group(props, "categories", obs_module_text("IRLSAFETYPlus.GroupCategories"),
@@ -281,14 +280,6 @@ static obs_properties_t *pii_filter_properties(void *unused)
 					obs_module_text("IRLSAFETYPlus.Confidence"), 0.1, 0.95, 0.05);
 	obs_properties_add_int_slider(protection, IRLSAFETY_SET_FRAME_SKIP, obs_module_text("IRLSAFETYPlus.FrameSkip"),
 				      1, 120, 1);
-	{
-		obs_property_t *detail_prop = obs_properties_add_list(
-			protection, IRLSAFETY_SET_OCR_DETAIL, obs_module_text("IRLSAFETYPlus.OcrDetail"),
-			OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_INT);
-		obs_property_list_add_int(detail_prop, obs_module_text("IRLSAFETYPlus.OcrDetailStandard"), 0);
-		obs_property_list_add_int(detail_prop, obs_module_text("IRLSAFETYPlus.OcrDetailDetailed"), 1);
-		obs_property_list_add_int(detail_prop, obs_module_text("IRLSAFETYPlus.OcrDetailMaximum"), 2);
-	}
 	mode_prop = obs_properties_add_list(protection, IRLSAFETY_SET_CENSOR_MODE,
 					    obs_module_text("IRLSAFETYPlus.CensorMode"), OBS_COMBO_TYPE_LIST,
 					    OBS_COMBO_FORMAT_INT);
@@ -302,32 +293,42 @@ static obs_properties_t *pii_filter_properties(void *unused)
 				       obs_module_text("IRLSAFETYPlus.CensorColor"));
 	obs_properties_add_path(protection, IRLSAFETY_SET_CENSOR_OVERLAY, obs_module_text("IRLSAFETYPlus.CensorOverlay"),
 				OBS_PATH_FILE, "Images (*.png *.jpg *.jpeg *.gif *.webp)", NULL);
-	obs_properties_add_float_slider(protection, IRLSAFETY_SET_BLUR_STRENGTH,
-					obs_module_text("IRLSAFETYPlus.BlurStrength"), 1.0, 32.0, 1.0);
-	obs_properties_add_float_slider(protection, IRLSAFETY_SET_OVERLAY_OVERLAP,
-					obs_module_text("IRLSAFETYPlus.OverlayOverlap"), 0.0, 0.80, 0.05);
+	obs_properties_add_bool(protection, IRLSAFETY_SET_ANGLED_COVER,
+				obs_module_text("IRLSAFETYPlus.AngledCover"));
 	obs_properties_add_bool(protection, IRLSAFETY_SET_HYBRID_DELAY_ENABLE,
 				obs_module_text("IRLSAFETYPlus.HybridDelayEnable"));
 	obs_properties_add_float_slider(protection, IRLSAFETY_SET_GLOBAL_DELAY_SEC,
 					obs_module_text("IRLSAFETYPlus.GlobalDelaySec"), 0.0, 5.0, 0.1);
-	obs_properties_add_float_slider(protection, IRLSAFETY_SET_AUTO_DELAY_SEC,
-					obs_module_text("IRLSAFETYPlus.AutoDelaySec"), 0.0, 5.0, 0.1);
-	obs_properties_add_float_slider(protection, IRLSAFETY_SET_AUTO_DELAY_HOLD_SEC,
-					obs_module_text("IRLSAFETYPlus.AutoDelayHoldSec"), 0.0, 15.0, 0.5);
-	obs_properties_add_float_slider(protection, IRLSAFETY_SET_PARTIAL_PII_THRESHOLD,
-					obs_module_text("IRLSAFETYPlus.PartialPiiThreshold"), 0.0, 1.0, 0.05);
-	obs_properties_add_bool(protection, IRLSAFETY_SET_SECURE_MODE_ENABLE,
-				obs_module_text("IRLSAFETYPlus.SecureModeEnable"));
-	obs_properties_add_bool(protection, IRLSAFETY_SET_SECURE_DROP_FRAMES,
-				obs_module_text("IRLSAFETYPlus.SecureDropFrames"));
-	obs_properties_add_bool(protection, IRLSAFETY_SET_COVER_WHILE_TYPING,
-				obs_module_text("IRLSAFETYPlus.CoverWhileTyping"));
-	obs_properties_add_text(protection, "hybrid_delay_audio_note",
-				obs_module_text("IRLSAFETYPlus.HybridDelayAudioNote"), OBS_TEXT_INFO);
 	obs_properties_add_group(props, "protection", obs_module_text("IRLSAFETYPlus.GroupProtection"),
 				 OBS_GROUP_NORMAL, protection);
 
 	advanced = obs_properties_create();
+	{
+		obs_property_t *detail_prop = obs_properties_add_list(
+			advanced, IRLSAFETY_SET_OCR_DETAIL, obs_module_text("IRLSAFETYPlus.OcrDetail"),
+			OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_INT);
+		obs_property_list_add_int(detail_prop, obs_module_text("IRLSAFETYPlus.OcrDetailStandard"), 0);
+		obs_property_list_add_int(detail_prop, obs_module_text("IRLSAFETYPlus.OcrDetailDetailed"), 1);
+		obs_property_list_add_int(detail_prop, obs_module_text("IRLSAFETYPlus.OcrDetailMaximum"), 2);
+	}
+	obs_properties_add_float_slider(advanced, IRLSAFETY_SET_BLUR_STRENGTH,
+					obs_module_text("IRLSAFETYPlus.BlurStrength"), 1.0, 32.0, 1.0);
+	obs_properties_add_float_slider(advanced, IRLSAFETY_SET_AUTO_DELAY_SEC,
+					obs_module_text("IRLSAFETYPlus.AutoDelaySec"), 0.0, 5.0, 0.1);
+	obs_properties_add_float_slider(advanced, IRLSAFETY_SET_AUTO_DELAY_HOLD_SEC,
+					obs_module_text("IRLSAFETYPlus.AutoDelayHoldSec"), 0.0, 15.0, 0.5);
+	obs_properties_add_float_slider(advanced, IRLSAFETY_SET_PARTIAL_PII_THRESHOLD,
+					obs_module_text("IRLSAFETYPlus.PartialPiiThreshold"), 0.0, 1.0, 0.05);
+	obs_properties_add_bool(advanced, IRLSAFETY_SET_SECURE_MODE_ENABLE,
+				obs_module_text("IRLSAFETYPlus.SecureModeEnable"));
+	obs_properties_add_bool(advanced, IRLSAFETY_SET_SECURE_DROP_FRAMES,
+				obs_module_text("IRLSAFETYPlus.SecureDropFrames"));
+	obs_properties_add_bool(advanced, IRLSAFETY_SET_COVER_WHILE_TYPING,
+				obs_module_text("IRLSAFETYPlus.CoverWhileTyping"));
+	obs_properties_add_bool(advanced, IRLSAFETY_SET_CAT_SENSITIVE_PATTERNS,
+				obs_module_text("IRLSAFETYPlus.CatSensitivePatterns"));
+	obs_properties_add_text(advanced, "hybrid_delay_audio_note",
+				obs_module_text("IRLSAFETYPlus.HybridDelayAudioNote"), OBS_TEXT_INFO);
 	obs_properties_add_bool(advanced, IRLSAFETY_SET_PREFER_GPU, obs_module_text("IRLSAFETYPlus.PreferGpu"));
 	obs_properties_add_bool(advanced, IRLSAFETY_SET_SHOW_PREVIEW, obs_module_text("IRLSAFETYPlus.ShowPreview"));
 	obs_properties_add_bool(advanced, IRLSAFETY_SET_ENABLE_LOGGING, obs_module_text("IRLSAFETYPlus.EnableLogging"));

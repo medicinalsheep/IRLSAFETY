@@ -1,10 +1,10 @@
 # IRLSAFETY+
 
-**Real-time privacy protection for OBS Studio** — local OCR, custom PII keywords, optional YOLO detection, hybrid stream delay, and a training hub for your own models. Nothing leaves your PC.
+**Real-time privacy protection for OBS Studio** — local OCR, custom PII keywords, YOLO detection (plates, signs, mail labels, IDs), hybrid stream delay, and a training hub. Nothing leaves your PC.
 
 | | |
 |---|---|
-| **Version** | 0.6.2 |
+| **Version** | 0.7.0 |
 | **Platform** | Windows 10/11 x64 |
 | **OBS** | 31.x / 32.x (64-bit) |
 | **Author** | [medicinalsheep](https://github.com/medicinalsheep) |
@@ -20,7 +20,7 @@ Design, training summary, and full attribution: **[CREDITS.md](CREDITS.md)** · 
 ## Private tester install (GitHub Release)
 
 1. Open [Releases](https://github.com/medicinalsheep/IRLSAFETY/releases) on this repo
-2. Download **`IRLSAFETY+-v0.6.2-win64.zip`** from the latest release
+2. Download **`IRLSAFETY+-v0.7.0-win64.zip`** from the latest release (when published)
 3. Extract the folder
 4. Right-click **`install-from-package.bat`** → **Run as administrator**
 5. Restart OBS
@@ -33,14 +33,14 @@ scripts\build-windows.bat
 scripts\package-v0.1.bat
 ```
 
-Package output: `release\IRLSAFETY+-v0.6.2-win64\`
+Package output: `release\IRLSAFETY+-v0.7.0-win64\`
 
 ---
 
 ## Quick setup
 
 1. Add **IRLSAFETY+** filter to **Display Capture** (top of filter list)
-2. Defaults: **Screen Text** + **Custom PII** on, **Solid Box** censor
+2. Defaults: **Solid Box** censor, **Mail & Labels** + **IDs** + plates/signs ON (train model for mail/ID classes)
 3. Add keywords under **Custom PII List** (one per line)
 4. Hover any setting for a full tooltip explanation
 
@@ -48,34 +48,63 @@ Package output: `release\IRLSAFETY+-v0.6.2-win64\`
 
 - **Test Effect** ON + Solid Box → center overlay appears
 - Notepad with large text on captured display → Screen Text covers it
-- Custom keyword visible → partial cover at **50%** by default
+- Custom keyword visible → partial cover at **50%** by default (Advanced)
 
 ---
 
-## v0.6.2 defaults
+## v0.7.0 highlights
+
+| Area | What's new |
+|------|------------|
+| **Categories** | Mail & Shipping Labels, IDs & Licenses (4-class training path) |
+| **Angled cover** | Low-poly quad censor for tilted packages (OBB-trained models) |
+| **Simpler UI** | Core settings in Protection; overlap padding removed |
+| **Training** | `shipping_label` + `id_document` classes, `--obb` / `-OBB` path |
+| **Dock** | Session Plan + laptop/RAM-disk training guides |
+
+### v0.7 defaults
 
 | Setting | Default |
 |---------|---------|
-| License Plates / Street Signs | **ON** (bundled trained model) |
-| Censor Style | **Solid Box** (black) |
-| Overlay Overlap | **25%** |
+| License Plates / Signs / Mail / IDs | **ON** |
+| Censor Style | **Solid Box** |
+| Angled Cover | **ON** |
+| Sensitive Numbers | **OFF** (Advanced) |
 | Confidence | **0.35** |
-| Hybrid Stream Delay | ON (**1.5s + 1.0s** auto) |
+| Scan Every N Frames | **3** |
+| Stream Delay | **1.5s** baseline |
 | Escalated Secure Mode | ON |
+
+Bundled `irlsafety-detect.onnx` may still be **2-class** (plates + signs) until you retrain. See `data/models/TRAINING_SESSION.txt`.
 
 ---
 
-## Local model training (US plates + street signs)
+## Local model training
 
-**One command** (requires Python 3.10+):
+**One command** (Python 3.10+, NVIDIA GPU recommended):
 
 ```bat
-scripts\train-model.ps1
+scripts\train-model.ps1 -Device 0
 ```
 
-Or from OBS Control dock: **Train US Model** | **Label Images** | **Capture Frame**
+Angled labels (OBB):
 
-Pipeline downloads US bootstrap data (LISA signs + plate boxes), trains YOLOv8n locally, exports `irlsafety-detect.onnx`. Add your own GoPro/stream frames for best results. Full guide: `data/models/TRAINING.txt`
+```bat
+scripts\train-model.ps1 -Device 0 -OBB
+```
+
+Control dock: **Train Detection Model** · **Label Images** · **Capture Frame** · **Session Plan**
+
+Classes: `license_plate`, `street_sign`, `shipping_label`, `id_document`
+
+Network RAM disk (optional):
+
+```bat
+set IRLSAFETY_TRAINING_ROOT=\\YOUR-PC\share\irlsafety-training
+```
+
+Guides: `data/models/TRAINING.txt`, `TRAINING_SESSION.txt`, `LAPTOP_TRAINING.txt`  
+JWCOM2 GPU kit: `X:\irlsafety-training-kit` — see `JWCOM2-RUN.txt` or `START_HERE.txt`
 
 ---
 
@@ -102,18 +131,19 @@ scripts\publish-release.ps1
 
 ## About the design
 
-IRLSAFETY+ runs a **local-only** pipeline inside OBS: Windows OCR for text and keywords, YOLOv8n ONNX for US plates and signs, region tracking with hybrid stream delay, and solid-box censorship by default.
+IRLSAFETY+ runs a **local-only** pipeline inside OBS: Windows OCR for text and keywords, YOLOv8n ONNX for objects, region tracking with hybrid stream delay, and solid-box censorship by default.
 
-The v0.6.2 **`irlsafety-detect.onnx`** model was trained locally (40 epochs, YOLOv8n, US bootstrap data + custom labels) and exported for on-device inference — no cloud. Full write-up: [CREDITS.md](CREDITS.md).
+Full write-up: [CREDITS.md](CREDITS.md)
 
 ---
 
 ## Project layout
 
 ```
-src/           plugin, pipeline, OCR, GPU path, hybrid delay
+src/           plugin, pipeline, OCR, GPU path, geometry, hybrid delay
 src/ui/        control dock, setup walkthrough
 data/locale/   UI strings + hover tooltips
+data/training/ YOLO scripts + class lists
 scripts/       build, package, training helpers
 tests/         unit tests
 ```

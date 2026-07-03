@@ -1,0 +1,96 @@
+IRLSAFETY+ — v0.7 Mail + ID Training Session
+=============================================
+
+BASELINE (completed)
+--------------------
+  Plates/signs retrain finished: 80 epochs, mAP50 ~99%, mAP50-95 ~81%
+  Dataset: 800 train + 200 val (plates + signs only)
+  ONNX: Z:\irlsafety-training\runs\irlsafety_us\weights\best.onnx
+
+NEXT GOAL — 4-class model
+-------------------------
+  0 license_plate   (existing — keep)
+  1 street_sign     (existing — keep)
+  2 shipping_label  (NEW — UPS, FedEx, Amazon, USPS, DHL, parcels)
+  3 id_document     (NEW — driver license, state ID)
+
+TARGETS BEFORE TRAIN
+--------------------
+  shipping_label  ≥ 50 boxes
+  id_document     ≥ 30 boxes
+  (plates/signs from bootstrap already OK)
+
+WORKFLOW (JWCOM4 + JWCOM2)
+--------------------------
+
+PHASE 0 — Props (JWCOM2 build, JWCOM4 print)
+  [ ] JWCOM2: .\jwcom2-build-props.ps1  (or scripts\build-props.ps1)
+  [ ] JWCOM4: print Z:\irlsafety-training\props\driver_licenses\ + shipping_labels\
+  [ ] Tape 4x6 labels to boxes/mailers; cut licenses on cardstock
+
+PHASE A — Capture on JWCOM4 (OBS)
+  [ ] Set machine env (once):  setx IRLSAFETY_TRAINING_ROOT Z:\irlsafety-training
+  [ ] Restart OBS so captures land on RAM disk (images/staging)
+  [ ] Control dock → Capture Frame (15–25 frames per category batch)
+
+  Shipping / mail (class: shipping_label):
+    [ ] UPS brown box, label facing camera
+    [ ] FedEx envelope or pak
+    [ ] Amazon smile bag/box
+    [ ] USPS priority / flat rate
+    [ ] Label at 30–45° angle
+    [ ] Label partially cut off at frame edge
+    [ ] Hand holding package
+
+  IDs (class: id_document):
+    [ ] Driver license flat
+    [ ] License tilted ~30°
+    [ ] State ID card
+    [ ] ID in hand with glare
+    [ ] ID on desk next to keyboard
+
+PHASE B — Prep + label on JWCOM2
+  [ ] .\jwcom2-prep.ps1              (audit counts)
+  [ ] .\jwcom2-prep.ps1 -Ingest      (staging → train, or label staging first)
+  [ ] .\jwcom2-label.ps1             (LabelImg — tight boxes on label/ID, not whole box)
+
+PHASE C — Validate
+  [ ] .\jwcom2-prep.ps1 -RequireV07  (blocks until mail/ID minimums met)
+
+PHASE D — Train (major improvements vs last run)
+  [ ] .\jwcom2-train.ps1 -RequireV07 -WarmStart -SkipBootstrap -Device 0 -Epochs 100
+
+  Improvements in this pass:
+    - Warm-start from plates/signs best.pt (transfer learning)
+    - 100 epochs, cosine LR, rotation aug for angled mail/IDs
+    - Run name: irlsafety_v07
+    - -RunsLocal C:\temp\irlsafety-runs  (optional — faster than RAM disk for runs/)
+
+  Angled OBB (phase 2, after axis-aligned works):
+    [ ] Re-label tilted frames as OBB
+    [ ] .\jwcom2-train.ps1 -OBB -RequireV07 -WarmStart -Device 0
+
+PHASE E — Deploy + test on JWCOM4
+  [ ] Copy models\irlsafety-detect.onnx to OBS plugin models\
+  [ ] Reload Model
+  [ ] Enable: Mail & Shipping Labels, IDs & Licenses
+  [ ] Angled Cover: ON
+  [ ] Test with same props you captured
+
+QUICK COMMANDS (JWCOM2 kit — X:\irlsafety-training-kit)
+--------------------------------------------------------
+  .\jwcom2-setup.ps1
+  .\jwcom2-build-props.ps1
+  .\jwcom2-prep.ps1
+  .\jwcom2-label.ps1
+  .\jwcom2-prep.ps1 -Ingest
+  .\jwcom2-prep.ps1 -RequireV07
+  .\jwcom2-train.ps1 -RequireV07 -WarmStart -SkipBootstrap -Device 0
+
+TIPS
+----
+  - One class shipping_label for ALL carriers
+  - Draw tight boxes around the label or ID card
+  - More angle variety beats duplicate flat shots
+  - Hard negatives help: plain cardboard, blank desk
+  - Captures go to images/staging — ingest before or after labeling

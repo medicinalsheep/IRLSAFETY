@@ -33,8 +33,8 @@ typedef struct irlsafety_runtime_status {
 	bool cat_street_signs;
 	bool cat_screen_text;
 	bool cat_sensitive_patterns;
-	bool cat_documents;
-	bool cat_faces;
+	bool cat_shipping_labels;
+	bool cat_id_documents;
 	bool cat_custom_pii;
 } irlsafety_runtime_status;
 

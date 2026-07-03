@@ -194,11 +194,7 @@ static bool should_log_frame(const irlsafety_filter_settings *settings, uint64_t
 
 static bool settings_need_detection(const irlsafety_filter_settings *settings)
 {
-	if (!settings)
-		return false;
-
-	return settings->cat_street_signs || settings->cat_license_plates || settings->cat_documents ||
-	       settings->cat_faces;
+	return irlsafety_filter_detection_enabled(settings);
 }
 
 static irlsafety_detection_config build_detection_config(const irlsafety_filter_settings *settings)
@@ -211,9 +207,10 @@ static irlsafety_detection_config build_detection_config(const irlsafety_filter_
 
 	config.license_plates = settings->cat_license_plates;
 	config.street_signs = settings->cat_street_signs;
-	config.documents = settings->cat_documents;
-	config.faces = settings->cat_faces;
+	config.shipping_labels = settings->cat_shipping_labels;
+	config.id_documents = settings->cat_id_documents;
 	config.confidence_threshold = settings->confidence_threshold;
+	config.angled_cover = settings->angled_cover;
 	return config;
 }
 
@@ -397,8 +394,8 @@ void irlsafety_pipeline_get_runtime_status(const irlsafety_pipeline *pipeline, s
 	out->cat_street_signs = settings->cat_street_signs;
 	out->cat_screen_text = settings->cat_screen_text;
 	out->cat_sensitive_patterns = settings->cat_sensitive_patterns;
-	out->cat_documents = settings->cat_documents;
-	out->cat_faces = settings->cat_faces;
+	out->cat_shipping_labels = settings->cat_shipping_labels;
+	out->cat_id_documents = settings->cat_id_documents;
 	out->cat_custom_pii = settings->cat_custom_pii;
 	out->frame_count = frame_count;
 	out->ocr_busy = pipeline->ocr_in_flight;
@@ -443,13 +440,12 @@ static void process_ocr_hits(irlsafety_pipeline *pipeline, const irlsafety_filte
 	pattern_regions.count = 0;
 	pipeline->fresh_regions.count = 0;
 
-		if (active->cat_custom_pii) {
+	if (active->cat_custom_pii) {
 		if (pipeline->custom_pii.count == 0) {
 			if (log_frame)
 				obs_log(LOG_INFO, "IRLSAFETY+: Custom PII enabled but no keywords loaded");
 		} else {
 			irlsafety_match_custom_pii_hits(hits, &pipeline->custom_pii, scale_x, scale_y,
-							active->overlay_overlap,
 							irlsafety_filter_effective_partial_threshold(active),
 							&custom_regions);
 			if (log_frame)
@@ -459,13 +455,13 @@ static void process_ocr_hits(irlsafety_pipeline *pipeline, const irlsafety_filte
 	}
 
 	if (active->cat_screen_text) {
-		irlsafety_regions_from_screen_text_hits(hits, scale_x, scale_y, active->overlay_overlap, &screen_regions);
+		irlsafety_regions_from_screen_text_hits(hits, scale_x, scale_y, &screen_regions);
 		if (log_frame)
 			obs_log(LOG_INFO, "IRLSAFETY+: Screen Text — %zu region(s)", screen_regions.count);
 	}
 
 	if (active->cat_sensitive_patterns) {
-		irlsafety_match_sensitive_pattern_hits(hits, scale_x, scale_y, active->overlay_overlap, &pattern_regions);
+		irlsafety_match_sensitive_pattern_hits(hits, scale_x, scale_y, &pattern_regions);
 		if (log_frame)
 			obs_log(LOG_INFO, "IRLSAFETY+: Sensitive Patterns — %zu region(s)", pattern_regions.count);
 	}
@@ -617,7 +613,6 @@ int irlsafety_pipeline_submit_detection(irlsafety_pipeline *pipeline, irlsafety_
 			if (log_frame && pipeline->detection_regions.count > 0)
 				obs_log(LOG_INFO, "IRLSAFETY+: Object detection — %zu region(s)",
 					pipeline->detection_regions.count);
-			irlsafety_regions_apply_overlap(&pipeline->detection_regions, active->overlay_overlap);
 			merge_regions(&pipeline->fresh_regions, &pipeline->detection_regions);
 			{
 				int frames_since = 1;

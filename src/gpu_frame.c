@@ -6,13 +6,19 @@
 #include "gpu_frame.h"
 
 #include "blur/overlay_image.h"
+#include "irlsafety_geometry.h"
 #include "ocr/ocr_frame_util.h"
 
 #include <obs-module.h>
 #include <plugin-support.h>
 
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 struct irlsafety_gpu_frame {
 	obs_source_t *filter;
@@ -93,6 +99,35 @@ static void force_opaque_alpha(uint8_t *buffer, uint32_t width, uint32_t height,
 		for (uint32_t x = 0; x < width; x++)
 			row[x * 4 + 3] = 255;
 	}
+}
+
+static void draw_region_sprite(gs_texture_t *tex, const irlsafety_rect *rect)
+{
+	float cx;
+	float cy;
+	float radians;
+
+	if (!rect || rect->width < 1.0f || rect->height < 1.0f)
+		return;
+
+	if (!irlsafety_rect_has_rotation(rect)) {
+		gs_matrix_push();
+		gs_matrix_translate3f(rect->x, rect->y, 0.0f);
+		gs_draw_sprite(tex, 0, (uint32_t)rect->width, (uint32_t)rect->height);
+		gs_matrix_pop();
+		return;
+	}
+
+	cx = rect->x + rect->width * 0.5f;
+	cy = rect->y + rect->height * 0.5f;
+	radians = rect->rotation_deg * (float)(M_PI / 180.0);
+
+	gs_matrix_push();
+	gs_matrix_translate3f(cx, cy, 0.0f);
+	gs_matrix_rotaa4f(0.0f, 0.0f, -1.0f, radians);
+	gs_matrix_translate3f(-rect->width * 0.5f, -rect->height * 0.5f, 0.0f);
+	gs_draw_sprite(tex, 0, (uint32_t)rect->width, (uint32_t)rect->height);
+	gs_matrix_pop();
 }
 
 static void obs_color_to_vec4(uint32_t color, struct vec4 *out)
@@ -509,10 +544,7 @@ void irlsafety_gpu_frame_draw_overlays(irlsafety_gpu_frame *gpu, struct obs_sour
 			if (rect->width < 1.0f || rect->height < 1.0f)
 				continue;
 
-			gs_matrix_push();
-			gs_matrix_translate3f(rect->x, rect->y, 0.0f);
-			gs_draw_sprite(tex, 0, (uint32_t)rect->width, (uint32_t)rect->height);
-			gs_matrix_pop();
+			draw_region_sprite(tex, rect);
 			drawn++;
 		}
 
@@ -553,10 +585,7 @@ solid_fallback:
 		if (rect->width < 1.0f || rect->height < 1.0f)
 			continue;
 
-		gs_matrix_push();
-		gs_matrix_translate3f(rect->x, rect->y, 0.0f);
-		gs_draw_sprite(NULL, 0, (uint32_t)rect->width, (uint32_t)rect->height);
-		gs_matrix_pop();
+		draw_region_sprite(NULL, rect);
 		drawn++;
 	}
 

@@ -72,6 +72,7 @@ set(_irlsafety_core_sources
     src/frame_sample.c
     src/gpu_frame.c
     src/irlsafety_types.c
+    src/irlsafety_geometry.c
     src/irlsafety_paths.c
     src/irlsafety_shutdown.c
     src/irlsafety_control.c

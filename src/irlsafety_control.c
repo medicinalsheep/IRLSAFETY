@@ -17,6 +17,7 @@
 #include <util/platform.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
@@ -192,10 +193,19 @@ void irlsafety_control_get_models_folder(char *dest, size_t dest_size)
 
 void irlsafety_control_get_training_folder(char *dest, size_t dest_size)
 {
+	const char *env_root;
+
 	if (!dest || dest_size == 0)
 		return;
 
 	dest[0] = '\0';
+
+	env_root = getenv("IRLSAFETY_TRAINING_ROOT");
+	if (env_root && env_root[0] != '\0') {
+		strncpy(dest, env_root, dest_size - 1);
+		dest[dest_size - 1] = '\0';
+		return;
+	}
 
 #ifndef IRLSAFETY_TEST_BUILD
 	{
@@ -308,7 +318,7 @@ int irlsafety_control_save_training_screenshot(void)
 	if (!irlsafety_control_ensure_dir(training_root))
 		return -1;
 
-	snprintf(train_dir, sizeof(train_dir), "%s/images/train", training_root);
+	snprintf(train_dir, sizeof(train_dir), "%s/images/staging", training_root);
 	if (!irlsafety_control_ensure_dir(train_dir))
 		return -1;
 

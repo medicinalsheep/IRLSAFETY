@@ -1,18 +1,18 @@
-# IRLSAFETY+ YOLO class roadmap — use exact names in LabelImg
+# IRLSAFETY+ YOLO classes — use exact names in LabelImg
 #
-# Phase 1 (v0.6 release — irlsafety-detect.onnx shipping now)
+# v0.7 detection model (train locally)
 license_plate
 street_sign
-
-# Phase 2 (v0.8 — train when you have 50+ labeled shipping frames)
 shipping_label
-
-# Phase 3 (v0.9 — payment surfaces + identity documents)
-payment_card
 id_document
 
-# Phase 4 (optional)
+# shipping_label covers: UPS, FedEx, Amazon, USPS, DHL, OnTrac, mail parcels, padded envelopes
+# id_document covers: driver license, state ID, passport page held to camera
+
+# Optional future classes
+payment_card
 face
 
-# Legacy aliases (reserved in code — map to Phase 3+ when retraining)
+# Legacy aliases (migrated on load in plugin settings)
 document
+face

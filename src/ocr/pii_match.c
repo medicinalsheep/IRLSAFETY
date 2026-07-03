@@ -292,7 +292,7 @@ static bool rect_contains_hit(const irlsafety_rect *rect, const irlsafety_ocr_hi
 }
 
 static void append_scaled_region(irlsafety_region_list *out_regions, const irlsafety_ocr_hit *hit, float scale_x,
-				 float scale_y, float overlap_ratio, bool horizontal_boost, float coverage_ratio)
+				 float scale_y, bool horizontal_boost, float coverage_ratio)
 {
 	irlsafety_rect rect;
 	float width_scale = 1.0f;
@@ -309,7 +309,7 @@ static void append_scaled_region(irlsafety_region_list *out_regions, const irlsa
 		width_scale = 3.5f;
 	rect.width *= width_scale;
 
-	expand_rect(&rect, overlap_ratio, horizontal_boost);
+	expand_rect(&rect, 0.0f, horizontal_boost);
 
 	if (!region_large_enough(&rect))
 		return;
@@ -438,7 +438,7 @@ static void merge_rolling_word_hits(const irlsafety_ocr_hit_list *hits, float sc
 }
 
 int irlsafety_match_custom_pii_hits(const irlsafety_ocr_hit_list *hits, const irlsafety_custom_pii_list *custom_pii,
-				    float scale_x, float scale_y, float overlay_overlap, float partial_pii_threshold,
+				    float scale_x, float scale_y, float partial_pii_threshold,
 				    irlsafety_region_list *out_regions)
 {
 	float threshold = partial_pii_threshold;
@@ -471,7 +471,7 @@ int irlsafety_match_custom_pii_hits(const irlsafety_ocr_hit_list *hits, const ir
 		if (!matched)
 			continue;
 
-		append_scaled_region(out_regions, hit, scale_x, scale_y, overlay_overlap, false,
+		append_scaled_region(out_regions, hit, scale_x, scale_y, false,
 				     best_coverage > 0.0f ? best_coverage : 1.0f);
 	}
 
@@ -479,7 +479,7 @@ int irlsafety_match_custom_pii_hits(const irlsafety_ocr_hit_list *hits, const ir
 }
 
 int irlsafety_regions_from_screen_text_hits(const irlsafety_ocr_hit_list *hits, float scale_x, float scale_y,
-					    float overlay_overlap, irlsafety_region_list *out_regions)
+					    irlsafety_region_list *out_regions)
 {
 	irlsafety_ocr_hit_list rolling_merged;
 
@@ -509,7 +509,7 @@ int irlsafety_regions_from_screen_text_hits(const irlsafety_ocr_hit_list *hits, 
 		if (covered)
 			continue;
 
-		append_scaled_region(out_regions, hit, scale_x, scale_y, overlay_overlap, false, 1.0f);
+		append_scaled_region(out_regions, hit, scale_x, scale_y, false, 1.0f);
 	}
 
 	/* Merged rolling/ticker fragments (horizontally adjacent words on the same line). */
@@ -528,7 +528,7 @@ int irlsafety_regions_from_screen_text_hits(const irlsafety_ocr_hit_list *hits, 
 		if (covered)
 			continue;
 
-		append_scaled_region(out_regions, hit, scale_x, scale_y, overlay_overlap, true, 1.0f);
+		append_scaled_region(out_regions, hit, scale_x, scale_y, true, 1.0f);
 	}
 
 	/* Fall back to isolated word boxes when no line hit exists (icons, single labels). */
@@ -550,7 +550,7 @@ int irlsafety_regions_from_screen_text_hits(const irlsafety_ocr_hit_list *hits, 
 		if (covered)
 			continue;
 
-		append_scaled_region(out_regions, hit, scale_x, scale_y, overlay_overlap, false, 1.0f);
+		append_scaled_region(out_regions, hit, scale_x, scale_y, false, 1.0f);
 	}
 
 	return 0;

@@ -22,6 +22,7 @@ struct obs_bool_entry {
 	bool value;
 	bool default_value;
 	bool has_default;
+	bool value_set;
 };
 
 struct obs_int_entry {
@@ -244,9 +245,18 @@ bool obs_data_get_bool(obs_data_t *data, const char *name)
 	struct obs_bool_entry *entry = find_bool(data, name);
 	if (!entry)
 		return false;
-	if (entry->has_default && !entry->value && entry->default_value)
+	if (!entry->value_set && entry->has_default)
 		return entry->default_value;
 	return entry->value;
+}
+
+void obs_data_set_bool(obs_data_t *data, const char *name, bool val)
+{
+	struct obs_bool_entry *entry = get_or_create_bool(data, name);
+	if (!entry)
+		return;
+	entry->value = val;
+	entry->value_set = true;
 }
 
 void obs_data_set_default_bool(obs_data_t *data, const char *name, bool val)
@@ -257,6 +267,28 @@ void obs_data_set_default_bool(obs_data_t *data, const char *name, bool val)
 	entry->default_value = val;
 	entry->has_default = true;
 	entry->value = val;
+	entry->value_set = true;
+}
+
+bool obs_data_has_user_value(obs_data_t *data, const char *name)
+{
+	struct obs_bool_entry *bool_entry = find_bool(data, name);
+	if (bool_entry)
+		return bool_entry->value_set;
+
+	struct obs_int_entry *int_entry = find_int(data, name);
+	if (int_entry)
+		return int_entry->value_set;
+
+	struct obs_double_entry *double_entry = find_double(data, name);
+	if (double_entry)
+		return double_entry->value_set;
+
+	struct obs_string_entry *string_entry = find_string(data, name);
+	if (string_entry)
+		return string_entry->value_set;
+
+	return false;
 }
 
 int obs_data_get_int(obs_data_t *data, const char *name)

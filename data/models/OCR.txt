@@ -7,8 +7,8 @@ PRIVACY
 - Only bounding boxes + matched keywords become overlays — not your full transcript.
 - Child OCR (coming) uses the same local ONNX stack as object detection.
 
-TODAY (v0.6.x)
---------------
+TODAY (v0.7)
+------------
 Windows 10/11:
   Backend: Windows.Media.Ocr (built into Windows)
   Works on: Display Capture, Window Capture, Video Capture (webcam/GoPro)

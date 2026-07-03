@@ -1,10 +1,18 @@
-# IRLSAFETY+ — full US plate/sign training pipeline (local only).
+# IRLSAFETY+ — full 4-class training pipeline (plates, signs, mail, IDs).
 param(
     [string]$PluginRoot = "",
     [string]$TrainingDir = "",
     [switch]$Bootstrap,
-    [int]$Epochs = 80,
-    [switch]$SkipBootstrap
+    [int]$Epochs = 100,
+    [switch]$SkipBootstrap,
+    [switch]$OBB,
+    [switch]$RequireV07,
+    [switch]$WarmStart,
+    [switch]$IngestStaging,
+    [string]$Device = "",
+    [string]$RunsLocal = "",
+    [int]$MinShipping = 50,
+    [int]$MinId = 30
 )
 
 $ErrorActionPreference = "Stop"
@@ -28,18 +36,17 @@ $FetchPs1 = Join-Path $PSScriptRoot "fetch-us-bootstrap.ps1"
 $PreparePy = Join-Path $PluginRoot "training\prepare_dataset.py"
 $TrainPy = Join-Path $PluginRoot "training\train_irlsafety.py"
 
-Write-Host "=== IRLSAFETY+ Train US Detection Model ===" -ForegroundColor Cyan
+Write-Host "=== IRLSAFETY+ Train Detection Model (v0.7 — plates, signs, mail, IDs) ===" -ForegroundColor Cyan
 Write-Host "Workspace: $TrainingDir" -ForegroundColor Yellow
 Write-Host ""
 
-& $SetupPs1 -PluginRoot $PluginRoot
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+& $SetupPs1 -PluginRoot $PluginRoot -TrainingDir $TrainingDir
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 $labeled = (Get-ChildItem (Join-Path $TrainingDir "labels\train") -Filter *.txt -ErrorAction SilentlyContinue).Count
 if ($Bootstrap -or (-not $SkipBootstrap -and $labeled -lt 20)) {
     Write-Host "Bootstrap: downloading US sign/plate starter data..." -ForegroundColor Yellow
-    & $FetchPs1 -PluginRoot $PluginRoot
+    & $FetchPs1 -PluginRoot $PluginRoot -TrainingDir $TrainingDir
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Bootstrap had issues — add your own labeled images and re-run." -ForegroundColor Yellow
     }
@@ -47,19 +54,36 @@ if ($Bootstrap -or (-not $SkipBootstrap -and $labeled -lt 20)) {
 
 Write-Host ""
 Write-Host "Preparing dataset..."
-python $PreparePy --training-dir $TrainingDir --min-labeled 20
+$prepareArgs = @("--training-dir", $TrainingDir, "--min-labeled", "20")
+if ($IngestStaging) { $prepareArgs += "--ingest-staging" }
+if ($RequireV07) {
+    $prepareArgs += @("--require-v07", "--min-shipping", $MinShipping, "--min-id", $MinId)
+}
+python $PreparePy @prepareArgs
 if ($LASTEXITCODE -ne 0) {
     Write-Host ""
-    Write-Host "Not enough labeled data yet." -ForegroundColor Yellow
+    Write-Host "Dataset not ready for training." -ForegroundColor Yellow
     Write-Host "  1. Capture frames in OBS (Control dock -> Capture Frame)"
-    Write-Host "  2. scripts\label-images.ps1"
-    Write-Host "  3. Re-run scripts\train-model.ps1"
+    Write-Host "  2. scripts\ingest-captures.ps1   (moves staging -> train)"
+    Write-Host "  3. scripts\label-images.ps1"
+    Write-Host "  4. Re-run with -RequireV07 when mail/ID counts are met"
     exit 1
 }
 
 Write-Host ""
-Write-Host "Training YOLOv8n (US plates + signs)..."
-python $TrainPy --training-dir $TrainingDir --models-dir $ModelsDir --epochs $Epochs
+$trainArgs = @("--training-dir", $TrainingDir, "--models-dir", $ModelsDir, "--epochs", $Epochs)
+if ($Device) { $trainArgs += @("--device", $Device) }
+if ($WarmStart) { $trainArgs += "--warm-start" }
+if ($RunsLocal) { $trainArgs += @("--runs-dir", $RunsLocal) }
+
+if ($OBB) {
+    Write-Host "Training YOLOv8n-OBB (angled labels — labels must be OBB format)..."
+    $trainArgs += @("--run-name", "irlsafety_obb")
+    python $TrainPy @trainArgs --obb
+} else {
+    Write-Host "Training YOLOv8n 4-class model (warm-start from prior run if -WarmStart)..."
+    python $TrainPy @trainArgs
+}
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 $ObsModels = Join-Path ${env:ProgramFiles} "obs-studio\data\obs-plugins\irlsafety-plus\models"
@@ -70,4 +94,5 @@ if ((Test-Path $Onnx) -and (Test-Path $ObsModels)) {
 }
 
 Write-Host ""
-Write-Host "Done! In OBS: enable License Plates + Street Signs, Reload Model in Control dock." -ForegroundColor Green
+Write-Host "Done! In OBS: enable Mail + IDs, Angled Cover ON, Reload Model." -ForegroundColor Green
+Write-Host "For angled OBB pass: train-model.ps1 -OBB -RequireV07 (after OBB labels)" -ForegroundColor Yellow

@@ -1,0 +1,25 @@
+IRLSAFETY+ Training Props (real-world references)
+=================================================
+
+DRIVER LICENSES — official government SAMPLES
+  Sources in SOURCES.json. These are DMV/HSMV specimen images, not synthetic art.
+  Print at 100% scale on cardstock for physical capture.
+
+  id_document class — draw tight box around the card in LabelImg.
+
+SHIPPING LABELS — standard 4x6" thermal layout
+  Based on real UPS/FedEx/USPS/Amazon/DHL field structure (tracking, ship-to,
+  routing, barcodes). Use fake tracking data only.
+
+  shipping_label class — tight box on the printed label.
+
+PRINT
+  Labels: 4x6" sticker paper or tape to boxes/mailers
+  Licenses: cardstock, color, 100% scale
+
+CAPTURE (JWCOM4)
+  setx IRLSAFETY_TRAINING_ROOT Z:\irlsafety-training
+  Restart OBS → Capture Frame → images/staging
+
+LABEL
+  jwcom2-label.ps1  →  jwcom2-prep.ps1 -Ingest  →  jwcom2-prep.ps1 -RequireV07

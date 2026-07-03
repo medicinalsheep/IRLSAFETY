@@ -13,20 +13,22 @@
 extern "C" {
 #endif
 
-/* Expected class indices in IRLSAFETY+ detection ONNX models. */
+/* Expected class indices in IRLSAFETY+ detection ONNX models (v0.7+). */
 #define IRLSAFETY_YOLO_CLASS_LICENSE_PLATE 0
 #define IRLSAFETY_YOLO_CLASS_STREET_SIGN 1
-#define IRLSAFETY_YOLO_CLASS_DOCUMENT 2
-#define IRLSAFETY_YOLO_CLASS_FACE 3
+#define IRLSAFETY_YOLO_CLASS_SHIPPING_LABEL 2
+#define IRLSAFETY_YOLO_CLASS_ID_DOCUMENT 3
+/* Legacy 4-class models used document/face at indices 2/3 — same slots as shipping_label/id_document. */
 
 typedef struct yolo_onnx_context yolo_onnx_context;
 
 typedef struct irlsafety_detection_config {
 	bool license_plates;
 	bool street_signs;
-	bool documents;
-	bool faces;
+	bool shipping_labels;
+	bool id_documents;
 	float confidence_threshold;
+	bool angled_cover;
 } irlsafety_detection_config;
 
 yolo_onnx_context *yolo_onnx_create(void);

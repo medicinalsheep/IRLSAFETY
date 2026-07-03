@@ -36,6 +36,7 @@ private slots:
 	void onOpenModelsFolder();
 	void onOpenTrainingFolder();
 	void onOpenTrainingGuide();
+	void onOpenTrainingSession();
 	void onOpenOcrGuide();
 	void onOpenPlatformsGuide();
 	void onOpenVirtualCamGuide();
@@ -65,8 +66,9 @@ private:
 	QCheckBox *enable_all = nullptr;
 	QCheckBox *cat_plates = nullptr;
 	QCheckBox *cat_signs = nullptr;
+	QCheckBox *cat_mail = nullptr;
+	QCheckBox *cat_ids = nullptr;
 	QCheckBox *cat_screen = nullptr;
-	QCheckBox *cat_sensitive = nullptr;
 	QPushButton *reload_btn = nullptr;
 	QPushButton *walkthrough_btn = nullptr;
 	QPushButton *capture_btn = nullptr;

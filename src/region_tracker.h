@@ -49,9 +49,6 @@ void irlsafety_region_tracker_hold_predict(irlsafety_region_tracker *tracker, in
 
 void irlsafety_region_tracker_copy_regions(const irlsafety_region_tracker *tracker, irlsafety_region_list *out);
 
-/* Expand every region by the user overlap ratio (also applied to ONNX detections). */
-void irlsafety_regions_apply_overlap(irlsafety_region_list *regions, float overlap_ratio);
-
 #ifdef __cplusplus
 }
 #endif
