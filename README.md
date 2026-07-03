@@ -7,7 +7,13 @@
 | **Version** | 0.6.2 |
 | **Platform** | Windows 10/11 x64 |
 | **OBS** | 31.x / 32.x (64-bit) |
+| **Author** | [medicinalsheep](https://github.com/medicinalsheep) |
+| **Contact** | jfkyt@icloud.com |
+| **Support** | [GitHub Sponsors](https://github.com/sponsors/medicinalsheep?frequency=one-time&sponsor=medicinalsheep) (optional — keeps it free & local) |
 | **License** | MIT ([LICENSE](LICENSE)) |
+
+**Made in the USA** — built on older hardware, with care, and with **Grok Build (beta)** as a development contribution.  
+Design, training summary, and full attribution: **[CREDITS.md](CREDITS.md)** · Third-party licenses: **[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)**
 
 ---
 
@@ -46,15 +52,16 @@ Package output: `release\IRLSAFETY+-v0.6.2-win64\`
 
 ---
 
-## v0.5.3 defaults
+## v0.6.2 defaults
 
 | Setting | Default |
 |---------|---------|
-| Overlay Overlap | **0%** (tight OCR boxes) |
-| Partial PII Cover | **50%** |
-| Cover While Typing | OFF |
+| License Plates / Street Signs | **ON** (bundled trained model) |
+| Censor Style | **Solid Box** (black) |
+| Overlay Overlap | **25%** |
+| Confidence | **0.35** |
+| Hybrid Stream Delay | ON (**1.5s + 1.0s** auto) |
 | Escalated Secure Mode | ON |
-| Hybrid Stream Delay | ON (0.5s + 0.5s auto) |
 
 ---
 
@@ -88,9 +95,16 @@ scripts\install-to-obs.bat
 ```bat
 scripts\package-v0.1.bat
 scripts\zip-release.ps1
+scripts\publish-release.ps1
 ```
 
-Upload `release\IRLSAFETY+-v0.5.3-win64.zip` to GitHub → **Releases → New release** → tag `v0.5.3`.
+---
+
+## About the design
+
+IRLSAFETY+ runs a **local-only** pipeline inside OBS: Windows OCR for text and keywords, YOLOv8n ONNX for US plates and signs, region tracking with hybrid stream delay, and solid-box censorship by default.
+
+The v0.6.2 **`irlsafety-detect.onnx`** model was trained locally (40 epochs, YOLOv8n, US bootstrap data + custom labels) and exported for on-device inference — no cloud. Full write-up: [CREDITS.md](CREDITS.md).
 
 ---
 

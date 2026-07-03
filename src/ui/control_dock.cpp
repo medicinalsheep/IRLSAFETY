@@ -74,6 +74,13 @@ IRLSafetyControlDock::IRLSafetyControlDock(QWidget *parent) : QFrame(parent)
 	scroll->setFrameShape(QFrame::NoFrame);
 	outer->addWidget(scroll, 1);
 
+	support_btn = new QPushButton(tr("IRLSAFETYPlus.Dock.SupportDev"));
+	support_btn->setToolTip(tr("IRLSAFETYPlus.Dock.SupportDev.Tooltip"));
+	support_btn->setFlat(true);
+	support_btn->setStyleSheet(QStringLiteral("color: #8ab4f8; font-size: 11px; text-align: left;"));
+	support_btn->setCursor(Qt::PointingHandCursor);
+	outer->addWidget(support_btn);
+
 	auto *content = new QWidget();
 	scroll->setWidget(content);
 	auto *layout = new QVBoxLayout(content);
@@ -212,6 +219,7 @@ IRLSafetyControlDock::IRLSafetyControlDock(QWidget *parent) : QFrame(parent)
 	connect(label_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onLabelImages);
 	connect(train_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onTrainModel);
 	connect(walkthrough_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onShowWalkthrough);
+	connect(support_btn, &QPushButton::clicked, this, &IRLSafetyControlDock::onSupportDevelopment);
 
 	connect(&refresh_timer, &QTimer::timeout, this, &IRLSafetyControlDock::refreshUi);
 	refresh_timer.start(750);
@@ -480,6 +488,12 @@ void IRLSafetyControlDock::onTrainModel()
 	if (irlsafety_control_run_script("scripts/train-model.ps1") != 0)
 		QMessageBox::warning(this, tr("IRLSAFETYPlus.Dock.TrainModel"),
 				     tr("IRLSAFETYPlus.Dock.TrainScriptFailed"));
+}
+
+void IRLSafetyControlDock::onSupportDevelopment()
+{
+	irlsafety_control_open_path(
+		"https://github.com/sponsors/medicinalsheep?frequency=one-time&sponsor=medicinalsheep");
 }
 
 void IRLSafetyControlDock::onCaptureTrainingFrame()

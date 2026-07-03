@@ -1,7 +1,9 @@
 # Third-Party Notices
 
 IRLSAFETY+ is licensed under the **MIT License** (see [LICENSE](LICENSE)).  
-When built and run inside OBS Studio, **GPLv2** obligations from OBS/libobs also apply.
+Copyright (c) 2026 **medicinalsheep** — contact: jfkyt@icloud.com
+
+When built and run inside OBS Studio, **GPLv2** obligations from OBS/libobs also apply to the combined distribution.
 
 ## Direct dependencies (build & runtime)
 
@@ -9,10 +11,20 @@ When built and run inside OBS Studio, **GPLv2** obligations from OBS/libobs also
 |-----------|---------|-----|------|
 | OBS Studio / libobs | GPLv2 | https://github.com/obsproject/obs-studio | Host application & plugin API |
 | OBS Plugin Template | GPLv2 | https://github.com/obsproject/obs-plugintemplate | Project scaffold & CMake helpers |
-| ONNX Runtime *(planned)* | MIT | https://github.com/microsoft/onnxruntime | YOLO inference (GPU/CPU) |
-| Ultralytics YOLOv8n *(planned)* | AGPL-3.0 (training code) / model-specific | https://github.com/ultralytics/ultralytics | Object detection model export |
-| EasyOCR *(planned)* | Apache 2.0 | https://github.com/JaidedAI/EasyOCR | OCR reference implementation |
-| Tesseract OCR *(alternative)* | Apache 2.0 | https://github.com/tesseract-ocr/tesseract | OCR engine option |
+| ONNX Runtime | MIT | https://github.com/microsoft/onnxruntime | YOLO ONNX inference (CPU/DirectML) |
+| Ultralytics YOLOv8 | AGPL-3.0 (training toolchain) | https://github.com/ultralytics/ultralytics | Model training & ONNX export |
+| Windows.Media.Ocr | Windows SDK / system | Microsoft | Default OCR backend (local) |
+| stb_image | MIT / Public Domain | https://github.com/nothings/stb | Custom overlay image loading |
+| Qt 6 | LGPL v3 / commercial | https://www.qt.io | Control dock UI (when enabled) |
+
+## Bundled models
+
+| Asset | Origin | Notes |
+|-------|--------|-------|
+| `irlsafety-detect.onnx` | Trained locally (medicinalsheep) | YOLOv8n export; US plates + signs |
+| `irlsafety-ocr-*.onnx` | Optional child OCR path | PP-OCR style det/rec for future backend |
+
+Training with Ultralytics is subject to **AGPL-3.0** for the training code. Exported ONNX weights are used at runtime via ONNX Runtime (MIT). Consult Ultralytics licensing if you redistribute training scripts or derivative training services.
 
 ## Inspiration & related OBS projects
 
@@ -21,6 +33,14 @@ When built and run inside OBS Studio, **GPLv2** obligations from OBS/libobs also
 | obs-detect | GPLv3 | https://github.com/occ-ai/obs-detect | OBS detection filter patterns |
 | obs-ocr | MIT | https://github.com/occ-ai/obs-ocr | OBS OCR integration patterns |
 
+## Development tools (not shipped)
+
+| Tool | Notes |
+|------|-------|
+| Grok Build (beta) | AI-assisted development contribution during v0.6.x; not a runtime dependency |
+
 ## IRLSAFETY+ source
 
-Copyright (c) 2026 IRLSAFETY+ Contributors — **MIT License**
+Copyright (c) 2026 **medicinalsheep** — **MIT License**
+
+See [CREDITS.md](CREDITS.md) for design overview, training summary, and attribution.

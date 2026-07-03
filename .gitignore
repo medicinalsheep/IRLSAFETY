@@ -19,6 +19,7 @@
 !CMakePresets.json
 !LICENSE
 !README.md
+!CREDITS.md
 !THIRD_PARTY_NOTICES.md
 
 # Exclude lock files

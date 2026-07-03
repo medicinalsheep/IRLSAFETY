@@ -1,6 +1,6 @@
 /*
  * IRLSAFETY+ — OBS control dock (model + training hub).
- * Copyright (c) 2026 IRLSAFETY+ Contributors. MIT License.
+ * Copyright (c) 2026 medicinalsheep. MIT License.
  */
 
 #pragma once
@@ -43,6 +43,7 @@ private slots:
 	void onShowWalkthrough();
 	void onLabelImages();
 	void onTrainModel();
+	void onSupportDevelopment();
 
 private:
 	void rebuildFilterList();
@@ -72,6 +73,7 @@ private:
 	QPushButton *label_btn = nullptr;
 	QPushButton *train_btn = nullptr;
 	QLabel *capture_hint = nullptr;
+	QPushButton *support_btn = nullptr;
 };
 
 #ifdef __cplusplus

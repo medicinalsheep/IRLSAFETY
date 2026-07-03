@@ -1,5 +1,9 @@
-IRLSAFETY+ v0.1 — Windows install & test
-==========================================
+IRLSAFETY+ — Windows install & test
+====================================
+
+Author: medicinalsheep · Contact: jfkyt@icloud.com
+Support (optional): https://github.com/sponsors/medicinalsheep
+MIT License · Made in the USA (see CREDITS.md in the repo)
 
 PRIVACY (core design)
 ---------------------
