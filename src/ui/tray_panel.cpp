@@ -1,5 +1,5 @@
 /*
- * IRLSAFETY+ — system tray + floating control panel (dark mode default).
+ * IRLSAFETY+ — system tray + floating control panel (dark mode, OBS-isolated).
  * Copyright (c) 2026 IRLSAFETY+ Contributors. MIT License.
  */
 
@@ -15,7 +15,6 @@
 #include <obs-module.h>
 #include <plugin-support.h>
 
-#include <QApplication>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMainWindow>
@@ -48,8 +47,7 @@ public:
 		title_layout->setContentsMargins(14, 10, 10, 10);
 
 		auto *icon = new QLabel(title_bar);
-		icon->setPixmap(QIcon(QStringLiteral(":/irlsafety/icons/appicon-tray.png"))
-					.pixmap(28, 28));
+		icon->setPixmap(QIcon(QStringLiteral(":/irlsafety/icons/appicon-tray.png")).pixmap(28, 28));
 		title_layout->addWidget(icon);
 
 		auto *titles = new QVBoxLayout();
@@ -76,7 +74,7 @@ public:
 static QSystemTrayIcon *g_tray_icon = nullptr;
 static IRLSafetyPanelWindow *g_panel_window = nullptr;
 
-static void show_panel()
+extern "C" void irlsafety_tray_panel_show(void)
 {
 	if (!g_panel_window)
 		return;
@@ -95,15 +93,14 @@ extern "C" void irlsafety_tray_panel_register(void)
 		return;
 
 	QWidget *main_window = static_cast<QWidget *>(obs_frontend_get_main_window());
-	irlsafety_ui::apply_dark_theme(main_window);
-
 	g_panel_window = new IRLSafetyPanelWindow(main_window);
 
 	g_tray_icon = new QSystemTrayIcon(main_window);
 	g_tray_icon->setIcon(QIcon(QStringLiteral(":/irlsafety/icons/appicon-tray.png")));
 	g_tray_icon->setToolTip(QStringLiteral("IRLSAFETY+ — Local privacy protection"));
 
-	auto *menu = new QMenu(main_window);
+	auto *menu = new QMenu(g_panel_window);
+	menu->setStyleSheet(g_panel_window->styleSheet());
 	auto *open_action = menu->addAction(QString::fromUtf8(obs_module_text("IRLSAFETYPlus.Tray.OpenPanel")));
 	auto *walkthrough_action = menu->addAction(QString::fromUtf8(obs_module_text("IRLSAFETYPlus.Tray.Walkthrough")));
 	menu->addSeparator();
@@ -111,7 +108,7 @@ extern "C" void irlsafety_tray_panel_register(void)
 
 	g_tray_icon->setContextMenu(menu);
 
-	QObject::connect(open_action, &QAction::triggered, [] { show_panel(); });
+	QObject::connect(open_action, &QAction::triggered, [] { irlsafety_tray_panel_show(); });
 	QObject::connect(walkthrough_action, &QAction::triggered, [] { irlsafety_onboarding_show(); });
 	QObject::connect(hide_action, &QAction::triggered, [] {
 		if (g_panel_window)
@@ -119,11 +116,10 @@ extern "C" void irlsafety_tray_panel_register(void)
 	});
 	QObject::connect(g_tray_icon, &QSystemTrayIcon::activated, [](QSystemTrayIcon::ActivationReason reason) {
 		if (reason == QSystemTrayIcon::Trigger || reason == QSystemTrayIcon::DoubleClick)
-			show_panel();
+			irlsafety_tray_panel_show();
 	});
 
 	g_tray_icon->show();
-	show_panel();
 }
 
 extern "C" void irlsafety_tray_panel_unregister(void)

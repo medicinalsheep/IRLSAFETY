@@ -49,6 +49,7 @@ typedef struct irlsafety_filter_list {
 } irlsafety_filter_list;
 
 void irlsafety_control_refresh_filters(irlsafety_filter_list *list);
+void irlsafety_control_release_filters(irlsafety_filter_list *list);
 int irlsafety_control_get_status(struct obs_source *filter, irlsafety_runtime_status *out);
 int irlsafety_control_set_bool_setting(struct obs_source *filter, const char *key, bool value);
 int irlsafety_control_reload_model(struct obs_source *filter);

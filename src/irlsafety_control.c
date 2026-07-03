@@ -110,7 +110,7 @@ static bool irlsafety_control_enum_source(void *param, obs_source_t *source)
 	return true;
 }
 
-void irlsafety_control_refresh_filters(irlsafety_filter_list *list)
+void irlsafety_control_release_filters(irlsafety_filter_list *list)
 {
 	size_t i;
 
@@ -123,6 +123,14 @@ void irlsafety_control_refresh_filters(irlsafety_filter_list *list)
 	}
 
 	memset(list, 0, sizeof(*list));
+}
+
+void irlsafety_control_refresh_filters(irlsafety_filter_list *list)
+{
+	if (!list)
+		return;
+
+	irlsafety_control_release_filters(list);
 	obs_enum_sources(irlsafety_control_enum_source, list);
 }
 

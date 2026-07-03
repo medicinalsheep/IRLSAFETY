@@ -249,7 +249,8 @@ IRLSafetyControlWidget::IRLSafetyControlWidget(QWidget *parent) : QWidget(parent
 
 IRLSafetyControlWidget::~IRLSafetyControlWidget()
 {
-	irlsafety_control_refresh_filters(&filters);
+	refresh_timer.stop();
+	irlsafety_control_release_filters(&filters);
 }
 
 obs_source_t *IRLSafetyControlWidget::currentFilter() const
