@@ -29,8 +29,9 @@ class IRLSafetyPanelWindow : public QMainWindow {
 public:
 	IRLSafetyControlWidget *controlWidget() const { return control_widget_; }
 
-	explicit IRLSafetyPanelWindow(QWidget *parent = nullptr) : QMainWindow(parent)
+	explicit IRLSafetyPanelWindow() : QMainWindow(nullptr, Qt::Window)
 	{
+		setAttribute(Qt::WA_QuitOnClose, false);
 		setWindowTitle(QStringLiteral("IRLSAFETY+"));
 		setMinimumSize(300, 380);
 		resize(320, 420);
@@ -80,10 +81,17 @@ private:
 static QSystemTrayIcon *g_tray_icon = nullptr;
 static IRLSafetyPanelWindow *g_panel_window = nullptr;
 
+static void ensure_panel_window()
+{
+	if (g_panel_window)
+		return;
+
+	g_panel_window = new IRLSafetyPanelWindow();
+}
+
 extern "C" void irlsafety_tray_panel_show(void)
 {
-	if (!g_panel_window)
-		return;
+	ensure_panel_window();
 
 	g_panel_window->show();
 	g_panel_window->raise();
@@ -101,17 +109,14 @@ extern "C" void irlsafety_tray_panel_register(void)
 	if (!QSystemTrayIcon::isSystemTrayAvailable())
 		return;
 
-	QWidget *main_window = static_cast<QWidget *>(obs_frontend_get_main_window());
-	if (!main_window)
+	if (!obs_frontend_get_main_window())
 		return;
 
-	g_panel_window = new IRLSafetyPanelWindow(main_window);
-
-	g_tray_icon = new QSystemTrayIcon(main_window);
+	g_tray_icon = new QSystemTrayIcon();
 	g_tray_icon->setIcon(QIcon(QStringLiteral(":/irlsafety/icons/appicon-tray.png")));
 	g_tray_icon->setToolTip(QStringLiteral("IRLSAFETY+ — Local privacy protection"));
 
-	auto *menu = new QMenu(g_panel_window);
+	auto *menu = new QMenu();
 	auto *open_action = menu->addAction(QString::fromUtf8(obs_module_text("IRLSAFETYPlus.Tray.OpenPanel")));
 	auto *walkthrough_action = menu->addAction(QString::fromUtf8(obs_module_text("IRLSAFETYPlus.Tray.Walkthrough")));
 	menu->addSeparator();

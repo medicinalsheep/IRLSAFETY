@@ -14,9 +14,8 @@
 #include "virtual_cam/virtual_cam.h"
 
 #if defined(IRLSAFETY_HAS_CONTROL_DOCK)
-void irlsafety_control_dock_register(void);
+void irlsafety_schedule_ui_registration(void);
 void irlsafety_control_dock_unregister(void);
-void irlsafety_tray_panel_register(void);
 void irlsafety_tray_panel_unregister(void);
 #endif
 
@@ -24,36 +23,19 @@ void irlsafety_tray_panel_unregister(void);
 #include <obs-frontend-api.h>
 #include "hybrid_delay.h"
 
-#if defined(IRLSAFETY_HAS_CONTROL_DOCK)
-static bool g_ui_registered = false;
-
-static void irlsafety_register_ui(void)
-{
-	if (g_ui_registered)
-		return;
-
-	g_ui_registered = true;
-	irlsafety_control_dock_register();
-	irlsafety_tray_panel_register();
-	obs_log(LOG_INFO, "IRLSAFETY+: Tray panel ready — click the IRLSAFETY+ icon in the system tray");
-	obs_log(LOG_INFO, "IRLSAFETY+: OBS dock also available under Docks → IRLSAFETY+ Control");
-}
-#endif
-
 static void irlsafety_frontend_event(enum obs_frontend_event event, void *unused)
 {
 	UNUSED_PARAMETER(unused);
 
 	if (event == OBS_FRONTEND_EVENT_FINISHED_LOADING) {
 #if defined(IRLSAFETY_HAS_CONTROL_DOCK)
-		irlsafety_register_ui();
+		irlsafety_schedule_ui_registration();
 #endif
 	} else if (event == OBS_FRONTEND_EVENT_EXIT) {
 		irlsafety_begin_shutdown();
 #if defined(IRLSAFETY_HAS_CONTROL_DOCK)
 		irlsafety_tray_panel_unregister();
 		irlsafety_control_dock_unregister();
-		g_ui_registered = false;
 #endif
 		irlsafety_obs_on_stream_stopped();
 	} else if (event == OBS_FRONTEND_EVENT_STREAMING_STARTED)
@@ -115,10 +97,7 @@ bool obs_module_load(void)
 	obs_frontend_add_event_callback(irlsafety_frontend_event, NULL);
 	obs_log(LOG_INFO, "IRLSAFETY+: Hybrid stream delay ready (default 1.5s global + 1.0s auto when protecting)");
 #elif defined(IRLSAFETY_HAS_CONTROL_DOCK)
-	irlsafety_control_dock_register();
-	irlsafety_tray_panel_register();
-	obs_log(LOG_INFO, "IRLSAFETY+: Tray panel ready — click the IRLSAFETY+ icon in the system tray");
-	obs_log(LOG_INFO, "IRLSAFETY+: OBS dock also available under Docks → IRLSAFETY+ Control");
+	irlsafety_schedule_ui_registration();
 #endif
 	return true;
 }

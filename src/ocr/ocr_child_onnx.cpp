@@ -68,10 +68,20 @@ static char g_det_path[1024] = {0};
 static char g_rec_path[1024] = {0};
 
 #ifdef IRLSAFETY_ENABLE_ONNX
-static Ort::Env g_env{ORT_LOGGING_LEVEL_WARNING, "irlsafety_ocr"};
 static std::unique_ptr<Ort::Session> g_det_session;
 static std::unique_ptr<Ort::Session> g_rec_session;
-static Ort::AllocatorWithDefaultOptions g_allocator;
+
+static Ort::Env &ocr_ort_env()
+{
+	static Ort::Env env{ORT_LOGGING_LEVEL_WARNING, "irlsafety_ocr"};
+	return env;
+}
+
+static Ort::AllocatorWithDefaultOptions &ocr_ort_allocator()
+{
+	static Ort::AllocatorWithDefaultOptions allocator;
+	return allocator;
+}
 static std::string g_det_input_name;
 static std::string g_rec_input_name;
 static std::string g_det_output_name;
@@ -173,9 +183,9 @@ static std::unique_ptr<Ort::Session> load_session(const char *path)
 
 #ifdef _WIN32
 	std::wstring wide = path_to_wide(path);
-	return std::make_unique<Ort::Session>(g_env, wide.c_str(), options);
+	return std::make_unique<Ort::Session>(ocr_ort_env(), wide.c_str(), options);
 #else
-	return std::make_unique<Ort::Session>(g_env, path, options);
+	return std::make_unique<Ort::Session>(ocr_ort_env(), path, options);
 #endif
 }
 
@@ -491,14 +501,14 @@ static void try_load_model_locked()
 		g_rec_session = load_session(g_rec_path);
 
 		{
-			Ort::AllocatedStringPtr in = g_det_session->GetInputNameAllocated(0, g_allocator);
-			Ort::AllocatedStringPtr out = g_det_session->GetOutputNameAllocated(0, g_allocator);
+			Ort::AllocatedStringPtr in = g_det_session->GetInputNameAllocated(0, ocr_ort_allocator());
+			Ort::AllocatedStringPtr out = g_det_session->GetOutputNameAllocated(0, ocr_ort_allocator());
 			g_det_input_name = in.get();
 			g_det_output_name = out.get();
 		}
 		{
-			Ort::AllocatedStringPtr in = g_rec_session->GetInputNameAllocated(0, g_allocator);
-			Ort::AllocatedStringPtr out = g_rec_session->GetOutputNameAllocated(0, g_allocator);
+			Ort::AllocatedStringPtr in = g_rec_session->GetInputNameAllocated(0, ocr_ort_allocator());
+			Ort::AllocatedStringPtr out = g_rec_session->GetOutputNameAllocated(0, ocr_ort_allocator());
 			g_rec_input_name = in.get();
 			g_rec_output_name = out.get();
 		}

@@ -64,6 +64,7 @@ if(ENABLE_FRONTEND_API AND ENABLE_QT)
               src/ui/control_widget.cpp
               src/ui/control_dock.cpp
               src/ui/tray_panel.cpp
+              src/ui/ui_register.cpp
               src/ui/ui_theme.cpp
               src/ui/onboarding_dialog.cpp
               src/ui/censor_log_dialog.cpp

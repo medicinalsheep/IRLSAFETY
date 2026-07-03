@@ -62,7 +62,6 @@ extern "C" void irlsafety_control_dock_register(void)
 	obs_frontend_add_dock_by_id("irlsafety_plus_control", obs_module_text("IRLSAFETYPlus.Dock.Title"),
 				    g_control_dock);
 	obs_frontend_pop_ui_translation();
-	irlsafety_onboarding_show_if_needed();
 }
 
 extern "C" void irlsafety_control_dock_unregister(void)

@@ -4,8 +4,9 @@ setlocal EnableExtensions
 REM Installs IRLSAFETY+ into an existing OBS Studio installation.
 
 set "ROOT=%~dp0.."
-set "SRC_DLL=%ROOT%\build_x64\rundir\RelWithDebInfo\irlsafety-plus.dll"
-set "SRC_DATA=%ROOT%\build_x64\rundir\RelWithDebInfo\irlsafety-plus"
+set "SRC_DIR=%ROOT%\build_x64\rundir\RelWithDebInfo"
+set "SRC_DLL=%SRC_DIR%\irlsafety-plus.dll"
+set "SRC_DATA=%SRC_DIR%\irlsafety-plus"
 
 if not exist "%SRC_DLL%" (
   echo [ERROR] Plugin not built. Run scripts\build-windows.bat first.
@@ -35,6 +36,11 @@ copy /Y "%SRC_DLL%" "%DEST_DLL%\"
 if errorlevel 1 (
   echo [ERROR] Could not copy DLL. Try running this script as Administrator.
   exit /b 1
+)
+
+if exist "%SRC_DIR%\onnxruntime.dll" (
+  copy /Y "%SRC_DIR%\onnxruntime.dll" "%DEST_DLL%\"
+  copy /Y "%SRC_DIR%\onnxruntime_providers_shared.dll" "%DEST_DLL%\"
 )
 
 xcopy /E /I /Y "%SRC_DATA%" "%DEST_DATA%\"
