@@ -95,14 +95,6 @@ fun SettingsPanel(
             onValueChange = { onSettingsChange(settings.copy(frameSkip = it.roundToInt())) }
         )
 
-        Text(
-            text = "Higher skip = smoother preview on A53/Exynos. Try 8–10 if stuttering.",
-            color = Color(0xFF9AA0A6),
-            fontSize = 11.sp,
-            lineHeight = 15.sp,
-            modifier = Modifier.padding(top = 2.dp)
-        )
-
         SettingSwitch(
             label = "Prefer GPU (NNAPI)",
             checked = settings.preferGpu,

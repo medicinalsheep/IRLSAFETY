@@ -9,7 +9,4 @@ data class DetectionSettings(
     val confidenceThreshold: Float = 0.35f,
     val frameSkip: Int = 6,
     val preferGpu: Boolean = true
-) {
-    fun withA53ThermalPreset(): DetectionSettings =
-        copy(frameSkip = 8.coerceAtLeast(frameSkip))
-}
+)

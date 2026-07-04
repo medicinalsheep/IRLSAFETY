@@ -1,27 +1,22 @@
-# IRLSAFETY+ Android — Alpha Tester Guide
+# IRLSAFETY+ Android — Tester Guide
 
-**Version:** v1.0.0-alpha5 (P14)  
-**Target device:** Samsung Galaxy A53 · One UI 8.0 · Android 16
+**Version:** 0.9.5-dev (pre-1.0)  
+**Primary device:** Samsung Galaxy A53 · One UI 8.0 · Android 16
 
 ---
 
 ## Install
 
-1. Enable **Install unknown apps** for your file manager (if sideloading APK).
-2. Copy `app-debug.apk` or release APK to the phone.
-3. Tap to install → open **IRLSAFETY+**.
-4. Grant **Camera** when prompted.
-
-Build from source: open `android/` in Android Studio → Run on device.
+1. Build: `scripts\package-android-apk.bat` (or Android Studio → Run)
+2. Copy `release\IRLSAFETY+-0.9.5-dev-android.apk` to the phone
+3. Install → open **IRLSAFETY+** → grant **Camera**
 
 ---
 
-## First-run setup (Samsung)
+## Samsung setup
 
 1. **Settings → Apps → IRLSAFETY+ → Battery → Unrestricted**
-2. Open app → scroll to **Detection settings**
-3. If preview stutters: set **Frame skip** to **8–10**
-4. Leave **Prefer GPU (NNAPI)** ON; if logcat shows CPU-only, that's OK on Exynos
+2. If preview stutters: increase **Frame skip** to 8–10 in app settings
 
 ---
 
@@ -29,14 +24,12 @@ Build from source: open `android/` in Android Studio → Run on device.
 
 | Scenario | Expected |
 |----------|----------|
-| Point at license plate | Black box over plate |
-| Point at street sign | Box over sign text area |
-| Shipping label / mail | Box over label |
-| ID / card prop | Box over document |
-| Turn off **License plates** | Plates no longer boxed |
-| **Protection enabled** OFF | No boxes |
-| Confidence 85% | Fewer, higher-quality boxes |
-| Frame skip 12 | Smoother preview, slower updates |
+| License plate in view | Black censorship box |
+| Street sign | Box over sign |
+| Shipping label | Box over label |
+| ID / card | Box over document |
+| Category OFF | That type no longer boxed |
+| Protection OFF | No boxes |
 
 ---
 
@@ -46,34 +39,20 @@ Build from source: open `android/` in Android Studio → Run on device.
 adb logcat -s IRLSAFETY+
 ```
 
-Healthy startup:
-
-```
-Detection model path: /data/user/0/.../files/models/irlsafety-detect.onnx
-frames=N · overlays=N · detector=ready · EP=NNAPI · skip=8
-```
+Look for `detector=ready` and your chosen `skip=` value.
 
 ---
 
 ## Bug reports
 
-Include:
+Include device model, One UI / Android version, app version (`0.9.5-dev`), steps, screenshot, and logcat (`IRLSAFETY+` tag).
 
-- Device model (e.g. SM-A536B), One UI version, Android version
-- APK version (alpha5)
-- Steps to reproduce
-- Screenshot or screen recording
-- Logcat snippet (`IRLSAFETY+` tag)
-- Settings used (frame skip, categories ON/OFF)
-
-File issues: GitHub `medicinalsheep/IRLSAFETY` or direct to medicinalsheep.
+GitHub issues: https://github.com/medicinalsheep/IRLSAFETY/issues
 
 ---
 
 ## Privacy
 
-- All inference on-device
-- No account, no cloud, no analytics in alpha build
-- Camera used only while app is in foreground
+On-device inference only. No account. Camera used while app is in foreground.
 
-See `data/models/SAMSUNG_ANDROID.txt` and `docs/ANDROID_ALPHA_REVIEW.md`.
+See `data/models/SAMSUNG_ANDROID.txt` and `docs/VERSIONING.md`.

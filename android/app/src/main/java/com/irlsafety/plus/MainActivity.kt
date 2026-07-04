@@ -43,8 +43,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.irlsafety.plus.overlay.GlesCensorOverlay
-import kotlinx.coroutines.delay
-import java.util.concurrent.Executors
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,7 +54,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    AlphaShell(lifecycleOwner = this)
+                    CameraShell(lifecycleOwner = this)
                 }
             }
         }
@@ -64,14 +62,11 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun AlphaShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
+private fun CameraShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
 
     var pipelineHandle by remember { mutableLongStateOf(0L) }
-    var statusLine by remember { mutableStateOf("Starting…") }
-    var modelLine by remember { mutableStateOf("Loading model…") }
-    var overlayCount by remember { mutableIntStateOf(0) }
     var overlayFrame by remember { mutableStateOf<OverlayFrame?>(null) }
     var previewBoxWidth by remember { mutableIntStateOf(0) }
     var previewBoxHeight by remember { mutableIntStateOf(0) }
@@ -98,11 +93,8 @@ private fun AlphaShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
         }
     }
 
-    val censorOverlay = remember {
-        GlesCensorOverlay(context)
-    }
-
-    val analysisExecutor = remember { Executors.newSingleThreadExecutor() }
+    val censorOverlay = remember { GlesCensorOverlay(context) }
+    val analysisExecutor = remember { java.util.concurrent.Executors.newSingleThreadExecutor() }
 
     fun applySettings(handle: Long, settings: DetectionSettings) {
         if (handle == 0L) return
@@ -120,14 +112,12 @@ private fun AlphaShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
     }
 
     DisposableEffect(modelPath) {
-        if (modelPath.isNullOrBlank()) {
-            modelLine = "Model missing — rebuild APK with irlsafety-detect.onnx asset."
-            pipelineHandle = 0L
+        pipelineHandle = if (modelPath.isNullOrBlank()) {
+            0L
         } else {
-            modelLine = "Model: ${modelPath.substringAfterLast('/')}"
-            pipelineHandle = IRLSafetyNative.nativeCreatePipeline(modelPath)
-            applySettings(pipelineHandle, detectionSettings)
-            statusLine = IRLSafetyNative.nativePipelineStatus(pipelineHandle)
+            IRLSafetyNative.nativeCreatePipeline(modelPath).also { handle ->
+                applySettings(handle, detectionSettings)
+            }
         }
         onDispose {
             if (pipelineHandle != 0L) {
@@ -157,9 +147,8 @@ private fun AlphaShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
                 previewView = previewView,
                 pipelineHandle = pipelineHandle,
                 analysisExecutor = analysisExecutor,
-                onFrameProcessed = { count, overlayData ->
+                onFrameProcessed = { _, overlayData ->
                     mainHandler.post {
-                        overlayCount = count
                         overlayFrame = overlayData?.let { OverlayFrame.fromPacked(it) }
                     }
                 }
@@ -171,13 +160,6 @@ private fun AlphaShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
         onDispose {
             session?.stop()
             analysisExecutor.shutdown()
-        }
-    }
-
-    LaunchedEffect(pipelineHandle) {
-        while (pipelineHandle != 0L) {
-            statusLine = IRLSafetyNative.nativePipelineStatus(pipelineHandle)
-            delay(500)
         }
     }
 
@@ -202,7 +184,7 @@ private fun AlphaShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
             .fillMaxSize()
             .verticalScroll(scrollState)
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
             text = "IRLSAFETY+",
@@ -211,12 +193,18 @@ private fun AlphaShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
             color = Color(0xFF3ECF8E)
         )
         Text(
-            text = IRLSafetyNative.nativeGetApiVersion(),
+            text = BuildConfig.VERSION_NAME,
             color = Color(0xFF8AB4F8),
             fontSize = 13.sp
         )
 
-        if (hasCameraPermission) {
+        if (modelPath.isNullOrBlank()) {
+            Text(
+                text = "Detection model not found. Rebuild the app from source.",
+                color = Color(0xFFFF8A80),
+                fontSize = 14.sp
+            )
+        } else if (hasCameraPermission) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -251,39 +239,15 @@ private fun AlphaShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
             }
         } else {
             Text(
-                text = "Camera permission required for live preview.",
+                text = "Camera permission is required.",
                 color = Color(0xFFFF8A80),
                 fontSize = 14.sp
             )
         }
 
-        Text(
-            text = modelLine,
-            color = Color(0xFF8AB4F8),
-            fontSize = 13.sp
-        )
-        Text(
-            text = statusLine,
-            color = Color(0xFFE8EAED),
-            fontSize = 14.sp
-        )
-        Text(
-            text = "Overlays (last frame): $overlayCount",
-            color = Color(0xFFE8EAED),
-            fontSize = 14.sp
-        )
-
         SettingsPanel(
             settings = detectionSettings,
             onSettingsChange = { detectionSettings = it }
-        )
-
-        Text(
-            text = "P14 — detection toggles + confidence + frame skip (saved locally).\n" +
-                "Next: internal tester APK + doc (P15).",
-            color = Color(0xFF9AA0A6),
-            fontSize = 12.sp,
-            lineHeight = 17.sp
         )
     }
 }

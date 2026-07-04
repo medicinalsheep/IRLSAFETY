@@ -61,15 +61,6 @@ static AndroidPipeline *pipeline_from_handle(jlong handle)
 	return reinterpret_cast<AndroidPipeline *>(static_cast<uintptr_t>(handle));
 }
 
-extern "C" JNIEXPORT jstring JNICALL Java_com_irlsafety_plus_IRLSafetyNative_nativeGetApiVersion(JNIEnv *env, jclass)
-{
-	ensure_android_logging();
-
-	char buf[96];
-	snprintf(buf, sizeof(buf), "libirlsafety API v%d · Android P14", IRLSAFETY_API_VERSION);
-	return env->NewStringUTF(buf);
-}
-
 static void copy_jstring(JNIEnv *env, jstring src, char *dest, size_t dest_size)
 {
 	if (!dest || dest_size == 0)

@@ -19,7 +19,7 @@ run the existing filter — identical to the Android interim workflow.
 signs, mail, IDs) and solid-box censorship. Screen OCR and system-wide overlay
 are out of scope for v1.
 
-**Gate:** iOS work starts after **Android v1.0-alpha exit** (P15 internal APK
+**Gate:** iOS work starts after **Android 0.9.x alpha exit** (tester APK on A53
 proves `libirlsafety` on mobile with ORT + GLES).
 
 ---

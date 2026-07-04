@@ -11,15 +11,18 @@ on:
 permissions:
   contents: write
 jobs:
+  # Plain pushes to main do not run CI (avoids failed macOS/Ubuntu template builds).
+  # Use workflow_dispatch or push a semver tag (e.g. 0.9.4) to build releases.
   check-format:
     name: Check Formatting 🔍
-    if: github.ref_name == 'master' || github.ref_name == 'main'
+    if: github.ref_type == 'tag'
     uses: ./.github/workflows/check-format.yaml
     permissions:
       contents: read
 
   build-project:
     name: Build Project 🧱
+    if: github.ref_type == 'tag'
     uses: ./.github/workflows/build-project.yaml
     secrets: inherit
     permissions:

@@ -199,7 +199,7 @@ See `data/models/PLATFORMS.txt`.
 
 ---
 
-### Phase 3 — v1.0-alpha: Android camera MVP (10–14 weeks)
+### Phase 3 — 0.9.x mobile alpha: Android camera MVP (10–14 weeks)
 
 | PR | Title | Depends |
 |----|-------|---------|
@@ -243,8 +243,8 @@ See `data/models/PLATFORMS.txt`.
 |-----------|---------------------|-------------------|
 | v0.8 core + vcam | ~2–3 months | Windows standalone path |
 | v0.9 portable OCR/YOLO | ~1–1.5 months | Child OCR release |
-| v1.0 Android alpha | ~3–4 months | Internal APK |
-| v1.1 Android beta | ~2 months | OCR + keywords |
+| 0.9.x Android alpha | ~3–4 months | Internal APK |
+| pre-1.0 Android beta | ~2 months | OCR + keywords |
 
 **Total to credible Android tester build:** ~6–9 months after v0.8 starts (overlapping work possible on P10–P12 once P9 lands).
 
@@ -257,7 +257,7 @@ See `data/models/PLATFORMS.txt`.
 | 2026-07-03 | Android v1 = camera app, not OBS plugin |
 | 2026-07-03 | OCR out of Android v1; detection-first |
 | 2026-07-03 | Reuse v0.7 `irlsafety-detect.onnx`; no retrain required for MVP |
-| 2026-07-03 | NDI/SRT → OBS remains official phone path until v1.0-alpha |
+| 2026-07-03 | NDI/SRT → OBS remains official phone path until 0.9.x mobile alpha ships |
 | 2026-07-03 | P2–P4 merged: `libirlsafety` OBS-agnostic; plugin owns OBS adapters |
 
 ---
@@ -268,7 +268,8 @@ See `data/models/PLATFORMS.txt`.
 - `data/models/SAMSUNG_ANDROID.txt` — Galaxy One UI / SoC tuning
 - `docs/DESIGN-ios-v1.md` — iOS phased plan (post P15)
 - `docs/ANDROID_ALPHA_REVIEW.md` — logic review checklist + P15–P16 plan
-- `android/TESTER.md` — alpha tester install guide (A53)
+- `android/TESTER.md` — tester install guide (A53)
+- `docs/VERSIONING.md` — naming and pre-1.0 version policy
 - `data/models/VIRTUAL_CAMERA.txt` — v0.8 vcam plan
 - `data/models/OCR.txt` — child OCR cross-platform path
 - `tests/CMakeLists.txt` — portable core test subgraph

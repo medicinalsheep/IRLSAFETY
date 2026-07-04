@@ -1,49 +1,29 @@
-IRLSAFETY+ — Android (planned)
-================================
+IRLSAFETY+ — Android
+=====================
 
-STATUS TODAY (v1.0-alpha5 P14)
---------------------------------
-Android app: CameraX preview, ONNX detection, GLES boxes, settings UI.
-Four category toggles + confidence + frame skip (saved locally).
+STATUS (0.9.5-dev, pre-1.0)
+----------------------------
+Standalone camera app in repo (`android/`): preview, ONNX detection, GLES boxes, settings UI.
 
 USE YOUR PHONE WITH OBS ON A PC (works now)
 -------------------------------------------
-1. On the phone: Larix Broadcaster, NDI HX Camera, or SRT streaming app
-2. On the PC: OBS → add NDI / SRT source
-3. Add IRLSAFETY+ filter on that source
-4. Stream or record as usual — detection runs on the PC
+1. Larix, NDI HX Camera, or SRT on the phone
+2. OBS NDI/SRT source on Windows
+3. IRLSAFETY+ filter on that source
 
-See PLATFORMS.txt for the full adapter matrix.
-
-ANDROID APP (roadmap)
----------------------
-Standalone camera protection app (not an OBS plugin):
-
-  v0.8  Extract libirlsafety core (shared with Windows) — done
-  v1.0  Android alpha — camera preview + plate/mail/ID detection
-        P10  Gradle + NDK scaffold — done
-        P11  CameraX → irlsafety_frame_view JNI — done
-        P12  ONNX Runtime Android + irlsafety-detect.onnx — done
-        P13  GLES solid-box overlay on preview — done
-        P14  Settings toggles (4 categories) — done
-        P15  Internal APK + tester doc — next
-  v1.1  On-device OCR (same ONNX stack as Windows child OCR)
+ANDROID APP ROADMAP (pre-1.0)
+-----------------------------
+  0.9.5-dev  Camera + detection + overlay + settings (current)
+  0.9.6+     Tester hardening, front camera, polish
+  1.0.0      First stable Android release (future)
 
 MVP scope:
-  - Rear camera live preview (front camera in P14+)
-  - Local YOLO detection (irlsafety-detect.onnx)
+  - Rear camera live preview
+  - Local YOLO (irlsafety-detect.onnx)
   - Solid-box censorship
-  - 100% on-device — no cloud
+  - 100% on-device
 
-Out of scope for first Android release:
-  - OBS integration (OBS does not host plugins on Android)
-  - Full-screen OCR on other apps
-  - On-phone training pipeline
+Samsung Galaxy: see SAMSUNG_ANDROID.txt
 
-Samsung Galaxy testers: see SAMSUNG_ANDROID.txt for One UI and SoC tips.
-
-Technical design: docs/DESIGN-android-v1.md in the repo.
-
-PRIVACY
--------
-Same as Windows: inference stays on your device. No account required.
+Design: docs/DESIGN-android-v1.md
+Versions: docs/VERSIONING.md

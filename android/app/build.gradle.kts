@@ -15,8 +15,8 @@ android {
         applicationId = "com.irlsafety.plus"
         minSdk = 26
         targetSdk = 35
-        versionCode = 5
-        versionName = "1.0.0-alpha5"
+        versionCode = 905
+        versionName = "0.9.5-dev"
 
         ndk {
             abiFilters += listOf("arm64-v8a")
@@ -53,6 +53,7 @@ android {
     buildFeatures {
         compose = true
         prefab = true
+        buildConfig = true
     }
 
     externalNativeBuild {

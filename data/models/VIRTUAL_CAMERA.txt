@@ -35,7 +35,7 @@ PHASE PLAN
   v0.7  libirlsafety core extracted (shared by OBS plugin + future apps)
   v0.8  Windows virtual camera module (OBS Tools menu + standalone option)
   v0.9  Spout / NDI optional outputs for pro streaming stacks
-  v1.0  Standalone "IRLSAFETY Desktop" — protect desktop without OBS running
+  1.0+  Standalone "IRLSAFETY Desktop" — protect desktop without OBS running (future)
 
 WHAT YOU CAN DO TODAY
 ---------------------

@@ -21,7 +21,7 @@ A tester on the A53 can:
 
 ## Logic review checklist
 
-Run through on **Galaxy A53** before tagging `v1.0.0-alpha5` tester build.
+Run through on **Galaxy A53** before sharing `0.9.5-dev` APK.
 
 ### Pipeline & performance
 
@@ -83,7 +83,7 @@ Run through on **Galaxy A53** before tagging `v1.0.0-alpha5` tester build.
 |------|-------------|
 | `scripts/build-android-release.bat` | Signed or debug APK + version stamp |
 | `android/TESTER.md` | Install, A53 tuning, logcat, bug report template |
-| GitHub Release `android-v1.0.0-alpha5` | APK asset attached |
+| `scripts/package-android-apk.bat` → `release/IRLSAFETY+-0.9.5-dev-android.apk` | Sideload package |
 | Smoke test matrix | A53 sign-off on checklist above |
 
 **Exit:** medicinalsheep ships APK to self + 1–2 trusted testers.
@@ -102,7 +102,7 @@ Based on A53 feedback:
 
 ---
 
-### v1.0-beta — Android feature parity slice (~1–2 months)
+### 0.10+ / pre-1.0 beta — Android feature parity slice (~1–2 months)
 
 | Feature | Source |
 |---------|--------|
@@ -154,6 +154,6 @@ See `docs/DESIGN-ios-v1.md`. Tester hardware:
 P14 settings (done)
     → P15 tester APK + A53 sign-off
     → P16 hardening from feedback (parallel: iOS I1 scaffold)
-    → v1.0-beta OCR
+    → pre-1.0 beta OCR
     → iOS TestFlight (I7)
 ```

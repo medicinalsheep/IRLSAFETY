@@ -5,7 +5,6 @@ object IRLSafetyNative {
         System.loadLibrary("irlsafety_jni")
     }
 
-    external fun nativeGetApiVersion(): String
     external fun nativeCreatePipeline(modelPath: String): Long
     external fun nativeDestroyPipeline(handle: Long)
     external fun nativePipelineStatus(handle: Long): String
