@@ -38,10 +38,54 @@ Built locally: `scripts\build-windows.bat` + release zip.
 
 ---
 
-## Clean up old failed runs
+## Archive / remove old releases
 
-Failed runs stay in the Actions history but **won’t repeat** if workflows are manual-only.  
-You can filter Actions by workflow name **Android APK Release** to see only mobile builds.
+GitHub has **no “archive release” button**. To clean up the Releases page you either **delete** old entries or hide failed draft releases.
+
+### Keep (recommended)
+
+| Release | Why |
+|---------|-----|
+| **v0.9.5-dev** | Current Android APK |
+| **v0.9.4** (or `0.9.4`) | Current Windows OBS zip |
+
+### Option A — GitHub website (no tools)
+
+1. Open https://github.com/medicinalsheep/IRLSAFETY/releases  
+2. For each **old** release (failed `android-v*` attempts, empty drafts, very old versions you don’t need):  
+   - Click the release → **Delete** (trash icon or Edit → Delete this release)  
+   - When asked, also delete the **tag** if it was a failed Android CI tag  
+3. Leave **v0.9.4** (Windows) and **v0.9.5-dev** (Android) published  
+
+### Option B — Script (fast, keeps allowlist)
+
+```powershell
+# One-time: install gh from https://cli.github.com/ then:
+gh auth login
+
+# Preview what would be removed:
+.\scripts\cleanup-github-releases.ps1 -WhatIf
+
+# Delete everything except v0.9.4 and v0.9.5-dev:
+.\scripts\cleanup-github-releases.ps1
+```
+
+Custom keep list:
+
+```powershell
+.\scripts\cleanup-github-releases.ps1 -KeepTags v0.9.4,v0.9.5-dev
+```
+
+### Actions history (failed CI runs)
+
+Failed **workflow runs** are separate from Releases. To reduce noise:
+
+1. **Actions** tab → filter by workflow **Android APK Release**  
+2. Old red runs can be left as history; they no longer auto-trigger  
+
+There is no bulk-delete for Actions runs without GitHub support / API.
+
+**Do not** use **Settings → Archive repository** — that archives the entire repo, not individual releases.
 
 ---
 
