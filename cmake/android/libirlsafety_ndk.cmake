@@ -20,4 +20,8 @@ if(IRLSAFETY_ENABLE_ONNX)
   include("${CMAKE_CURRENT_LIST_DIR}/onnxruntime_android.cmake")
 endif()
 
+# libirlsafety.cmake lists sources relative to the repo root (not android/app/src/main/cpp).
+set(_irlsafety_cmake_source_dir "${CMAKE_CURRENT_SOURCE_DIR}")
+set(CMAKE_CURRENT_SOURCE_DIR "${IRLSAFETY_REPO_ROOT}")
 include("${IRLSAFETY_REPO_ROOT}/cmake/libirlsafety.cmake")
+set(CMAKE_CURRENT_SOURCE_DIR "${_irlsafety_cmake_source_dir}")
