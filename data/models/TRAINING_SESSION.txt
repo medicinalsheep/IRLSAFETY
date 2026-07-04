@@ -1,96 +1,92 @@
-IRLSAFETY+ — v0.7 Mail + ID Training Session
-=============================================
+IRLSAFETY+ — v08 Training Session (JWCOM2 + JWCOM4)
+===================================================
 
-BASELINE (completed)
---------------------
-  Plates/signs retrain finished: 80 epochs, mAP50 ~99%, mAP50-95 ~81%
-  Dataset: 800 train + 200 val (plates + signs only)
-  ONNX: Z:\irlsafety-training\runs\irlsafety_us\weights\best.onnx
+PLANNED FOR: v0.9.6 bundled model (Windows + Android)
+HOST TRAIN:   JWCOM2 (GPU laptop, X:\irlsafety-training-kit)
+HOST CAPTURE: JWCOM4 (OBS, Z:\irlsafety-training RAM disk)
 
-NEXT GOAL — 4-class model
+Prep: medicinalsheep is setting up JWCOM2 and JWCOM4 before this session.
+
+
+BASELINE (v07 — shipped in v0.9.4 / Android 0.9.5-dev)
+--------------------------------------------------------
+  4-class irlsafety-detect.onnx bundled in releases
+  Classes: license_plate, street_sign, shipping_label, id_document
+  Plates/signs: strong (mAP50 ~99% on bootstrap + warm-start)
+  Mail/ID: present but needs more real-world variety for v08
+
+
+NEXT GOAL — irlsafety_v08
 -------------------------
-  0 license_plate   (existing — keep)
-  1 street_sign     (existing — keep)
-  2 shipping_label  (NEW — UPS, FedEx, Amazon, USPS, DHL, parcels)
-  3 id_document     (NEW — driver license, state ID)
+  Same 4 classes — improve mail + ID robustness, not new taxonomy
 
-TARGETS BEFORE TRAIN
---------------------
-  shipping_label  ≥ 50 boxes
-  id_document     ≥ 30 boxes
-  (plates/signs from bootstrap already OK)
+  shipping_label  ≥ 50 boxes (more angles, carriers, partial frames)
+  id_document     ≥ 30 boxes (glare, hand-held, desk scenes)
+  Hard negatives: plain cardboard, empty desk, no-label packages
 
-WORKFLOW (JWCOM4 + JWCOM2)
---------------------------
 
-PHASE 0 — Props (JWCOM2 build, JWCOM4 print)
-  [ ] JWCOM2: .\jwcom2-build-props.ps1  (or scripts\build-props.ps1)
-  [ ] JWCOM4: print Z:\irlsafety-training\props\driver_licenses\ + shipping_labels\
-  [ ] Tape 4x6 labels to boxes/mailers; cut licenses on cardstock
+WORKFLOW
+--------
+
+PHASE 0 — Props (JWCOM2 build → JWCOM4 print)
+  [ ] JWCOM2: cd X:\irlsafety-training-kit
+  [ ] JWCOM2: .\jwcom2-build-props.ps1
+  [ ] JWCOM4: print Z:\irlsafety-training\props\driver_licenses\
+  [ ] JWCOM4: print Z:\irlsafety-training\props\shipping_labels\
+  [ ] JWCOM4: tape 4x6 labels to boxes/mailers; cardstock licenses
 
 PHASE A — Capture on JWCOM4 (OBS)
-  [ ] Set machine env (once):  setx IRLSAFETY_TRAINING_ROOT Z:\irlsafety-training
-  [ ] Restart OBS so captures land on RAM disk (images/staging)
-  [ ] Control dock → Capture Frame (15–25 frames per category batch)
+  [ ] JWCOM4: setx IRLSAFETY_TRAINING_ROOT Z:\irlsafety-training
+  [ ] JWCOM4: restart OBS
+  [ ] Control dock → Capture Frame (15–25 frames per batch)
 
-  Shipping / mail (class: shipping_label):
-    [ ] UPS brown box, label facing camera
-    [ ] FedEx envelope or pak
-    [ ] Amazon smile bag/box
-    [ ] USPS priority / flat rate
-    [ ] Label at 30–45° angle
-    [ ] Label partially cut off at frame edge
-    [ ] Hand holding package
+  shipping_label:
+    [ ] UPS / FedEx / Amazon / USPS / DHL labels
+    [ ] 30–45° angle, partial edge crop, hand holding package
 
-  IDs (class: id_document):
-    [ ] Driver license flat
-    [ ] License tilted ~30°
-    [ ] State ID card
-    [ ] ID in hand with glare
-    [ ] ID on desk next to keyboard
+  id_document:
+    [ ] Flat license, tilted ~30°, glare, in hand, on desk by keyboard
 
-PHASE B — Prep + label on JWCOM2
-  [ ] .\jwcom2-prep.ps1              (audit counts)
-  [ ] .\jwcom2-prep.ps1 -Ingest      (staging → train, or label staging first)
-  [ ] .\jwcom2-label.ps1             (LabelImg — tight boxes on label/ID, not whole box)
+PHASE B — Label on JWCOM2
+  [ ] .\jwcom2-prep.ps1
+  [ ] .\jwcom2-label.ps1
+  [ ] .\jwcom2-prep.ps1 -Ingest
 
 PHASE C — Validate
-  [ ] .\jwcom2-prep.ps1 -RequireV07  (blocks until mail/ID minimums met)
+  [ ] .\jwcom2-prep.ps1 -RequireV07
 
-PHASE D — Train (major improvements vs last run)
+PHASE D — Train on JWCOM2
   [ ] .\jwcom2-train.ps1 -RequireV07 -WarmStart -SkipBootstrap -Device 0 -Epochs 100
+  [ ] Run name: irlsafety_v08
+  [ ] Optional faster runs: -RunsLocal C:\temp\irlsafety-runs
 
-  Improvements in this pass:
-    - Warm-start from plates/signs best.pt (transfer learning)
-    - 100 epochs, cosine LR, rotation aug for angled mail/IDs
-    - Run name: irlsafety_v07
-    - -RunsLocal C:\temp\irlsafety-runs  (optional — faster than RAM disk for runs/)
-
-  Angled OBB (phase 2, after axis-aligned works):
+  Phase 2 (after axis-aligned v08 validates):
     [ ] Re-label tilted frames as OBB
     [ ] .\jwcom2-train.ps1 -OBB -RequireV07 -WarmStart -Device 0
 
-PHASE E — Deploy + test on JWCOM4
-  [ ] Copy models\irlsafety-detect.onnx to OBS plugin models\
-  [ ] Reload Model
-  [ ] Enable: Mail & Shipping Labels, IDs & Licenses
-  [ ] Angled Cover: ON
-  [ ] Test with same props you captured
+PHASE E — Deploy
+  [ ] Copy best.onnx → repo data/models/irlsafety-detect.onnx
+  [ ] JWCOM4: copy to OBS plugin models\ → Reload Model
+  [ ] Test all four categories + Angled Cover ON
+  [ ] Rebuild Windows package + Android APK for v0.9.6 release
 
-QUICK COMMANDS (JWCOM2 kit — X:\irlsafety-training-kit)
---------------------------------------------------------
+
+QUICK COMMANDS (JWCOM2)
+-----------------------
+  cd X:\irlsafety-training-kit
   .\jwcom2-setup.ps1
   .\jwcom2-build-props.ps1
   .\jwcom2-prep.ps1
   .\jwcom2-label.ps1
   .\jwcom2-prep.ps1 -Ingest
   .\jwcom2-prep.ps1 -RequireV07
-  .\jwcom2-train.ps1 -RequireV07 -WarmStart -SkipBootstrap -Device 0
+  .\jwcom2-train.ps1 -RequireV07 -WarmStart -SkipBootstrap -Device 0 -Epochs 100
 
 TIPS
 ----
   - One class shipping_label for ALL carriers
-  - Draw tight boxes around the label or ID card
-  - More angle variety beats duplicate flat shots
-  - Hard negatives help: plain cardboard, blank desk
-  - Captures go to images/staging — ingest before or after labeling
+  - Tight boxes on label/ID only — not whole box or desk
+  - Angle variety beats duplicate flat shots
+  - Captures → images/staging — ingest after labeling staging
+
+See also: LAPTOP_TRAINING.txt, props/PROPS_GUIDE.txt

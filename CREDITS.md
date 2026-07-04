@@ -18,63 +18,105 @@
 
 ## What this project is
 
-**IRLSAFETY+** is a real-time privacy filter for OBS Studio. All live censorship runs **on your PC** — no cloud inference, no frame uploads.
+**IRLSAFETY+** is a **local-only** real-time privacy product family:
 
-The plugin watches your video sources, finds sensitive content (screen text, custom keywords, license plates, street signs, and pattern-matched numbers), and covers it before it reaches your stream or recording.
+| Surface | Role |
+|---------|------|
+| **Windows OBS plugin** | Filter on live sources — stream/recording protection |
+| **Android app** | Standalone camera preview + on-device detection (alpha) |
+| **macOS OBS plugin** | Planned next — same `libirlsafety` core |
+| **iOS app** | Planned after Android alpha — camera protection (no OBS on iOS) |
+
+Nothing is sent to the cloud for inference. Training stays on your machines and your dataset.
+
+---
+
+## Current progress (2026-07)
+
+| Platform | Shipped | Notes |
+|----------|---------|-------|
+| **Windows** | **v0.9.4** | OBS plugin; 4-class YOLO; tray panel; virtual cam hooks; defaults tuned for **4–6 GB VRAM** (frame skip 8) |
+| **Android** | **v0.9.5-dev** | CameraX + GLES overlay; settings UI; GitHub APK; primary tester: Samsung A53 |
+| **Core** | `libirlsafety` | Shared static lib — pipeline, ONNX YOLO, region tracker, portable settings API |
+| **macOS** | — | OBS plugin scaffold after v0.9.6 alignment |
+| **iOS** | — | Design draft — starts after Android alpha sign-off |
+
+**Engineering milestones (internal):** Android P10–P15 complete (JNI, ORT, overlay, tester APK). P16 hardening (front camera toggle, A53 feedback) in progress.
+
+---
+
+## Roadmap — v0.9.6 (next aligned release)
+
+**Goal:** one marketing version line across platforms before 1.0.0 — not necessarily feature parity, but consistent naming and bundled model.
+
+| Target | Plan |
+|--------|------|
+| **v0.9.6** | Bump Windows + Android together when Android alpha checklist passes on A53 |
+| **Windows** | Ship refreshed `irlsafety-detect.onnx` from next JWCOM training pass; keep low-end defaults |
+| **Android** | Promote `0.9.5-dev` → `0.9.6` (drop `-dev` when stable) |
+| **macOS** | OBS plugin build + smoke test on Apple Silicon / Intel |
+| **iOS** | Begin **I1** scaffold (`ios/` + `libirlsafety`) in parallel with macOS; TestFlight later |
+
+Nothing is **1.0.0** until a deliberate public launch (installer, Play Store, App Store). See `docs/VERSIONING.md`.
 
 ---
 
 ## Design (how it works)
 
 ```
-Video source → IRLSAFETY+ filter
-    ├─ Windows OCR (Screen Text, Custom PII, Sensitive Patterns)
-    ├─ YOLOv8n ONNX detection (License Plates, Street Signs)
-    ├─ Region tracker (overlays persist between scans; motion prediction)
-    ├─ Censor compositor (solid box, blur, custom overlay image)
-    ├─ Hybrid stream delay (baseline + auto buffer while protecting)
-    └─ Secure mode (hold overlays; optional frame drop during motion)
+Video / camera frame → libirlsafety pipeline
+    ├─ YOLOv8n ONNX (plates, signs, mail labels, IDs) — DirectML / NNAPI / CPU
+    ├─ OCR path (Windows Media OCR + optional child ONNX on Windows)
+    ├─ Custom PII keywords + sensitive patterns
+    ├─ Region tracker (persist + predict between detection frames)
+    ├─ Censor compositor (solid box, blur, custom overlay, angled quad)
+    ├─ Hybrid stream delay (OBS Windows)
+    └─ Secure mode (hold overlays; optional frame drop)
+
+Windows: OBS filter + control dock + tray panel
+Android: CameraX preview + GLES censorship overlay
 ```
 
 **Privacy-first choices:**
-- Inference is local (Windows.Media.Ocr + ONNX Runtime)
-- Training is local (your disk, your labels, your GPU/CPU)
-- Optional child OCR ONNX path for cross-platform builds later
-
-**OBS integration:**
-- Filter on each source (Display Capture, webcam, Media, etc.)
-- Control dock for model reload, training hub, and setup walkthrough
+- Inference is local only
+- Training is local (your disk, your labels, your GPU)
 - Bundled guides in `data/models/` (OCR, platforms, training, PII strategy)
 
 ---
 
-## Training (v0.6.2 detection model)
+## Detection model — shipped & next training
 
-The bundled **`irlsafety-detect.onnx`** model was trained in-house for US **license plates** and **street signs**:
+### Shipped: `irlsafety_v07` (bundled `irlsafety-detect.onnx`)
 
 | | |
 |---|---|
 | **Architecture** | YOLOv8n (Ultralytics) |
-| **Classes** | `0 = license_plate`, `1 = street_sign` |
-| **Data** | US bootstrap (LISA street signs + plate boxes) + local labeling |
-| **Training** | 40 epochs on JWCOM-3 (CPU); checkpoints on JWCOM-4 RAM disk |
-| **Export** | ONNX via Ultralytics export → `irlsafety-detect.onnx` (~12 MB) |
-| **Peak metrics** | mAP50 ~0.988 (epoch 39); final mAP50 ~0.982 |
+| **Classes** | `license_plate`, `street_sign`, `shipping_label`, `id_document` |
+| **Data** | US bootstrap (plates/signs) + printed props (mail/ID) |
+| **Training** | Warm-start; 100-epoch pass; checkpoints on JWCOM-4 RAM disk; GPU train on JWCOM2 |
+| **Export** | ONNX ~12 MB via Ultralytics |
+| **Metrics** | Plates/signs mAP50 ~0.99; full 4-class bundle in v0.9.4 Windows + Android APK |
 
-Re-train on your own GoPro/IRL frames with the Control dock or `scripts/train-model.ps1` — nothing leaves your machine.
+### Next session: `irlsafety_v08` (planned on JWCOM2 + JWCOM4)
 
----
+**You are prepping JWCOM2 (GPU train/label) and JWCOM4 (OBS capture / RAM disk dataset).**
 
-## v0.7.0 (plugin — in progress)
+| Phase | Machine | Work |
+|-------|---------|------|
+| **0 — Props** | JWCOM2 build → JWCOM4 print | `jwcom2-build-props.ps1`; tape 4×6 labels; cardstock licenses |
+| **A — Capture** | JWCOM4 | OBS Control dock → Capture Frame; angled mail, hand-held IDs, edge crops |
+| **B — Label** | JWCOM2 | `jwcom2-label.ps1` — tight boxes on labels/cards only |
+| **C — Gate** | JWCOM2 | `jwcom2-prep.ps1 -RequireV07` (50+ mail, 30+ ID boxes) |
+| **D — Train** | JWCOM2 | `jwcom2-train.ps1 -RequireV07 -WarmStart -SkipBootstrap -Device 0 -Epochs 100` |
+| **E — Deploy** | JWCOM4 + repo | Copy `best.onnx` → plugin `models/`; Reload Model; validate all four categories |
 
-| | |
-|---|---|
-| **Detection taxonomy** | 4 classes: `license_plate`, `street_sign`, `shipping_label`, `id_document` |
-| **Angled cover** | Low-poly quad censor for OBB-trained models |
-| **Settings** | Simplified Protection UI; overlap padding removed |
-| **Training** | `train-model.ps1 -Device 0 -OBB`; RAM-disk / laptop guides |
+**v08 goals vs v07:**
+- More real-world mail/ID diversity (angles, glare, partial labels, hands)
+- Hard negatives (blank cardboard, desk without labels)
+- Optional **OBB** pass after axis-aligned model is solid (`-OBB` on JWCOM2)
+- Export becomes the **v0.9.6** bundled model for Windows + Android
 
-Bundled ONNX may remain 2-class until the next local training run completes.
+Full checklist: `data/models/TRAINING_SESSION.txt` · JWCOM kit: `data/models/LAPTOP_TRAINING.txt`
 
 ---
 
@@ -82,17 +124,19 @@ Bundled ONNX may remain 2-class until the next local training run completes.
 
 | Contribution | Notes |
 |--------------|-------|
-| **medicinalsheep** | Architecture, pipeline, OBS plugin, training pipeline, US model |
-| **Grok Build (beta)** | AI-assisted design, implementation, and iteration (v0.6–v0.7) |
+| **medicinalsheep** | Architecture, `libirlsafety`, OBS plugin, Android app, training pipeline, US models |
+| **Grok Build (beta)** | AI-assisted design, implementation, and iteration (v0.6–v0.9) |
 | **OBS Plugin Template** | CMake/build scaffold ([obs-plugintemplate](https://github.com/obsproject/obs-plugintemplate)) |
 | **Community references** | Patterns informed by [obs-detect](https://github.com/occ-ai/obs-detect) and [obs-ocr](https://github.com/occ-ai/obs-ocr) |
 
 Third-party libraries and licenses: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
+Design docs: `docs/DESIGN-android-v1.md`, `docs/DESIGN-ios-v1.md`, `docs/ANDROID_ALPHA_REVIEW.md`.
+
 ---
 
 ## Hardware note
 
-This project was developed and trained on **older US hardware** — including CPU-only training runs where modern GPU stacks were unavailable — because privacy tooling should not require a datacenter to get started.
+Developed and trained on **older US hardware** — CPU-only runs where GPUs were unavailable, **4–6 GB VRAM** Windows tuning, and a mid-range **Samsung A53** as the Android alpha device. Privacy tooling should not require a datacenter to get started.
 
 *Made in the USA with old hardware, love, and Grok Build beta.*

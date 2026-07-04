@@ -1,6 +1,6 @@
 # IRLSAFETY+ — Versioning & Naming
 
-**Last updated:** 2026-07-03
+**Last updated:** 2026-07-04
 
 ---
 
@@ -27,7 +27,13 @@ You do **not** need a domain to ship alpha builds. `com.irlsafety.plus` follows 
 |----------|--------------|--------|
 | Windows OBS plugin | **0.9.4** | `buildspec.json` → `IRLSAFETY+-v0.9.4-win64.zip` |
 | Android app | **0.9.5-dev** | `versionName` in Gradle; bump only on meaningful milestones |
-| iOS (planned) | **0.9.x-dev** | Not started — same pre-1.0 line |
+| macOS OBS plugin | — | Planned with **0.9.6** alignment |
+| iOS app | — | **0.9.6-dev** after Android alpha; see `docs/DESIGN-ios-v1.md` |
+
+### Next aligned release: **0.9.6**
+
+Bump Windows + Android together when A53 alpha passes and `irlsafety_v08` ONNX is bundled.
+macOS OBS smoke build and iOS **I1** scaffold can start in the same window.
 
 ### When to bump
 
