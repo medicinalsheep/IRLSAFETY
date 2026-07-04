@@ -1,19 +1,30 @@
 /*
- * IRLSAFETY+ — Android JNI bridge to libirlsafety (P10).
+ * IRLSAFETY+ — Android JNI bridge to libirlsafety (P10–P11).
  * Copyright (c) 2026 IRLSAFETY+ Contributors. MIT License.
  */
+
+#include "yuv_convert.h"
 
 #include <android/log.h>
 #include <jni.h>
 
 #include <cstdio>
 #include <cstring>
+#include <vector>
 
 #include "irlsafety.h"
 #include "irlsafety_control.h"
 #include "irlsafety_settings.h"
 
 #define IRL_LOG_TAG "IRLSAFETY+"
+
+struct AndroidPipeline {
+	irlsafety_pipeline *core = nullptr;
+	irlsafety_filter_settings settings {};
+	uint64_t frame_index = 0;
+	std::vector<uint8_t> bgra;
+	uint32_t last_overlay_count = 0;
+};
 
 static void android_log_bridge(int level, const char *message, void *)
 {
@@ -40,56 +51,131 @@ static void ensure_android_logging(void)
 	}
 }
 
+static AndroidPipeline *pipeline_from_handle(jlong handle)
+{
+	if (handle == 0)
+		return nullptr;
+	return reinterpret_cast<AndroidPipeline *>(static_cast<uintptr_t>(handle));
+}
+
 extern "C" JNIEXPORT jstring JNICALL Java_com_irlsafety_plus_IRLSafetyNative_nativeGetApiVersion(JNIEnv *env, jclass)
 {
 	ensure_android_logging();
 
 	char buf[96];
-	snprintf(buf, sizeof(buf), "libirlsafety API v%d (Android P10)", IRLSAFETY_API_VERSION);
+	snprintf(buf, sizeof(buf), "libirlsafety API v%d · Android P11", IRLSAFETY_API_VERSION);
 	return env->NewStringUTF(buf);
 }
 
 extern "C" JNIEXPORT jlong JNICALL Java_com_irlsafety_plus_IRLSafetyNative_nativeCreatePipeline(JNIEnv *, jclass)
 {
 	ensure_android_logging();
-	return static_cast<jlong>(reinterpret_cast<uintptr_t>(irlsafety_pipeline_create()));
+
+	auto *wrap = new AndroidPipeline();
+	wrap->core = irlsafety_pipeline_create();
+	irlsafety_settings_apply_defaults(&wrap->settings);
+	/* Android MVP: detection-first, no screen OCR. */
+	wrap->settings.cat_screen_text = false;
+	wrap->settings.cat_custom_pii = false;
+	wrap->settings.cat_sensitive_patterns = false;
+	wrap->settings.frame_skip = 6;
+	wrap->settings.prefer_gpu = true;
+	return static_cast<jlong>(reinterpret_cast<uintptr_t>(wrap));
 }
 
-extern "C" JNIEXPORT void JNICALL Java_com_irlsafety_plus_IRLSafetyNative_nativeDestroyPipeline(JNIEnv *, jclass, jlong handle)
+extern "C" JNIEXPORT void JNICALL Java_com_irlsafety_plus_IRLSafetyNative_nativeDestroyPipeline(JNIEnv *, jclass,
+											      jlong handle)
 {
-	if (handle == 0)
+	auto *wrap = pipeline_from_handle(handle);
+	if (!wrap)
 		return;
 
-	auto *pipeline = reinterpret_cast<irlsafety_pipeline *>(static_cast<uintptr_t>(handle));
-	irlsafety_pipeline_shutdown(pipeline);
-	irlsafety_pipeline_destroy(pipeline);
+	if (wrap->core) {
+		irlsafety_pipeline_shutdown(wrap->core);
+		irlsafety_pipeline_destroy(wrap->core);
+	}
+	delete wrap;
 }
 
-extern "C" JNIEXPORT jstring JNICALL Java_com_irlsafety_plus_IRLSafetyNative_nativePipelineStatus(JNIEnv *env, jclass, jlong handle)
+extern "C" JNIEXPORT jstring JNICALL Java_com_irlsafety_plus_IRLSafetyNative_nativePipelineStatus(JNIEnv *env, jclass,
+												       jlong handle)
 {
-	irlsafety_filter_settings settings;
 	irlsafety_runtime_status status;
-	char buf[256];
+	char buf[320];
 
 	ensure_android_logging();
-	irlsafety_settings_apply_defaults(&settings);
 
-	if (handle == 0) {
+	auto *wrap = pipeline_from_handle(handle);
+	if (!wrap || !wrap->core)
 		return env->NewStringUTF("Pipeline not created");
-	}
 
-	auto *pipeline = reinterpret_cast<irlsafety_pipeline *>(static_cast<uintptr_t>(handle));
-	irlsafety_pipeline_update_settings(pipeline, &settings);
-	irlsafety_pipeline_get_runtime_status(pipeline, &status, 0);
+	irlsafety_pipeline_update_settings(wrap->core, &wrap->settings);
+	irlsafety_pipeline_get_runtime_status(wrap->core, &status, wrap->frame_index);
 
 	snprintf(buf, sizeof(buf),
-		 "detector=%s · OCR=%s · frame_skip=%u · onnx=%s",
+		 "frames=%llu · overlays=%u · detector=%s · EP=%s · skip=%u",
+		 static_cast<unsigned long long>(wrap->frame_index), wrap->last_overlay_count,
 		 status.detector_ready ? "ready" : "stub",
-		 status.ocr_available ? "on" : "off",
-		 status.frame_skip,
-		 status.detector_message[0] ? status.detector_message : "idle");
+		 status.detector_ep[0] ? status.detector_ep : "CPU", status.frame_skip);
 
 	return env->NewStringUTF(buf);
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_irlsafety_plus_IRLSafetyNative_nativeProcessCameraFrame(JNIEnv *env, jclass, jlong handle, jint width,
+								       jint height, jbyteArray y_plane, jint y_row_stride,
+								       jint y_pixel_stride, jbyteArray u_plane, jint u_row_stride,
+								       jint u_pixel_stride, jbyteArray v_plane, jint v_row_stride,
+								       jint v_pixel_stride)
+{
+	auto *wrap = pipeline_from_handle(handle);
+	if (!wrap || !wrap->core || width <= 0 || height <= 0)
+		return 0;
+
+	const jsize y_len = env->GetArrayLength(y_plane);
+	const jsize u_len = env->GetArrayLength(u_plane);
+	const jsize v_len = env->GetArrayLength(v_plane);
+	if (y_len <= 0 || u_len <= 0 || v_len <= 0)
+		return 0;
+
+	jbyte *y_bytes = env->GetByteArrayElements(y_plane, nullptr);
+	jbyte *u_bytes = env->GetByteArrayElements(u_plane, nullptr);
+	jbyte *v_bytes = env->GetByteArrayElements(v_plane, nullptr);
+	if (!y_bytes || !u_bytes || !v_bytes) {
+		if (y_bytes)
+			env->ReleaseByteArrayElements(y_plane, y_bytes, JNI_ABORT);
+		if (u_bytes)
+			env->ReleaseByteArrayElements(u_plane, u_bytes, JNI_ABORT);
+		if (v_bytes)
+			env->ReleaseByteArrayElements(v_plane, v_bytes, JNI_ABORT);
+		return wrap->last_overlay_count;
+	}
+
+	irlsafety_android_yuv420888_to_bgra(reinterpret_cast<const uint8_t *>(y_bytes), y_row_stride, y_pixel_stride,
+					    reinterpret_cast<const uint8_t *>(u_bytes), u_row_stride, u_pixel_stride,
+					    reinterpret_cast<const uint8_t *>(v_bytes), v_row_stride, v_pixel_stride,
+					    width, height, wrap->bgra);
+
+	env->ReleaseByteArrayElements(y_plane, y_bytes, JNI_ABORT);
+	env->ReleaseByteArrayElements(u_plane, u_bytes, JNI_ABORT);
+	env->ReleaseByteArrayElements(v_plane, v_bytes, JNI_ABORT);
+
+	irlsafety_frame_view frame {};
+	frame.planes[0] = wrap->bgra.data();
+	frame.linesize[0] = static_cast<uint32_t>(width) * 4u;
+	frame.width = static_cast<uint32_t>(width);
+	frame.height = static_cast<uint32_t>(height);
+	frame.format = IRLSAFETY_FORMAT_BGRA;
+	frame.plane_count = 1;
+
+	irlsafety_pipeline_update_settings(wrap->core, &wrap->settings);
+	irlsafety_pipeline_detect_frame(wrap->core, &frame, &wrap->settings, wrap->frame_index++, frame.width,
+					frame.height, false);
+
+	irlsafety_region_list regions {};
+	irlsafety_pipeline_get_overlays(wrap->core, frame.width, frame.height, &wrap->settings, &regions);
+	wrap->last_overlay_count = static_cast<uint32_t>(regions.count);
+	return static_cast<jint>(wrap->last_overlay_count);
 }
 
 extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM *, void *)

@@ -1,10 +1,10 @@
 IRLSAFETY+ — Android (planned)
 ================================
 
-STATUS TODAY (v1.0-alpha P10)
------------------------------
-Android scaffold exists (`android/` in repo) — links libirlsafety via NDK.
-Camera preview + live detection ship in P11–P13. Windows OBS plugin remains primary.
+STATUS TODAY (v1.0-alpha2 P11)
+--------------------------------
+Android app scaffold + CameraX live preview ships in repo (`android/`).
+Camera frames feed libirlsafety via JNI; detector ONNX stub until P12.
 
 USE YOUR PHONE WITH OBS ON A PC (works now)
 -------------------------------------------
@@ -17,14 +17,20 @@ See PLATFORMS.txt for the full adapter matrix.
 
 ANDROID APP (roadmap)
 ---------------------
-Planned as a standalone camera protection app (not an OBS plugin):
+Standalone camera protection app (not an OBS plugin):
 
   v0.8  Extract libirlsafety core (shared with Windows) — done
-  v1.0  Android alpha — camera preview + plate/mail/ID detection (P10 scaffold shipped)
+  v1.0  Android alpha — camera preview + plate/mail/ID detection
+        P10  Gradle + NDK scaffold — done
+        P11  CameraX → irlsafety_frame_view JNI — done
+        P12  ONNX Runtime Android + irlsafety-detect.onnx — next
+        P13  GLES solid-box overlay on preview
+        P14  Settings toggles (4 categories)
+        P15  Internal APK + tester doc
   v1.1  On-device OCR (same ONNX stack as Windows child OCR)
 
 MVP scope:
-  - Rear/front camera live preview
+  - Rear camera live preview (front camera in P14+)
   - Local YOLO detection (irlsafety-detect.onnx)
   - Solid-box censorship
   - 100% on-device — no cloud
@@ -33,6 +39,8 @@ Out of scope for first Android release:
   - OBS integration (OBS does not host plugins on Android)
   - Full-screen OCR on other apps
   - On-phone training pipeline
+
+Samsung Galaxy testers: see SAMSUNG_ANDROID.txt for One UI and SoC tips.
 
 Technical design: docs/DESIGN-android-v1.md in the repo.
 

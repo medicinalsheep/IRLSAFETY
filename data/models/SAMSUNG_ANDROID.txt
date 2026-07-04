@@ -1,0 +1,99 @@
+IRLSAFETY+ — Samsung Galaxy (Android app)
+==========================================
+
+Applies to: IRLSAFETY+ Android v1.0-alpha (CameraX app)
+Primary test targets: Galaxy S21–S24 series, Galaxy A54/A55, Galaxy Z Fold/Flip
+
+STATUS
+------
+P11 ships CameraX → libirlsafety frame bridge. Detection ONNX lands in P12.
+Samsung-specific tuning matters because One UI aggressively manages background
+CPU/GPU and NNAPI behavior differs between Exynos and Snapdragon variants.
+
+BEFORE YOU TEST
+---------------
+1. Install the debug APK from android/ (see android/README.txt)
+2. Grant Camera permission when prompted
+3. Open logcat filter: IRLSAFETY+
+4. Expect "detector=stub" until P12 bundles irlsafety-detect.onnx
+
+ONE UI BATTERY & BACKGROUND
+---------------------------
+Samsung may throttle the app if battery optimization is ON:
+
+  Settings → Apps → IRLSAFETY+ → Battery
+    → Unrestricted (recommended for live camera testing)
+
+  Settings → Battery and device care → Background usage limits
+    → Remove IRLSAFETY+ from Sleeping/Deep sleeping apps if preview stalls
+
+If preview freezes after locking the screen, that is expected v1 behavior —
+keep the screen on during IRL testing.
+
+THERMAL THROTTLING
+------------------
+Galaxy devices reduce CPU/GPU clocks when skin temperature rises.
+IRLSAFETY+ defaults to frame_skip=6 (~5 Hz detection @ 30 fps preview).
+
+If you see stutter or rising inference latency:
+
+  - Let the phone cool between sessions
+  - Disable unused detection categories (P14 settings)
+  - Increase frame skip in settings when available (try 10–15)
+  - Close Game Launcher / performance overlays competing for GPU
+
+EXYNOS vs SNAPDRAGON
+--------------------
+Many Galaxy models ship two SoC variants (especially EU vs US).
+
+| SoC family        | ORT EP (P12 plan)     | Notes |
+|-------------------|-----------------------|-------|
+| Snapdragon 8 Gen  | NNAPI + GPU delegate  | Best NNAPI path; test first |
+| Exynos 2100/2200  | NNAPI, XNNPACK fallback | Some ops fall back to CPU — watch logcat EP line |
+| Mid-range Exynos  | XNNPACK CPU default   | May need frame_skip 10+ for smooth preview |
+
+Logcat status line shows active EP after P12:
+  frames=N · overlays=N · detector=ready · EP=NNAPI · skip=6
+
+If EP shows CPU on a flagship, try:
+  - Samsung "Performance mode" (Game Booster / Labs) during test only
+  - Reinstall after a full reboot (clears stuck NNAPI cache on some builds)
+
+CAMERAX ON SAMSUNG
+------------------
+CameraX is the default capture path — it handles Samsung HAL quirks better
+than raw Camera2 for MVP.
+
+Known behaviors:
+  - YUV_420_888 plane strides vary by resolution — JNI bridge handles per-plane stride
+  - Ultra-wide vs main lens: v1 binds DEFAULT_BACK_CAMERA (main lens)
+  - 1080p analysis is typical; 4K analysis not targeted for v1
+
+If preview is black:
+  - Confirm another app is not holding the camera
+  - Force-stop Camera, then relaunch IRLSAFETY+
+  - Toggle permission off/on in App permissions → Camera
+
+GALAXY-SPECIFIC FEATURES (out of v1 scope)
+------------------------------------------
+  - Secure Folder separate install — not supported in alpha
+  - Samsung DeX desktop mode — untested
+  - Bixby Vision / object detection — unrelated; IRLSAFETY runs locally
+
+USE WITH OBS ON A PC (works today)
+----------------------------------
+Until the Android app reaches beta quality, the official phone → PC path remains:
+
+  Larix / NDI HX / SRT on Galaxy → OBS source on Windows → IRLSAFETY+ filter
+
+See PLATFORMS.txt and ANDROID.txt.
+
+REPORTING ISSUES
+----------------
+Include in bug reports:
+  - Model (e.g. SM-S928B), One UI version, Android version
+  - Snapdragon vs Exynos (if known)
+  - logcat snippet with tag IRLSAFETY+
+  - Whether battery optimization was Unrestricted
+
+See docs/DESIGN-android-v1.md for roadmap (P12–P15).

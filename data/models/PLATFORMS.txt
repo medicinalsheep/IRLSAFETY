@@ -20,6 +20,8 @@ ADAPTER MATRIX
 | VLC playback          | Filter on Media Source in OBS | Standalone file redaction  |
 | GoPro / webcam        | Filter on Video Capture Dev   | Same (YUY2/UYVY supported) |
 | Phone (NDI/SRT)       | OBS source + filter           | NDI in/out module          |
+| Samsung Galaxy        | OBS + filter (PC path now)    | Android app (P12+ detect)  |
+| iPhone                | OBS + filter (PC path now)    | iOS app (after Android MVP)|
 
 * Screen share in Discord does not run through OBS filters. Prefer camera virtual device
   or window capture of a single sanitized app when privacy is critical.
@@ -54,12 +56,25 @@ Power users can point training to a fast local or network RAM disk:
 
 (Requires a shared folder you create — e.g. ImDisk RAM disk on another PC.)
 
+MOBILE STANDALONE APPS (planned)
+--------------------------------
+Samsung Galaxy (Android):
+  - Interim: Larix / NDI / SRT → OBS on PC (same as any phone)
+  - App: android/ in repo — CameraX preview + local detection (alpha)
+  - Samsung tuning: SAMSUNG_ANDROID.txt (One UI battery, Exynos vs Snapdragon)
+
+iPhone (iOS):
+  - Interim: Larix / NDI HX / SRT → OBS on PC
+  - App: planned after Android MVP — see docs/DESIGN-ios-v1.md
+
 RESOURCES IN THIS FOLDER
 ------------------------
   README.txt         — detection model (irlsafety-detect.onnx)
   TRAINING.txt       — train plates + signs locally
   OCR.txt            — Screen Text / Custom PII / child OCR plan
   VIRTUAL_CAMERA.txt — protected output for Discord, Zoom, etc.
+  ANDROID.txt        — Android app roadmap
+  SAMSUNG_ANDROID.txt — Galaxy-specific testing tips
   PLATFORMS.txt      — this file
 
 Control dock: Open Training Guide opens TRAINING.txt from your install folder.

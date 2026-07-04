@@ -38,7 +38,7 @@ IRLSAFETY+ today is a **Windows OBS plugin**. Android is **not a port** of that 
 | Hybrid stream delay | v1.2+ |
 | On-device training / labeling | v1.2+ (or companion desktop) |
 | System-wide overlay on other apps | Separate product decision (Play policy) |
-| iOS | After Android MVP proves core portability |
+| iOS | After Android MVP proves core portability — see `docs/DESIGN-ios-v1.md` |
 
 ---
 
@@ -265,6 +265,8 @@ See `data/models/PLATFORMS.txt`.
 ## References
 
 - `data/models/PLATFORMS.txt` — adapter matrix
+- `data/models/SAMSUNG_ANDROID.txt` — Galaxy One UI / SoC tuning
+- `docs/DESIGN-ios-v1.md` — iOS phased plan (post P15)
 - `data/models/VIRTUAL_CAMERA.txt` — v0.8 vcam plan
 - `data/models/OCR.txt` — child OCR cross-platform path
 - `tests/CMakeLists.txt` — portable core test subgraph
@@ -286,4 +288,5 @@ See `data/models/PLATFORMS.txt`.
 10. ~~**P8** child OCR dual-backend toggle on Windows~~ — done (`ocr_router.cpp`, `use_child_ocr` setting)
 11. ~~**P9** frozen `irlsafety.h` C API~~ — done (`src/irlsafety.h`, API version 1)
 12. ~~**P10** `android/` Gradle + NDK JNI bridge~~ — done (`android/`, `irlsafety_jni.cpp`, `cmake/android/libirlsafety_ndk.cmake`)
-13. **P11** (Android): next — CameraX → `irlsafety_frame_view` JNI
+13. ~~**P11** CameraX → `irlsafety_frame_view` JNI~~ — done (`CameraSession.kt`, `yuv_convert.cpp`, `nativeProcessCameraFrame`)
+14. **P12** (Android): next — ONNX Runtime Android + bundled `irlsafety-detect.onnx`
