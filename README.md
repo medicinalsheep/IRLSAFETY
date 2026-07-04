@@ -4,7 +4,7 @@
 
 | | |
 |---|---|
-| **Version** | 0.7.1 |
+| **Version** | 0.9.4 |
 | **Platform** | Windows 10/11 x64 |
 | **OBS** | 31.x / 32.x (64-bit) |
 | **Author** | [medicinalsheep](https://github.com/medicinalsheep) |
@@ -31,7 +31,7 @@ https://github.com/medicinalsheep/IRLSAFETY/releases
 
 ### Windows OBS plugin (0.9.4)
 
-1. Download **`IRLSAFETY+-v0.9.4-win64.zip`** (older Windows release on same page)
+1. Download **`IRLSAFETY+-v0.9.4-win64.zip`** from Releases → `v0.9.4`
 2. Extract → **`install-from-package.bat`** as Administrator → restart OBS
 
 Local builds:

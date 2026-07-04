@@ -39,10 +39,10 @@ $notes = @"
 ## IRLSAFETY+ $Tag
 
 ### Highlights
-- **Performance** - Screen Text OFF by default; detection-only GPU readback at 640px; YOLO runs while OCR busy
-- **Defaults** - Scan every 6 frames (was 3); less CPU/GPU load for new installs
+- **Low-end defaults** - tuned for **4-6 GB VRAM** (GTX 1650 / RX 580 class): Frame Skip **8**, Screen Text **OFF**, DirectML **ON**
+- **Performance** - YOLO at 640px; detection runs while OCR busy; hybrid delay + solid-box censor
 - **4-class detection model** bundled (irlsafety-detect.onnx: plates, signs, mail labels, IDs)
-- **libirlsafety core** extracted (v0.8 P1) - shared static lib for future Android/standalone
+- **Tray panel** + virtual camera hooks; child OCR ONNX optional toggle
 - **Angled cover** - quad-masked censor for tilted packages
 
 ### Model (irlsafety_v07)

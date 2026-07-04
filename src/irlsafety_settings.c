@@ -24,7 +24,7 @@ void irlsafety_settings_apply_defaults(irlsafety_filter_settings *out)
 	out->cat_custom_pii = true;
 	out->cat_sensitive_patterns = false;
 	out->confidence_threshold = 0.35f;
-	out->frame_skip = 6;
+	out->frame_skip = 8;
 	out->ocr_detail = 0;
 	out->blur_strength = 24.0f;
 	out->censor_mode = IRLSAFETY_CENSOR_BOX;

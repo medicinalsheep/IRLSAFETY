@@ -29,7 +29,7 @@ void irlsafety_filter_settings_set_defaults(struct obs_data *settings)
 	obs_data_set_default_bool(settings, IRLSAFETY_SET_CAT_SENSITIVE_PATTERNS, false);
 
 	obs_data_set_default_double(settings, IRLSAFETY_SET_CONFIDENCE, 0.35);
-	obs_data_set_default_int(settings, IRLSAFETY_SET_FRAME_SKIP, 6);
+	obs_data_set_default_int(settings, IRLSAFETY_SET_FRAME_SKIP, 8);
 	obs_data_set_default_int(settings, IRLSAFETY_SET_CENSOR_MODE, IRLSAFETY_CENSOR_BOX);
 	obs_data_set_default_int(settings, IRLSAFETY_SET_CENSOR_COLOR, 0xFF000000);
 	obs_data_set_default_string(settings, IRLSAFETY_SET_CENSOR_OVERLAY, "");

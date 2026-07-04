@@ -4,11 +4,20 @@ IRLSAFETY+ v0.9.4 — Windows install & test
 Author: medicinalsheep · Contact: jfkyt@icloud.com
 MIT License
 
+TARGET HARDWARE (defaults tuned for this)
+-----------------------------------------
+- 4–6 GB VRAM GPUs (GTX 1650 / 1060 6GB, RX 580 class) or modest iGPU + CPU
+- 16 GB system RAM recommended; 8 GB workable with defaults below
+- OBS canvas 1080p30 or 720p60 — avoid 1440p60 + heavy browser sources on first test
+
+Fresh installs default to **Scan every 8 frames**, **Screen Text OFF**, **Prefer GPU ON**
+(DirectML). That keeps YOLO at ~3–4 runs/sec at 30 fps without starving OBS.
+
 REQUIREMENTS
 ------------
 - Windows 10/11 x64
 - OBS Studio 31.x or 32.x (64-bit)
-- Windows OCR language pack (Settings → Time & Language → Language → OCR)
+- Windows OCR language pack (only if you enable Screen Text or Custom PII OCR)
 
 BUNDLED MODELS (this package)
 -----------------------------
@@ -29,6 +38,7 @@ INSTALL
 3. Restart OBS.
 4. Add filter: right-click source → Filters → + → IRLSAFETY+ PII Blur.
 5. Keep IRLSAFETY+ at the TOP of the Filters list.
+6. Existing filters keep old settings — remove and re-add the filter to pick up v0.9.4 defaults.
 
 VERIFY MODEL IS LOADED
 ----------------------
@@ -37,21 +47,25 @@ VERIFY MODEL IS LOADED
 3. Enable at least one detection category (License Plates or Street Signs).
 4. Click Reload Model.
 5. The status line should show something like:
-     YOLO 42.3 ms · DML · ~30 scans/min · 0 censored · load Medium
+     YOLO 42.3 ms · DML · ~22 scans/min · 0 censored · load Medium
    If you see "YOLO on disk — enable plates/signs + Reload Model", the file
    is installed but inference is not active yet — enable categories and Reload.
 
 6. Optional: Help → Log Files — search for "Object detection" or "YOLO".
 
-REDUCE FRAME DROPS
-------------------
-- OCR Scan Every N Frames: 6–12 for cameras, 4–8 for display capture at 60 fps
-- OCR Detail: Standard (not Maximum) unless you need tiny text
-- Disable detection categories you do not need (each enabled class costs YOLO time)
-- Protection → Frame Skip: 2–4 for heavy scenes
-- Advanced → Prefer GPU: ON (DirectML on NVIDIA/AMD)
-- Lower OBS canvas/output FPS (30 fps saves a lot vs 60 fps)
-- Screen Text + YOLO + Maximum OCR together will drop frames on older CPUs (i7-4790 class)
+IF YOU STILL DROP FRAMES (4–6 GB VRAM / older CPU)
+--------------------------------------------------
+Start here (in order):
+- Frame Skip: **10–12** for webcam, **8–10** for display capture
+- Disable categories you do not need (each class adds YOLO work)
+- Keep **Screen Text OFF** unless you need on-screen OCR
+- Custom PII keywords only when needed (triggers OCR passes)
+- OCR Detail: **Standard** (not Maximum)
+- OBS: output **30 fps**, canvas **1080p** or **720p**
+- Advanced → Prefer GPU: **ON** (DirectML). If DML errors, try OFF for CPU-only YOLO
+- Close extra browser/game captures on the same GPU
+
+High-end tuning (8+ GB VRAM): Frame Skip **4–6**, enable Screen Text if needed.
 
 QUICK TEST — red box (no OCR)
 -----------------------------
