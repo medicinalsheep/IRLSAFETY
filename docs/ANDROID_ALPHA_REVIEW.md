@@ -66,7 +66,7 @@ Run through on **Galaxy A53** before sharing `0.9.5-dev` APK.
 
 | Gap | Target |
 |-----|--------|
-| Front camera switch | P15 or v1.1 |
+| ~~Front camera switch~~ | P16 — settings toggle |
 | Angled (OBB) box drawing | v1.1 (model path exists on Windows) |
 | Screen OCR | v1.1 (child OCR ONNX) |
 | Settings sheet / bottom nav polish | P15 tester feedback |

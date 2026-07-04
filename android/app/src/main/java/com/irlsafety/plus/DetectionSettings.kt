@@ -8,5 +8,6 @@ data class DetectionSettings(
     val idDocuments: Boolean = true,
     val confidenceThreshold: Float = 0.35f,
     val frameSkip: Int = 6,
-    val preferGpu: Boolean = true
+    val preferGpu: Boolean = true,
+    val useFrontCamera: Boolean = false
 )

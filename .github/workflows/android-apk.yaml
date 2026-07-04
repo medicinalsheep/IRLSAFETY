@@ -48,6 +48,8 @@ jobs:
 
       - name: Extract ONNX Runtime prefab
         working-directory: android/app
+        env:
+          ORT_VERSION: "1.20.0"
         run: |
           chmod +x ../scripts/extract-ort-prefab.sh
           ../scripts/extract-ort-prefab.sh ort-prefab

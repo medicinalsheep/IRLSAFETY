@@ -15,7 +15,8 @@ object SettingsStore {
             idDocuments = prefs.getBoolean("cat_id_documents", true),
             confidenceThreshold = prefs.getFloat("confidence_threshold", 0.35f),
             frameSkip = prefs.getInt("frame_skip", 6).coerceIn(1, 20),
-            preferGpu = prefs.getBoolean("prefer_gpu", true)
+            preferGpu = prefs.getBoolean("prefer_gpu", true),
+            useFrontCamera = prefs.getBoolean("use_front_camera", false)
         )
     }
 
@@ -30,6 +31,7 @@ object SettingsStore {
             .putFloat("confidence_threshold", settings.confidenceThreshold)
             .putInt("frame_skip", settings.frameSkip.coerceIn(1, 20))
             .putBoolean("prefer_gpu", settings.preferGpu)
+            .putBoolean("use_front_camera", settings.useFrontCamera)
             .apply()
     }
 }

@@ -17,6 +17,7 @@ class CameraSession(
     private val lifecycleOwner: LifecycleOwner,
     private val previewView: PreviewView,
     private val pipelineHandle: Long,
+    private val useFrontCamera: Boolean,
     private val analysisExecutor: Executor,
     private val onFrameProcessed: (overlayCount: Int, overlayData: FloatArray?) -> Unit
 ) {
@@ -54,10 +55,17 @@ class CameraSession(
             }
         }
 
+        val lensFacing = if (useFrontCamera) {
+            CameraSelector.LENS_FACING_FRONT
+        } else {
+            CameraSelector.LENS_FACING_BACK
+        }
+        val selector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
+
         provider.unbindAll()
         provider.bindToLifecycle(
             lifecycleOwner,
-            CameraSelector.DEFAULT_BACK_CAMERA,
+            selector,
             preview,
             analysis
         )

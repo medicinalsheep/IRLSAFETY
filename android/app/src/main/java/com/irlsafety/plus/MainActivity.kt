@@ -139,13 +139,14 @@ private fun CameraShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
         }
     }
 
-    DisposableEffect(pipelineHandle, hasCameraPermission) {
+    DisposableEffect(pipelineHandle, hasCameraPermission, detectionSettings.useFrontCamera) {
         val session = if (hasCameraPermission && pipelineHandle != 0L) {
             CameraSession(
                 context = context,
                 lifecycleOwner = lifecycleOwner,
                 previewView = previewView,
                 pipelineHandle = pipelineHandle,
+                useFrontCamera = detectionSettings.useFrontCamera,
                 analysisExecutor = analysisExecutor,
                 onFrameProcessed = { _, overlayData ->
                     mainHandler.post {

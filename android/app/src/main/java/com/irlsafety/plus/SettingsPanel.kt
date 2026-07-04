@@ -101,6 +101,14 @@ fun SettingsPanel(
             enabled = settings.enableAll,
             onCheckedChange = { onSettingsChange(settings.copy(preferGpu = it)) }
         )
+
+        HorizontalDivider(color = Color(0xFF2A2D35), modifier = Modifier.padding(vertical = 6.dp))
+
+        SettingSwitch(
+            label = "Front camera",
+            checked = settings.useFrontCamera,
+            onCheckedChange = { onSettingsChange(settings.copy(useFrontCamera = it)) }
+        )
     }
 }
 

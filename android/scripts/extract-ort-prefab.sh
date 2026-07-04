@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ORT_VERSION="${ORT_VERSION:-1.20.1}"
+ORT_VERSION="${ORT_VERSION:-1.20.0}"
 OUT_DIR="${1:-ort-prefab}"
 AAR_URL="https://repo1.maven.org/maven2/com/microsoft/onnxruntime/onnxruntime-android/${ORT_VERSION}/onnxruntime-android-${ORT_VERSION}.aar"
 
