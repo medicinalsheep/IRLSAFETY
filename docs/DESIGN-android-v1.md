@@ -289,4 +289,5 @@ See `data/models/PLATFORMS.txt`.
 11. ~~**P9** frozen `irlsafety.h` C API~~ — done (`src/irlsafety.h`, API version 1)
 12. ~~**P10** `android/` Gradle + NDK JNI bridge~~ — done (`android/`, `irlsafety_jni.cpp`, `cmake/android/libirlsafety_ndk.cmake`)
 13. ~~**P11** CameraX → `irlsafety_frame_view` JNI~~ — done (`CameraSession.kt`, `yuv_convert.cpp`, `nativeProcessCameraFrame`)
-14. **P12** (Android): next — ONNX Runtime Android + bundled `irlsafety-detect.onnx`
+14. ~~**P12** ONNX Runtime Android + bundled `irlsafety-detect.onnx`~~ — done (`onnxruntime-android` prefab, `ModelInstaller.kt`, Gradle asset copy)
+15. **P13** (Android): next — GLES solid-box overlay on preview

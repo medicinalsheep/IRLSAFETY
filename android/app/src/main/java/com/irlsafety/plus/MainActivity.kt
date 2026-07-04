@@ -60,7 +60,9 @@ private fun AlphaShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
 
     var pipelineHandle by remember { mutableLongStateOf(0L) }
     var statusLine by remember { mutableStateOf("Starting…") }
+    var modelLine by remember { mutableStateOf("Loading model…") }
     var overlayCount by remember { mutableIntStateOf(0) }
+    val modelPath = remember { ModelInstaller.ensureDetectionModel(context) }
     var hasCameraPermission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
@@ -83,9 +85,15 @@ private fun AlphaShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
 
     val analysisExecutor = remember { Executors.newSingleThreadExecutor() }
 
-    DisposableEffect(Unit) {
-        pipelineHandle = IRLSafetyNative.nativeCreatePipeline()
-        statusLine = IRLSafetyNative.nativePipelineStatus(pipelineHandle)
+    DisposableEffect(modelPath) {
+        if (modelPath.isNullOrBlank()) {
+            modelLine = "Model missing — rebuild APK with irlsafety-detect.onnx asset."
+            pipelineHandle = 0L
+        } else {
+            modelLine = "Model: ${modelPath.substringAfterLast('/')}"
+            pipelineHandle = IRLSafetyNative.nativeCreatePipeline(modelPath)
+            statusLine = IRLSafetyNative.nativePipelineStatus(pipelineHandle)
+        }
         onDispose {
             if (pipelineHandle != 0L) {
                 IRLSafetyNative.nativeDestroyPipeline(pipelineHandle)
@@ -163,6 +171,11 @@ private fun AlphaShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
         }
 
         Text(
+            text = modelLine,
+            color = Color(0xFF8AB4F8),
+            fontSize = 13.sp
+        )
+        Text(
             text = statusLine,
             color = Color(0xFFE8EAED),
             fontSize = 14.sp
@@ -173,8 +186,8 @@ private fun AlphaShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
             fontSize = 14.sp
         )
         Text(
-            text = "P11 — CameraX feeds libirlsafety (detector stub until P12).\n" +
-                "Next: ONNX + model (P12), GLES boxes (P13), settings (P14).",
+            text = "P12 — ONNX Runtime + irlsafety-detect.onnx on-device.\n" +
+                "Next: GLES censorship boxes (P13), settings UI (P14).",
             color = Color(0xFF9AA0A6),
             fontSize = 12.sp,
             lineHeight = 17.sp

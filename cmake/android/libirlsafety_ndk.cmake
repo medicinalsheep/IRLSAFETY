@@ -16,4 +16,8 @@ endif()
 
 set(IRLSAFETY_BUILD_TESTS OFF)
 
+if(IRLSAFETY_ENABLE_ONNX)
+  include("${CMAKE_CURRENT_LIST_DIR}/onnxruntime_android.cmake")
+endif()
+
 include("${IRLSAFETY_REPO_ROOT}/cmake/libirlsafety.cmake")

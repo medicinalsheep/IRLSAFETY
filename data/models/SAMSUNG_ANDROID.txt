@@ -6,16 +6,16 @@ Primary test targets: Galaxy S21–S24 series, Galaxy A54/A55, Galaxy Z Fold/Fli
 
 STATUS
 ------
-P11 ships CameraX → libirlsafety frame bridge. Detection ONNX lands in P12.
-Samsung-specific tuning matters because One UI aggressively manages background
-CPU/GPU and NNAPI behavior differs between Exynos and Snapdragon variants.
+P12 ships ONNX Runtime + irlsafety-detect.onnx on-device. Samsung-specific
+tuning matters because One UI aggressively manages background CPU/GPU and
+NNAPI behavior differs between Exynos and Snapdragon variants.
 
 BEFORE YOU TEST
 ---------------
-1. Install the debug APK from android/ (see android/README.txt)
+1. Build/install v1.0.0-alpha3 APK from android/ (see android/README.txt)
 2. Grant Camera permission when prompted
 3. Open logcat filter: IRLSAFETY+
-4. Expect "detector=stub" until P12 bundles irlsafety-detect.onnx
+4. Expect "detector=ready" and EP=NNAPI (Snapdragon) or CPU/XNNPACK (Exynos)
 
 ONE UI BATTERY & BACKGROUND
 ---------------------------

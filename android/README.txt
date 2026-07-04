@@ -1,8 +1,8 @@
-IRLSAFETY+ Android (P11 CameraX bridge)
-========================================
+IRLSAFETY+ Android (P12 ONNX detection)
+=======================================
 
-STATUS: P11 — CameraX preview feeds libirlsafety via JNI.
-Detection ONNX is stub until P12 (expect detector=stub in status line).
+STATUS: P12 — ONNX Runtime Android + bundled irlsafety-detect.onnx.
+CameraX preview feeds libirlsafety; expect detector=ready and EP=NNAPI on Samsung.
 
 REQUIREMENTS
 ------------
@@ -27,23 +27,30 @@ COMMAND LINE (optional)
 APK output:
   app/build/outputs/apk/debug/app-debug.apk
 
-WHAT P11 PROVES
+WHAT P12 PROVES
 ---------------
-- CameraX ImageAnalysis (YUV_420_888) → JNI → irlsafety_frame_view
-- Live preview in Compose via PreviewView
-- Per-frame overlay count (0 until model loads in P12)
-- Logs route to logcat tag IRLSAFETY+
+- ONNX Runtime 1.20.1 (prefab) linked into libirlsafety arm64-v8a
+- irlsafety-detect.onnx copied from data/models/ at build time into APK assets
+- ModelInstaller extracts ONNX to filesDir on first launch
+- Live YOLO inference via NNAPI (Snapdragon) or XNNPACK/CPU fallback
+- Status line shows detector=ready · EP=NNAPI (or CPU) · skip=6
+
+BUILD NOTE
+----------
+The Gradle preBuild task copies:
+  data/models/irlsafety-detect.onnx  →  app/src/main/assets/models/
+Train or download the model on Windows first if missing.
 
 SAMSUNG GALAXY NOTES
 --------------------
 See data/models/SAMSUNG_ANDROID.txt in the repo root:
   - Set Battery → Unrestricted for IRLSAFETY+
-  - Exynos vs Snapdragon affects NNAPI path (P12)
+  - Exynos vs Snapdragon affects NNAPI EP selection
   - Default frame_skip=6 for thermal headroom
+  - Point camera at plate/sign/mail label to verify overlay count > 0
 
 ROADMAP (see docs/DESIGN-android-v1.md)
 ---------------------------------------
-  P12  ONNX Runtime Android + irlsafety-detect.onnx asset
   P13  GLES solid-box overlay on preview
   P14  Settings toggles (4 detection categories)
   P15  Internal APK + tester doc

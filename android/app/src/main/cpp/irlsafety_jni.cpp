@@ -1,5 +1,5 @@
 /*
- * IRLSAFETY+ — Android JNI bridge to libirlsafety (P10–P11).
+ * IRLSAFETY+ — Android JNI bridge to libirlsafety (P10–P12).
  * Copyright (c) 2026 IRLSAFETY+ Contributors. MIT License.
  */
 
@@ -63,11 +63,30 @@ extern "C" JNIEXPORT jstring JNICALL Java_com_irlsafety_plus_IRLSafetyNative_nat
 	ensure_android_logging();
 
 	char buf[96];
-	snprintf(buf, sizeof(buf), "libirlsafety API v%d · Android P11", IRLSAFETY_API_VERSION);
+	snprintf(buf, sizeof(buf), "libirlsafety API v%d · Android P12", IRLSAFETY_API_VERSION);
 	return env->NewStringUTF(buf);
 }
 
-extern "C" JNIEXPORT jlong JNICALL Java_com_irlsafety_plus_IRLSafetyNative_nativeCreatePipeline(JNIEnv *, jclass)
+static void copy_jstring(JNIEnv *env, jstring src, char *dest, size_t dest_size)
+{
+	if (!dest || dest_size == 0)
+		return;
+
+	dest[0] = '\0';
+	if (!src)
+		return;
+
+	const char *utf = env->GetStringUTFChars(src, nullptr);
+	if (!utf)
+		return;
+
+	strncpy(dest, utf, dest_size - 1);
+	dest[dest_size - 1] = '\0';
+	env->ReleaseStringUTFChars(src, utf);
+}
+
+extern "C" JNIEXPORT jlong JNICALL Java_com_irlsafety_plus_IRLSafetyNative_nativeCreatePipeline(JNIEnv *env, jclass,
+											      jstring model_path)
 {
 	ensure_android_logging();
 
@@ -80,6 +99,15 @@ extern "C" JNIEXPORT jlong JNICALL Java_com_irlsafety_plus_IRLSafetyNative_nativ
 	wrap->settings.cat_sensitive_patterns = false;
 	wrap->settings.frame_skip = 6;
 	wrap->settings.prefer_gpu = true;
+
+	copy_jstring(env, model_path, wrap->settings.model_path, sizeof(wrap->settings.model_path));
+	if (wrap->settings.model_path[0] != '\0') {
+		irlsafety_pipeline_update_settings(wrap->core, &wrap->settings);
+		__android_log_print(ANDROID_LOG_INFO, IRL_LOG_TAG, "Detection model path: %s", wrap->settings.model_path);
+	} else {
+		__android_log_print(ANDROID_LOG_WARN, IRL_LOG_TAG, "No detection model path — detector will stay unloaded");
+	}
+
 	return static_cast<jlong>(reinterpret_cast<uintptr_t>(wrap));
 }
 

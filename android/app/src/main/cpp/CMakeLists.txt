@@ -11,3 +11,9 @@ add_library(irlsafety_jni SHARED irlsafety_jni.cpp yuv_convert.cpp)
 target_include_directories(irlsafety_jni PRIVATE "${IRLSAFETY_REPO_ROOT}/src")
 
 target_link_libraries(irlsafety_jni PRIVATE libirlsafety log)
+
+if(DEFINED IRLSAFETY_ONNX_LINK_TARGET)
+  target_link_libraries(irlsafety_jni PRIVATE ${IRLSAFETY_ONNX_LINK_TARGET})
+elseif(TARGET onnxruntime::onnxruntime)
+  target_link_libraries(irlsafety_jni PRIVATE onnxruntime::onnxruntime)
+endif()

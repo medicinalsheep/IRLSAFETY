@@ -6,7 +6,7 @@ object IRLSafetyNative {
     }
 
     external fun nativeGetApiVersion(): String
-    external fun nativeCreatePipeline(): Long
+    external fun nativeCreatePipeline(modelPath: String): Long
     external fun nativeDestroyPipeline(handle: Long)
     external fun nativePipelineStatus(handle: Long): String
 

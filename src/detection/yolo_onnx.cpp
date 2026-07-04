@@ -190,6 +190,7 @@ int yolo_onnx_load_model(yolo_onnx_context *ctx, const char *model_path, bool pr
 		ort_cfg.prefer_gpu = prefer_gpu;
 		irlsafety_ort_apply_session_opts(options, &ort_cfg, ep_name, sizeof(ep_name));
 
+#ifdef _WIN32
 		std::wstring wide_path;
 		{
 			int needed = MultiByteToWideChar(CP_UTF8, 0, model_path, -1, nullptr, 0);
@@ -200,6 +201,9 @@ int yolo_onnx_load_model(yolo_onnx_context *ctx, const char *model_path, bool pr
 		}
 
 		ctx->session = std::make_unique<Ort::Session>(ctx->env, wide_path.c_str(), options);
+#else
+		ctx->session = std::make_unique<Ort::Session>(ctx->env, model_path, options);
+#endif
 		strncpy(ctx->model_path, model_path, sizeof(ctx->model_path) - 1);
 		ctx->prefer_gpu = prefer_gpu;
 
