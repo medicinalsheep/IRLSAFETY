@@ -6,7 +6,7 @@
 #   .\scripts\cleanup-github-releases.ps1 -KeepTags v0.9.4,v0.9.5-dev -WhatIf
 
 param(
-    [string[]]$KeepTags = @('v0.9.4', 'v0.9.5-dev', '0.9.4'),
+    [string[]]$KeepTags = @('v0.9.5-dev', 'v0.9.4', '0.9.4', 'v0.7.1'),
     [switch]$WhatIf
 )
 
@@ -40,16 +40,16 @@ foreach ($release in $releases) {
     $name = $release.name
 
     if ($KeepTags -contains $tag) {
-        Write-Host "[KEEP] $tag — $name"
+        Write-Host "[KEEP] $tag - $name"
         continue
     }
 
     if ($WhatIf) {
-        Write-Host "[WOULD DELETE] $tag — $name (id $id)"
+        Write-Host "[WOULD DELETE] $tag - $name (id $id)"
         continue
     }
 
-    Write-Host "[DELETE] $tag — $name"
+    Write-Host "[DELETE] $tag - $name"
     gh api -X DELETE "repos/$Repo/releases/$id"
 
     # Release delete does not remove the git tag.

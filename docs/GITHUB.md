@@ -46,8 +46,9 @@ GitHub has **no “archive release” button**. To clean up the Releases page yo
 
 | Release | Why |
 |---------|-----|
-| **v0.9.5-dev** | Current Android APK |
-| **v0.9.4** (or `0.9.4`) | Current Windows OBS zip |
+| **v0.9.5-dev** | Current Android APK (when published) |
+| **v0.9.4** (or `0.9.4`) | Current Windows OBS zip (when published) |
+| **v0.7.1** | Latest Windows release on GitHub today |
 
 ### Option A — GitHub website (no tools)
 
