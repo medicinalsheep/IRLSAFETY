@@ -424,6 +424,25 @@ int irlsafety_pipeline_update_settings(irlsafety_pipeline *pipeline, const irlsa
 	return loaded;
 }
 
+int irlsafety_pipeline_apply_runtime_settings(irlsafety_pipeline *pipeline,
+					      const irlsafety_filter_settings *settings)
+{
+	bool model_changed;
+
+	if (!pipeline || !settings)
+		return -1;
+
+	model_changed = strcmp(pipeline->settings.model_path, settings->model_path) != 0 ||
+			pipeline->settings.prefer_gpu != settings->prefer_gpu;
+
+	pipeline->settings = *settings;
+
+	if (!model_changed)
+		return 0;
+
+	return irlsafety_pipeline_set_detector_model(pipeline, settings->model_path, settings->prefer_gpu);
+}
+
 int irlsafety_pipeline_set_detector_model(irlsafety_pipeline *pipeline, const char *model_path, bool prefer_gpu)
 {
 	if (!pipeline || !pipeline->detector)

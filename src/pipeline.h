@@ -25,6 +25,13 @@ void irlsafety_pipeline_destroy(irlsafety_pipeline *pipeline);
 /* Reload custom PII keywords from current filter settings. */
 int irlsafety_pipeline_update_settings(irlsafety_pipeline *pipeline, const irlsafety_filter_settings *settings);
 
+/*
+ * Hot-swap runtime toggles (categories, confidence, frame skip) without clearing
+ * the overlay tracker. Reloads the detector only when model path or prefer_gpu changes.
+ */
+int irlsafety_pipeline_apply_runtime_settings(irlsafety_pipeline *pipeline,
+					      const irlsafety_filter_settings *settings);
+
 /* Load or reload the YOLO ONNX detector model. */
 int irlsafety_pipeline_set_detector_model(irlsafety_pipeline *pipeline, const char *model_path, bool prefer_gpu);
 

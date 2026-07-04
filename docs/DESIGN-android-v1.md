@@ -267,6 +267,8 @@ See `data/models/PLATFORMS.txt`.
 - `data/models/PLATFORMS.txt` — adapter matrix
 - `data/models/SAMSUNG_ANDROID.txt` — Galaxy One UI / SoC tuning
 - `docs/DESIGN-ios-v1.md` — iOS phased plan (post P15)
+- `docs/ANDROID_ALPHA_REVIEW.md` — logic review checklist + P15–P16 plan
+- `android/TESTER.md` — alpha tester install guide (A53)
 - `data/models/VIRTUAL_CAMERA.txt` — v0.8 vcam plan
 - `data/models/OCR.txt` — child OCR cross-platform path
 - `tests/CMakeLists.txt` — portable core test subgraph
@@ -291,4 +293,5 @@ See `data/models/PLATFORMS.txt`.
 13. ~~**P11** CameraX → `irlsafety_frame_view` JNI~~ — done (`CameraSession.kt`, `yuv_convert.cpp`, `nativeProcessCameraFrame`)
 14. ~~**P12** ONNX Runtime Android + bundled `irlsafety-detect.onnx`~~ — done (`onnxruntime-android` prefab, `ModelInstaller.kt`, Gradle asset copy)
 15. ~~**P13** GLES solid-box overlay on preview~~ — done (`GlesCensorOverlay`, `nativeGetOverlayRects`, region tick)
-16. **P14** (Android): next — settings UI (4 detection categories, frame skip)
+16. ~~**P14** settings UI (4 detection categories, confidence, frame skip)~~ — done (`SettingsPanel`, `apply_runtime_settings`)
+17. **P15** (Android): next — internal tester APK + `android/TESTER.md` release

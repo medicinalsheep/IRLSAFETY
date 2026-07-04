@@ -1,5 +1,5 @@
 /*
- * IRLSAFETY+ — Android JNI bridge to libirlsafety (P10–P13).
+ * IRLSAFETY+ — Android JNI bridge to libirlsafety (P10–P14).
  * Copyright (c) 2026 IRLSAFETY+ Contributors. MIT License.
  */
 
@@ -66,7 +66,7 @@ extern "C" JNIEXPORT jstring JNICALL Java_com_irlsafety_plus_IRLSafetyNative_nat
 	ensure_android_logging();
 
 	char buf[96];
-	snprintf(buf, sizeof(buf), "libirlsafety API v%d · Android P13", IRLSAFETY_API_VERSION);
+	snprintf(buf, sizeof(buf), "libirlsafety API v%d · Android P14", IRLSAFETY_API_VERSION);
 	return env->NewStringUTF(buf);
 }
 
@@ -140,14 +140,13 @@ extern "C" JNIEXPORT jstring JNICALL Java_com_irlsafety_plus_IRLSafetyNative_nat
 	if (!wrap || !wrap->core)
 		return env->NewStringUTF("Pipeline not created");
 
-	irlsafety_pipeline_update_settings(wrap->core, &wrap->settings);
 	irlsafety_pipeline_get_runtime_status(wrap->core, &status, wrap->frame_index);
 
 	snprintf(buf, sizeof(buf),
 		 "frames=%llu · overlays=%u · detector=%s · EP=%s · skip=%u",
 		 static_cast<unsigned long long>(wrap->frame_index), wrap->last_overlay_count,
 		 status.detector_ready ? "ready" : "stub",
-		 status.detector_ep[0] ? status.detector_ep : "CPU", status.frame_skip);
+		 status.detector_ep[0] ? status.detector_ep : "CPU", wrap->settings.frame_skip);
 
 	return env->NewStringUTF(buf);
 }
@@ -199,7 +198,6 @@ Java_com_irlsafety_plus_IRLSafetyNative_nativeProcessCameraFrame(JNIEnv *env, jc
 	frame.format = IRLSAFETY_FORMAT_BGRA;
 	frame.plane_count = 1;
 
-	irlsafety_pipeline_update_settings(wrap->core, &wrap->settings);
 	irlsafety_pipeline_tick(wrap->core, wrap->frame_index, &wrap->settings);
 	irlsafety_pipeline_detect_frame(wrap->core, &frame, &wrap->settings, wrap->frame_index, frame.width,
 					frame.height, false);
@@ -243,6 +241,30 @@ Java_com_irlsafety_plus_IRLSafetyNative_nativeGetOverlayRects(JNIEnv *env, jclas
 
 	env->SetFloatArrayRegion(out, 0, length, packed.data());
 	return out;
+}
+
+extern "C" JNIEXPORT void JNICALL Java_com_irlsafety_plus_IRLSafetyNative_nativeApplySettings(
+	JNIEnv *, jclass, jlong handle, jboolean enable_all, jboolean cat_license_plates, jboolean cat_street_signs,
+	jboolean cat_shipping_labels, jboolean cat_id_documents, jfloat confidence_threshold, jint frame_skip,
+	jboolean prefer_gpu)
+{
+	auto *wrap = pipeline_from_handle(handle);
+	if (!wrap || !wrap->core)
+		return;
+
+	wrap->settings.enable_all = enable_all == JNI_TRUE;
+	wrap->settings.cat_license_plates = cat_license_plates == JNI_TRUE;
+	wrap->settings.cat_street_signs = cat_street_signs == JNI_TRUE;
+	wrap->settings.cat_shipping_labels = cat_shipping_labels == JNI_TRUE;
+	wrap->settings.cat_id_documents = cat_id_documents == JNI_TRUE;
+	wrap->settings.confidence_threshold = confidence_threshold;
+	wrap->settings.frame_skip = frame_skip < 1 ? 1 : frame_skip;
+	wrap->settings.prefer_gpu = prefer_gpu == JNI_TRUE;
+	wrap->settings.cat_screen_text = false;
+	wrap->settings.cat_custom_pii = false;
+	wrap->settings.cat_sensitive_patterns = false;
+
+	irlsafety_pipeline_apply_runtime_settings(wrap->core, &wrap->settings);
 }
 
 extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM *, void *)

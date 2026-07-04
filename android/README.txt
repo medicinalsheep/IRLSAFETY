@@ -1,8 +1,8 @@
-IRLSAFETY+ Android (P13 GLES overlay)
-====================================
+IRLSAFETY+ Android (P14 settings)
+=================================
 
-STATUS: P13 — solid-box GLES censorship drawn over CameraX preview.
-ONNX Runtime + irlsafety-detect.onnx load on first launch (P12).
+STATUS: P14 — detection category toggles, confidence + frame skip (persisted).
+P13 GLES overlay · P12 ONNX · P11 CameraX.
 
 REQUIREMENTS
 ------------
@@ -27,14 +27,15 @@ COMMAND LINE (optional)
 APK output:
   app/build/outputs/apk/debug/app-debug.apk
 
-WHAT P13 PROVES
----------------
-- GLES2 transparent overlay (GlesCensorOverlay) draws black censorship boxes
-- JNI returns tracked overlay rects; coordinates mapped to PreviewView FILL_CENTER
-- Region tracker tick runs every analysis frame for hold/predict between detections
-- Point camera at plate/sign/mail label — boxes should appear over preview
+WHAT P14 ADDS
+-------------
+- SettingsPanel: plates / signs / mail / IDs toggles
+- Confidence slider (15–85%) and frame skip (1–15)
+- Prefer GPU (NNAPI) toggle; settings saved in SharedPreferences
+- Hot-swap via irlsafety_pipeline_apply_runtime_settings (no per-frame model reload)
 
-PRIMARY TESTER: Samsung Galaxy A53 (One UI 8.0, Android 16) — mid-range Exynos path
+PRIMARY TESTER: Samsung Galaxy A53 (One UI 8.0, Android 16)
+See android/TESTER.md and docs/ANDROID_ALPHA_REVIEW.md
 
 BUILD NOTE
 ----------
@@ -52,8 +53,8 @@ See data/models/SAMSUNG_ANDROID.txt in the repo root:
 
 ROADMAP (see docs/DESIGN-android-v1.md)
 ---------------------------------------
-  P14  Settings toggles (4 detection categories)
-  P15  Internal APK + tester doc
+  P15  Internal APK + GitHub release (TESTER.md ready)
+  P16  Alpha hardening from A53 feedback
 
 iOS app planning: docs/DESIGN-ios-v1.md (starts after Android P15).
 

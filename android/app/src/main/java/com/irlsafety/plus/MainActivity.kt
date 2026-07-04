@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -33,11 +35,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.irlsafety.plus.overlay.GlesCensorOverlay
@@ -64,6 +66,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun AlphaShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
     val context = LocalContext.current
+    val scrollState = rememberScrollState()
 
     var pipelineHandle by remember { mutableLongStateOf(0L) }
     var statusLine by remember { mutableStateOf("Starting…") }
@@ -72,6 +75,7 @@ private fun AlphaShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
     var overlayFrame by remember { mutableStateOf<OverlayFrame?>(null) }
     var previewBoxWidth by remember { mutableIntStateOf(0) }
     var previewBoxHeight by remember { mutableIntStateOf(0) }
+    var detectionSettings by remember { mutableStateOf(SettingsStore.load(context)) }
     val modelPath = remember { ModelInstaller.ensureDetectionModel(context) }
     val mainHandler = remember { Handler(Looper.getMainLooper()) }
     var hasCameraPermission by remember {
@@ -100,6 +104,21 @@ private fun AlphaShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
 
     val analysisExecutor = remember { Executors.newSingleThreadExecutor() }
 
+    fun applySettings(handle: Long, settings: DetectionSettings) {
+        if (handle == 0L) return
+        IRLSafetyNative.nativeApplySettings(
+            handle = handle,
+            enableAll = settings.enableAll,
+            licensePlates = settings.licensePlates,
+            streetSigns = settings.streetSigns,
+            shippingLabels = settings.shippingLabels,
+            idDocuments = settings.idDocuments,
+            confidenceThreshold = settings.confidenceThreshold,
+            frameSkip = settings.frameSkip,
+            preferGpu = settings.preferGpu
+        )
+    }
+
     DisposableEffect(modelPath) {
         if (modelPath.isNullOrBlank()) {
             modelLine = "Model missing — rebuild APK with irlsafety-detect.onnx asset."
@@ -107,6 +126,7 @@ private fun AlphaShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
         } else {
             modelLine = "Model: ${modelPath.substringAfterLast('/')}"
             pipelineHandle = IRLSafetyNative.nativeCreatePipeline(modelPath)
+            applySettings(pipelineHandle, detectionSettings)
             statusLine = IRLSafetyNative.nativePipelineStatus(pipelineHandle)
         }
         onDispose {
@@ -115,6 +135,12 @@ private fun AlphaShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
                 pipelineHandle = 0L
             }
         }
+    }
+
+    LaunchedEffect(detectionSettings, pipelineHandle) {
+        if (pipelineHandle == 0L) return@LaunchedEffect
+        SettingsStore.save(context, detectionSettings)
+        applySettings(pipelineHandle, detectionSettings)
     }
 
     LaunchedEffect(hasCameraPermission) {
@@ -174,6 +200,7 @@ private fun AlphaShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(scrollState)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
@@ -245,9 +272,15 @@ private fun AlphaShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
             color = Color(0xFFE8EAED),
             fontSize = 14.sp
         )
+
+        SettingsPanel(
+            settings = detectionSettings,
+            onSettingsChange = { detectionSettings = it }
+        )
+
         Text(
-            text = "P13 — GLES solid-box censorship over live preview.\n" +
-                "Next: settings UI (P14), internal tester APK (P15).",
+            text = "P14 — detection toggles + confidence + frame skip (saved locally).\n" +
+                "Next: internal tester APK + doc (P15).",
             color = Color(0xFF9AA0A6),
             fontSize = 12.sp,
             lineHeight = 17.sp

@@ -10,6 +10,18 @@ object IRLSafetyNative {
     external fun nativeDestroyPipeline(handle: Long)
     external fun nativePipelineStatus(handle: Long): String
 
+    external fun nativeApplySettings(
+        handle: Long,
+        enableAll: Boolean,
+        licensePlates: Boolean,
+        streetSigns: Boolean,
+        shippingLabels: Boolean,
+        idDocuments: Boolean,
+        confidenceThreshold: Float,
+        frameSkip: Int,
+        preferGpu: Boolean
+    )
+
     /**
      * Convert a CameraX YUV_420_888 frame and run detection.
      * Returns overlay region count for the processed frame.
