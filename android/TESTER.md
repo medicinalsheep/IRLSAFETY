@@ -12,7 +12,12 @@
 2. Find the latest **`IRLSAFETY+ Android 0.9.5-dev`** prerelease (tag `android-v0.9.5-dev`).
 3. Under **Assets**, download **`IRLSAFETY+-0.9.5-dev-android.apk`**.
 
-If no release is listed yet, a maintainer must run the **Android APK Release** workflow or push tag `android-v0.9.5-dev`. You can also download the APK from the workflow’s **Artifacts** tab on the Actions page.
+If no release is listed yet:
+
+1. **Actions** → **Android APK Release** → **Run workflow** (green button)
+2. When the run finishes, check **Releases** again or download from the run’s **Artifacts** tab
+
+The Node.js 20 message in logs is a warning from an older action — it is not the build failure.
 
 ---
 
@@ -53,7 +58,14 @@ Use this if browser install fails or you prefer `adb`.
 adb install -r IRLSAFETY+-0.9.5-dev-android.apk
 ```
 
-Windows: install [Platform Tools](https://developer.android.com/tools/releases/platform-tools) and run the same command from the folder containing the APK.
+Windows with repo checkout:
+
+```bat
+scripts\package-android-apk.bat
+scripts\install-android-usb.bat
+```
+
+Or install [Platform Tools](https://developer.android.com/tools/releases/platform-tools) and run `adb install -r` on the APK file.
 
 ---
 

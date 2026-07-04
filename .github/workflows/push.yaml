@@ -15,14 +15,14 @@ jobs:
   # Use workflow_dispatch or push a semver tag (e.g. 0.9.4) to build releases.
   check-format:
     name: Check Formatting 🔍
-    if: github.ref_type == 'tag'
+    if: github.ref_type == 'tag' && !startsWith(github.ref_name, 'android-v')
     uses: ./.github/workflows/check-format.yaml
     permissions:
       contents: read
 
   build-project:
     name: Build Project 🧱
-    if: github.ref_type == 'tag'
+    if: github.ref_type == 'tag' && !startsWith(github.ref_name, 'android-v')
     uses: ./.github/workflows/build-project.yaml
     secrets: inherit
     permissions:
@@ -30,7 +30,7 @@ jobs:
 
   create-release:
     name: Create Release 🛫
-    if: github.ref_type == 'tag'
+    if: github.ref_type == 'tag' && !startsWith(github.ref_name, 'android-v')
     runs-on: ubuntu-24.04
     needs: build-project
     defaults:
