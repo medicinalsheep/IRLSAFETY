@@ -10,6 +10,7 @@
 !/src
 !/tests
 !/scripts
+!/android
 !/release
 /release/IRLSAFETY+-*
 !.clang-format

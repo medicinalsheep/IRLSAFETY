@@ -1,0 +1,1 @@
+# IRLSAFETY+ Android — no shrink rules yet (alpha).

@@ -285,4 +285,5 @@ See `data/models/PLATFORMS.txt`.
 9. ~~**P7** ONNX Runtime abstraction — CPU/NNAPI/DML EP selection~~ — done (`src/onnx/ort_ep.cpp`)
 10. ~~**P8** child OCR dual-backend toggle on Windows~~ — done (`ocr_router.cpp`, `use_child_ocr` setting)
 11. ~~**P9** frozen `irlsafety.h` C API~~ — done (`src/irlsafety.h`, API version 1)
-12. **P10** (Android): next — `android/` Gradle + NDK JNI bridge
+12. ~~**P10** `android/` Gradle + NDK JNI bridge~~ — done (`android/`, `irlsafety_jni.cpp`, `cmake/android/libirlsafety_ndk.cmake`)
+13. **P11** (Android): next — CameraX → `irlsafety_frame_view` JNI

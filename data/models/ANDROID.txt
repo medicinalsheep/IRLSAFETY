@@ -1,9 +1,10 @@
 IRLSAFETY+ — Android (planned)
 ================================
 
-STATUS TODAY (v0.7)
--------------------
-There is no Android app yet. IRLSAFETY+ is a Windows OBS plugin.
+STATUS TODAY (v1.0-alpha P10)
+-----------------------------
+Android scaffold exists (`android/` in repo) — links libirlsafety via NDK.
+Camera preview + live detection ship in P11–P13. Windows OBS plugin remains primary.
 
 USE YOUR PHONE WITH OBS ON A PC (works now)
 -------------------------------------------
@@ -18,8 +19,8 @@ ANDROID APP (roadmap)
 ---------------------
 Planned as a standalone camera protection app (not an OBS plugin):
 
-  v0.8  Extract libirlsafety core (shared with Windows)
-  v1.0  Android alpha — camera preview + plate/mail/ID detection
+  v0.8  Extract libirlsafety core (shared with Windows) — done
+  v1.0  Android alpha — camera preview + plate/mail/ID detection (P10 scaffold shipped)
   v1.1  On-device OCR (same ONNX stack as Windows child OCR)
 
 MVP scope:
