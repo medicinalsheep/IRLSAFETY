@@ -77,16 +77,18 @@ Run through on **Galaxy A53** before sharing `0.9.5-dev` APK.
 
 ## Phase plan (after P14)
 
-### P15 — Internal tester package (next, ~1 week)
+### P15 — Internal tester package (done)
 
 | Task | Deliverable |
 |------|-------------|
-| `scripts/build-android-release.bat` | Signed or debug APK + version stamp |
-| `android/TESTER.md` | Install, A53 tuning, logcat, bug report template |
-| `scripts/package-android-apk.bat` → `release/IRLSAFETY+-0.9.5-dev-android.apk` | Sideload package |
-| Smoke test matrix | A53 sign-off on checklist above |
+| `scripts/package-android-apk.bat` | Local APK build |
+| `.github/workflows/android-apk.yaml` | GitHub prerelease with APK asset |
+| `android/TESTER.md` | Download, Samsung dev mode, sideload, tests |
+| `android/RELEASE_NOTES.txt` | Release description |
 
-**Exit:** medicinalsheep ships APK to self + 1–2 trusted testers.
+**Publish:** push tag `android-v0.9.5-dev` or run **Android APK Release** workflow.
+
+**Exit:** Download APK from GitHub Releases on A53; run checklist above.
 
 ---
 

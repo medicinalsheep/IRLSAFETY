@@ -10,6 +10,7 @@ val detectionModelSrc = file("$irlsafetyRepoRoot/data/models/irlsafety-detect.on
 android {
     namespace = "com.irlsafety.plus"
     compileSdk = 35
+    ndkVersion = "26.1.10909125"
 
     defaultConfig {
         applicationId = "com.irlsafety.plus"

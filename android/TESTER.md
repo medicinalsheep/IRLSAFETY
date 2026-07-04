@@ -1,58 +1,119 @@
-# IRLSAFETY+ Android — Tester Guide
+# IRLSAFETY+ Android — Install & Test Guide
 
 **Version:** 0.9.5-dev (pre-1.0)  
-**Primary device:** Samsung Galaxy A53 · One UI 8.0 · Android 16
+**Test phone:** Samsung Galaxy A53 · One UI 8.0 · Android 16
 
 ---
 
-## Install
+## 1. Download from GitHub
 
-1. Build: `scripts\package-android-apk.bat` (or Android Studio → Run)
-2. Copy `release\IRLSAFETY+-0.9.5-dev-android.apk` to the phone
-3. Install → open **IRLSAFETY+** → grant **Camera**
+1. Open **Releases** on the repo:  
+   https://github.com/medicinalsheep/IRLSAFETY/releases
+2. Find the latest **`IRLSAFETY+ Android 0.9.5-dev`** prerelease (tag `android-v0.9.5-dev`).
+3. Under **Assets**, download **`IRLSAFETY+-0.9.5-dev-android.apk`**.
 
----
-
-## Samsung setup
-
-1. **Settings → Apps → IRLSAFETY+ → Battery → Unrestricted**
-2. If preview stutters: increase **Frame skip** to 8–10 in app settings
+If no release is listed yet, a maintainer must run the **Android APK Release** workflow or push tag `android-v0.9.5-dev`. You can also download the APK from the workflow’s **Artifacts** tab on the Actions page.
 
 ---
 
-## What to test
+## 2. Allow install on Samsung (no PC required)
 
-| Scenario | Expected |
-|----------|----------|
-| License plate in view | Black censorship box |
-| Street sign | Box over sign |
-| Shipping label | Box over label |
-| ID / card | Box over document |
-| Category OFF | That type no longer boxed |
-| Protection OFF | No boxes |
+You do **not** need a computer if you download the APK on the phone.
+
+### Option A — Install from browser (recommended)
+
+1. Open the Releases page in **Chrome** or **Samsung Internet** on the A53.
+2. Download the `.apk` file.
+3. **Settings → Security and privacy → More security settings → Install unknown apps**
+4. Select your browser → turn **Allow from this source** ON.
+5. Open **My Files** → **Downloads** → tap `IRLSAFETY+-0.9.5-dev-android.apk` → **Install**.
+
+One UI 8.0 path may also appear as:  
+**Settings → Apps → ⋮ menu → Special access → Install unknown apps**
+
+### Option B — USB install (needs Developer mode)
+
+Use this if browser install fails or you prefer `adb`.
+
+#### Enable Developer options
+
+1. **Settings → About phone → Software information**
+2. Tap **Build number** seven times → enter PIN → “Developer mode enabled”.
+
+#### Enable USB debugging
+
+1. **Settings → Developer options**
+2. Turn **USB debugging** ON.
+3. Connect the phone to your PC with a USB cable.
+4. On the phone, tap **Allow** when prompted for USB debugging.
+
+#### Install from PC
+
+```bash
+adb install -r IRLSAFETY+-0.9.5-dev-android.apk
+```
+
+Windows: install [Platform Tools](https://developer.android.com/tools/releases/platform-tools) and run the same command from the folder containing the APK.
 
 ---
 
-## Logcat
+## 3. First launch (Samsung A53)
+
+1. Open **IRLSAFETY+** → tap **Allow** for **Camera**.
+2. **Settings → Apps → IRLSAFETY+ → Battery → Unrestricted** (important on One UI).
+3. Point the rear camera at a license plate, sign, or shipping label.
+4. You should see **black boxes** over detected items.
+
+### If preview is slow or stutters
+
+In the app, scroll to settings:
+
+- Set **Frame skip** to **8–10**
+- Leave **Prefer GPU (NNAPI)** on (Exynos may show CPU in logs — that is OK)
+
+---
+
+## 4. What to test
+
+| Action | Expected result |
+|--------|-----------------|
+| Plate / sign / label / ID in frame | Black censorship box |
+| Turn off **License plates** | Plates no longer boxed |
+| **Protection enabled** OFF | No boxes |
+| Confidence **85%** | Fewer detections |
+| Frame skip **10** | Smoother preview, slower updates |
+
+Full checklist: `docs/ANDROID_ALPHA_REVIEW.md`
+
+---
+
+## 5. Logs (optional, USB debugging)
 
 ```bash
 adb logcat -s IRLSAFETY+
 ```
 
-Look for `detector=ready` and your chosen `skip=` value.
+Healthy line looks like: `detector=ready · EP=... · skip=8`
 
 ---
 
-## Bug reports
+## 6. Bug reports
 
-Include device model, One UI / Android version, app version (`0.9.5-dev`), steps, screenshot, and logcat (`IRLSAFETY+` tag).
+Include:
 
-GitHub issues: https://github.com/medicinalsheep/IRLSAFETY/issues
+- Phone model (e.g. SM-A536B), One UI + Android version
+- App version: **0.9.5-dev**
+- Steps, screenshot or short video
+- Logcat snippet if possible
+
+https://github.com/medicinalsheep/IRLSAFETY/issues
 
 ---
 
-## Privacy
+## 7. Privacy
 
-On-device inference only. No account. Camera used while app is in foreground.
+- Inference runs only on your phone
+- No account or cloud required
+- Camera is used while the app is open in the foreground
 
-See `data/models/SAMSUNG_ANDROID.txt` and `docs/VERSIONING.md`.
+See also: `data/models/SAMSUNG_ANDROID.txt`, `docs/VERSIONING.md`

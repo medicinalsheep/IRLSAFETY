@@ -14,12 +14,22 @@ REQUIREMENTS
 - Android Studio Ladybug (2024.2+) or SDK + NDK 26+
 - JDK 17, arm64-v8a device (API 26+)
 
-BUILD
------
-  scripts\package-android-apk.bat
+DOWNLOAD (testers)
+------------------
+  https://github.com/medicinalsheep/IRLSAFETY/releases
+  Asset: IRLSAFETY+-0.9.5-dev-android.apk
+  Install: android\TESTER.md
 
-Output:
+BUILD (developers)
+------------------
+  scripts\package-android-apk.bat
   release\IRLSAFETY+-0.9.5-dev-android.apk
+
+PUBLISH TO GITHUB
+-----------------
+  git tag android-v0.9.5-dev
+  git push origin android-v0.9.5-dev
+  (runs .github/workflows/android-apk.yaml)
 
 OPEN IN ANDROID STUDIO
 ----------------------

@@ -55,3 +55,11 @@ irlsafety-plus-0.9.5-dev-android.apk  Android sideload
 ```
 
 iOS (future): `IRLSAFETY+ 0.9.5-dev` TestFlight build number separate from marketing version.
+
+### Android GitHub release tags
+
+```
+android-v0.9.5-dev   → triggers .github/workflows/android-apk.yaml
+```
+
+Asset name: `IRLSAFETY+-0.9.5-dev-android.apk`

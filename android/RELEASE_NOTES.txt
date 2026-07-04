@@ -1,0 +1,25 @@
+IRLSAFETY+ Android (pre-1.0)
+============================
+
+Download **IRLSAFETY+-0.9.5-dev-android.apk** from the Assets section below.
+
+Install and test: see android/TESTER.md in the repo
+  https://github.com/medicinalsheep/IRLSAFETY/blob/main/android/TESTER.md
+
+Quick start (Samsung Galaxy A53)
+--------------------------------
+1. On the phone: enable install from your browser (see TESTER.md)
+2. Download this APK from GitHub Releases
+3. Tap the file → Install
+4. Open IRLSAFETY+ → allow Camera
+5. Settings → Apps → IRLSAFETY+ → Battery → Unrestricted
+
+What this build includes
+------------------------
+- Live camera preview with on-device YOLO detection
+- Black censorship boxes over plates, signs, mail labels, IDs
+- Settings: category toggles, confidence, frame skip
+
+Privacy: 100% on-device. No account. No cloud inference.
+
+Version policy: docs/VERSIONING.md

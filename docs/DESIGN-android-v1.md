@@ -295,4 +295,5 @@ See `data/models/PLATFORMS.txt`.
 14. ~~**P12** ONNX Runtime Android + bundled `irlsafety-detect.onnx`~~ — done (`onnxruntime-android` prefab, `ModelInstaller.kt`, Gradle asset copy)
 15. ~~**P13** GLES solid-box overlay on preview~~ — done (`GlesCensorOverlay`, `nativeGetOverlayRects`, region tick)
 16. ~~**P14** settings UI (4 detection categories, confidence, frame skip)~~ — done (`SettingsPanel`, `apply_runtime_settings`)
-17. **P15** (Android): next — internal tester APK + `android/TESTER.md` release
+17. ~~**P15** internal tester APK + GitHub release workflow~~ — done (`android-apk.yaml`, `TESTER.md`, `package-android-apk.bat`)
+18. **P16** (Android): next — hardening from A53 feedback

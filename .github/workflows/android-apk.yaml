@@ -1,0 +1,70 @@
+name: Android APK Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'android-v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify detection model
+        run: |
+          test -f data/models/irlsafety-detect.onnx
+          ls -lh data/models/irlsafety-detect.onnx
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.10.2
+
+      - name: Build debug APK
+        working-directory: android
+        run: gradle assembleDebug --no-daemon --stacktrace
+
+      - name: Package APK
+        id: apk
+        run: |
+          VERSION=$(grep 'versionName' android/app/build.gradle.kts | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+          APK_NAME="IRLSAFETY+-${VERSION}-android.apk"
+          cp android/app/build/outputs/apk/debug/app-debug.apk "${APK_NAME}"
+          echo "apk_name=${APK_NAME}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          ls -lh "${APK_NAME}"
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.apk.outputs.apk_name }}
+          path: ${{ steps.apk.outputs.apk_name }}
+          retention-days: 90
+
+      - name: Publish GitHub prerelease
+        if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/android-v')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('android-v{0}', steps.apk.outputs.version) }}
+          name: IRLSAFETY+ Android ${{ steps.apk.outputs.version }}
+          prerelease: true
+          make_latest: false
+          files: ${{ steps.apk.outputs.apk_name }}
+          body_path: android/RELEASE_NOTES.txt
+          fail_on_unmatched_files: true
