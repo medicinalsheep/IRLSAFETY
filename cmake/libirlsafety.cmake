@@ -1,5 +1,21 @@
 # libirlsafety — shared detection/OCR/censor core (v0.8 extraction).
 
+if(NOT DEFINED IRLSAFETY_REPO_ROOT)
+  set(IRLSAFETY_REPO_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
+endif()
+
+function(_irlsafety_prefix_sources var)
+  set(_out)
+  foreach(_src IN LISTS ${var})
+    if(IS_ABSOLUTE "${_src}")
+      list(APPEND _out "${_src}")
+    else()
+      list(APPEND _out "${IRLSAFETY_REPO_ROOT}/${_src}")
+    endif()
+  endforeach()
+  set(${var} "${_out}" PARENT_SCOPE)
+endfunction()
+
 set(
   IRLSAFETY_LIB_SOURCES
   src/pipeline.c
@@ -57,20 +73,20 @@ endif()
 list(APPEND IRLSAFETY_LIB_SOURCES ${_irlsafety_lib_detection_sources})
 
 function(irlsafety_configure_lib_target target)
-  target_include_directories(${target} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
+  target_include_directories(${target} PUBLIC "${IRLSAFETY_REPO_ROOT}/src")
 
   if(_irlsafety_ocr_has_child)
-    set_source_files_properties(src/ocr/ocr_child_onnx.cpp PROPERTIES LANGUAGE CXX)
+    set_source_files_properties("${IRLSAFETY_REPO_ROOT}/src/ocr/ocr_child_onnx.cpp" PROPERTIES LANGUAGE CXX)
     target_compile_definitions(${target} PUBLIC IRLSAFETY_OCR_HAS_CHILD=1 IRLSAFETY_OCR_BACKEND_CHILD=1)
   endif()
 
   if(_irlsafety_ocr_has_windows)
-    set_source_files_properties(src/ocr/ocr_windows.cpp PROPERTIES LANGUAGE CXX)
+    set_source_files_properties("${IRLSAFETY_REPO_ROOT}/src/ocr/ocr_windows.cpp" PROPERTIES LANGUAGE CXX)
     target_compile_definitions(${target} PUBLIC IRLSAFETY_OCR_HAS_WINDOWS=1)
   endif()
 
   if(_irlsafety_ocr_has_child OR _irlsafety_ocr_has_windows)
-    set_source_files_properties(src/ocr/ocr_router.cpp PROPERTIES LANGUAGE CXX)
+    set_source_files_properties("${IRLSAFETY_REPO_ROOT}/src/ocr/ocr_router.cpp" PROPERTIES LANGUAGE CXX)
     target_compile_features(${target} PUBLIC cxx_std_20)
   endif()
 
@@ -79,7 +95,10 @@ function(irlsafety_configure_lib_target target)
   endif()
 
   if(IRLSAFETY_ENABLE_ONNX AND IRLSAFETY_HAS_ONNX_RUNTIME)
-    set_source_files_properties(src/detection/yolo_onnx.cpp src/onnx/ort_ep.cpp PROPERTIES LANGUAGE CXX)
+    set_source_files_properties(
+      "${IRLSAFETY_REPO_ROOT}/src/detection/yolo_onnx.cpp"
+      "${IRLSAFETY_REPO_ROOT}/src/onnx/ort_ep.cpp"
+      PROPERTIES LANGUAGE CXX)
     target_compile_definitions(${target} PUBLIC IRLSAFETY_ENABLE_ONNX=1)
     target_compile_features(${target} PUBLIC cxx_std_20)
     if(DEFINED IRLSAFETY_ONNX_LINK_TARGET)
@@ -92,6 +111,7 @@ function(irlsafety_configure_lib_target target)
   endif()
 endfunction()
 
+_irlsafety_prefix_sources(IRLSAFETY_LIB_SOURCES)
 add_library(libirlsafety STATIC ${IRLSAFETY_LIB_SOURCES})
 irlsafety_configure_lib_target(libirlsafety)
 
@@ -100,6 +120,7 @@ set(IRLSAFETY_TEST_LIB_SOURCES ${IRLSAFETY_LIB_SOURCES})
 list(FILTER IRLSAFETY_TEST_LIB_SOURCES EXCLUDE REGEX "yolo_onnx\\.cpp$|ort_ep\\.cpp$|ocr_windows\\.cpp$|ocr_child_onnx\\.cpp$|ocr_router\\.cpp$")
 list(APPEND IRLSAFETY_TEST_LIB_SOURCES src/detection/yolo_onnx_stub.c src/ocr/ocr_stub.c)
 
+_irlsafety_prefix_sources(IRLSAFETY_TEST_LIB_SOURCES)
 add_library(libirlsafety_test STATIC ${IRLSAFETY_TEST_LIB_SOURCES})
 target_compile_definitions(libirlsafety_test PUBLIC IRLSAFETY_TEST_BUILD)
 irlsafety_configure_lib_target(libirlsafety_test)
