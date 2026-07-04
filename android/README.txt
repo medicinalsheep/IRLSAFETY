@@ -1,8 +1,8 @@
-IRLSAFETY+ Android (P12 ONNX detection)
-=======================================
+IRLSAFETY+ Android (P13 GLES overlay)
+====================================
 
-STATUS: P12 — ONNX Runtime Android + bundled irlsafety-detect.onnx.
-CameraX preview feeds libirlsafety; expect detector=ready and EP=NNAPI on Samsung.
+STATUS: P13 — solid-box GLES censorship drawn over CameraX preview.
+ONNX Runtime + irlsafety-detect.onnx load on first launch (P12).
 
 REQUIREMENTS
 ------------
@@ -27,13 +27,14 @@ COMMAND LINE (optional)
 APK output:
   app/build/outputs/apk/debug/app-debug.apk
 
-WHAT P12 PROVES
+WHAT P13 PROVES
 ---------------
-- ONNX Runtime 1.20.1 (prefab) linked into libirlsafety arm64-v8a
-- irlsafety-detect.onnx copied from data/models/ at build time into APK assets
-- ModelInstaller extracts ONNX to filesDir on first launch
-- Live YOLO inference via NNAPI (Snapdragon) or XNNPACK/CPU fallback
-- Status line shows detector=ready · EP=NNAPI (or CPU) · skip=6
+- GLES2 transparent overlay (GlesCensorOverlay) draws black censorship boxes
+- JNI returns tracked overlay rects; coordinates mapped to PreviewView FILL_CENTER
+- Region tracker tick runs every analysis frame for hold/predict between detections
+- Point camera at plate/sign/mail label — boxes should appear over preview
+
+PRIMARY TESTER: Samsung Galaxy A53 (One UI 8.0, Android 16) — mid-range Exynos path
 
 BUILD NOTE
 ----------
@@ -51,7 +52,6 @@ See data/models/SAMSUNG_ANDROID.txt in the repo root:
 
 ROADMAP (see docs/DESIGN-android-v1.md)
 ---------------------------------------
-  P13  GLES solid-box overlay on preview
   P14  Settings toggles (4 detection categories)
   P15  Internal APK + tester doc
 

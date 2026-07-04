@@ -14,6 +14,9 @@ object IRLSafetyNative {
      * Convert a CameraX YUV_420_888 frame and run detection.
      * Returns overlay region count for the processed frame.
      */
+    /** Packed overlay rects: [frameW, frameH, count, x, y, w, h, ...] */
+    external fun nativeGetOverlayRects(handle: Long): FloatArray?
+
     external fun nativeProcessCameraFrame(
         handle: Long,
         width: Int,

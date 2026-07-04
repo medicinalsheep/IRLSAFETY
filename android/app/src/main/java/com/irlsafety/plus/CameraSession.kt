@@ -18,7 +18,7 @@ class CameraSession(
     private val previewView: PreviewView,
     private val pipelineHandle: Long,
     private val analysisExecutor: Executor,
-    private val onFrameProcessed: (overlayCount: Int) -> Unit
+    private val onFrameProcessed: (overlayCount: Int, overlayData: FloatArray?) -> Unit
 ) {
     private var cameraProvider: ProcessCameraProvider? = null
 
@@ -92,7 +92,7 @@ class CameraSession(
             vPlane.pixelStride
         )
 
-        onFrameProcessed(overlayCount)
+        onFrameProcessed(overlayCount, IRLSafetyNative.nativeGetOverlayRects(pipelineHandle))
     }
 
     private fun planeToByteArray(buffer: ByteBuffer): ByteArray {

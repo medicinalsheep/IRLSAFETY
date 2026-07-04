@@ -195,6 +195,19 @@ See `data/models/PLATFORMS.txt`.
 
 ---
 
+## Tester device matrix (planned)
+
+| Device | Role | Notes |
+|--------|------|-------|
+| Galaxy A53 (Android 16 / One UI 8.0) | **Android alpha primary** | Mid-range Exynos 1280; P12–P15 validation |
+| iPhone 16e | iOS alpha primary | Newest phone; CoreML EP + ANE path |
+| iPhone XS | iOS perf floor | A12 — higher default frame_skip; thermal watch |
+| iPad | iOS layout / tablet | Landscape preview + settings; not phone-only assumptions |
+
+Android ships first (P15 internal APK). iOS TestFlight (I7) starts after Android MVP exit.
+
+---
+
 ## Decision log
 
 | Date | Decision |

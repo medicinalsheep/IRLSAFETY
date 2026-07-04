@@ -3,12 +3,17 @@ package com.irlsafety.plus
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.view.ViewGroup
+import android.widget.FrameLayout
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,8 +37,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import com.irlsafety.plus.overlay.GlesCensorOverlay
 import kotlinx.coroutines.delay
 import java.util.concurrent.Executors
 
@@ -62,7 +69,11 @@ private fun AlphaShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
     var statusLine by remember { mutableStateOf("Starting…") }
     var modelLine by remember { mutableStateOf("Loading model…") }
     var overlayCount by remember { mutableIntStateOf(0) }
+    var overlayFrame by remember { mutableStateOf<OverlayFrame?>(null) }
+    var previewBoxWidth by remember { mutableIntStateOf(0) }
+    var previewBoxHeight by remember { mutableIntStateOf(0) }
     val modelPath = remember { ModelInstaller.ensureDetectionModel(context) }
+    val mainHandler = remember { Handler(Looper.getMainLooper()) }
     var hasCameraPermission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
@@ -81,6 +92,10 @@ private fun AlphaShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
             implementationMode = PreviewView.ImplementationMode.COMPATIBLE
             scaleType = PreviewView.ScaleType.FILL_CENTER
         }
+    }
+
+    val censorOverlay = remember {
+        GlesCensorOverlay(context)
     }
 
     val analysisExecutor = remember { Executors.newSingleThreadExecutor() }
@@ -116,8 +131,11 @@ private fun AlphaShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
                 previewView = previewView,
                 pipelineHandle = pipelineHandle,
                 analysisExecutor = analysisExecutor,
-                onFrameProcessed = { count ->
-                    overlayCount = count
+                onFrameProcessed = { count, overlayData ->
+                    mainHandler.post {
+                        overlayCount = count
+                        overlayFrame = overlayData?.let { OverlayFrame.fromPacked(it) }
+                    }
                 }
             ).also { it.start() }
         } else {
@@ -135,6 +153,22 @@ private fun AlphaShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
             statusLine = IRLSafetyNative.nativePipelineStatus(pipelineHandle)
             delay(500)
         }
+    }
+
+    LaunchedEffect(overlayFrame, previewBoxWidth, previewBoxHeight) {
+        val frame = overlayFrame
+        if (frame == null || previewBoxWidth <= 0 || previewBoxHeight <= 0) {
+            censorOverlay.updateRegions(emptyList())
+            return@LaunchedEffect
+        }
+
+        val mapped = OverlayCoordinateMapper.toViewRects(
+            frame = frame,
+            viewWidth = previewBoxWidth,
+            viewHeight = previewBoxHeight,
+            scaleType = previewView.scaleType
+        )
+        censorOverlay.updateRegions(mapped)
     }
 
     Column(
@@ -156,12 +190,38 @@ private fun AlphaShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
         )
 
         if (hasCameraPermission) {
-            AndroidView(
-                factory = { previewView },
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(9f / 16f)
-            )
+                    .onSizeChanged { size ->
+                        previewBoxWidth = size.width
+                        previewBoxHeight = size.height
+                    }
+            ) {
+                AndroidView(
+                    factory = { previewView },
+                    modifier = Modifier.fillMaxSize()
+                )
+                AndroidView(
+                    factory = {
+                        FrameLayout(context).apply {
+                            layoutParams = ViewGroup.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.MATCH_PARENT
+                            )
+                            addView(
+                                censorOverlay,
+                                FrameLayout.LayoutParams(
+                                    FrameLayout.LayoutParams.MATCH_PARENT,
+                                    FrameLayout.LayoutParams.MATCH_PARENT
+                                )
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         } else {
             Text(
                 text = "Camera permission required for live preview.",
@@ -186,8 +246,8 @@ private fun AlphaShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
             fontSize = 14.sp
         )
         Text(
-            text = "P12 — ONNX Runtime + irlsafety-detect.onnx on-device.\n" +
-                "Next: GLES censorship boxes (P13), settings UI (P14).",
+            text = "P13 — GLES solid-box censorship over live preview.\n" +
+                "Next: settings UI (P14), internal tester APK (P15).",
             color = Color(0xFF9AA0A6),
             fontSize = 12.sp,
             lineHeight = 17.sp

@@ -1,10 +1,10 @@
 IRLSAFETY+ — Android (planned)
 ================================
 
-STATUS TODAY (v1.0-alpha3 P12)
+STATUS TODAY (v1.0-alpha4 P13)
 --------------------------------
-Android app ships ONNX Runtime + irlsafety-detect.onnx in repo (`android/`).
-CameraX preview feeds libirlsafety; YOLO detection runs on-device (NNAPI on Samsung).
+Android app ships ONNX Runtime + irlsafety-detect.onnx + GLES censorship overlay.
+CameraX preview with solid-box redaction over detected plates/signs/mail/IDs.
 
 USE YOUR PHONE WITH OBS ON A PC (works now)
 -------------------------------------------
@@ -24,8 +24,8 @@ Standalone camera protection app (not an OBS plugin):
         P10  Gradle + NDK scaffold — done
         P11  CameraX → irlsafety_frame_view JNI — done
         P12  ONNX Runtime Android + irlsafety-detect.onnx — done
-        P13  GLES solid-box overlay on preview — next
-        P14  Settings toggles (4 categories)
+        P13  GLES solid-box overlay on preview — done
+        P14  Settings toggles (4 categories) — next
         P15  Internal APK + tester doc
   v1.1  On-device OCR (same ONNX stack as Windows child OCR)
 

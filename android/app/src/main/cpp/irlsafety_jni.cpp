@@ -1,5 +1,5 @@
 /*
- * IRLSAFETY+ — Android JNI bridge to libirlsafety (P10–P12).
+ * IRLSAFETY+ — Android JNI bridge to libirlsafety (P10–P13).
  * Copyright (c) 2026 IRLSAFETY+ Contributors. MIT License.
  */
 
@@ -24,6 +24,9 @@ struct AndroidPipeline {
 	uint64_t frame_index = 0;
 	std::vector<uint8_t> bgra;
 	uint32_t last_overlay_count = 0;
+	irlsafety_region_list last_regions {};
+	uint32_t last_frame_width = 0;
+	uint32_t last_frame_height = 0;
 };
 
 static void android_log_bridge(int level, const char *message, void *)
@@ -63,7 +66,7 @@ extern "C" JNIEXPORT jstring JNICALL Java_com_irlsafety_plus_IRLSafetyNative_nat
 	ensure_android_logging();
 
 	char buf[96];
-	snprintf(buf, sizeof(buf), "libirlsafety API v%d · Android P12", IRLSAFETY_API_VERSION);
+	snprintf(buf, sizeof(buf), "libirlsafety API v%d · Android P13", IRLSAFETY_API_VERSION);
 	return env->NewStringUTF(buf);
 }
 
@@ -197,13 +200,49 @@ Java_com_irlsafety_plus_IRLSafetyNative_nativeProcessCameraFrame(JNIEnv *env, jc
 	frame.plane_count = 1;
 
 	irlsafety_pipeline_update_settings(wrap->core, &wrap->settings);
-	irlsafety_pipeline_detect_frame(wrap->core, &frame, &wrap->settings, wrap->frame_index++, frame.width,
+	irlsafety_pipeline_tick(wrap->core, wrap->frame_index, &wrap->settings);
+	irlsafety_pipeline_detect_frame(wrap->core, &frame, &wrap->settings, wrap->frame_index, frame.width,
 					frame.height, false);
 
 	irlsafety_region_list regions {};
 	irlsafety_pipeline_get_overlays(wrap->core, frame.width, frame.height, &wrap->settings, &regions);
+	wrap->last_regions = regions;
+	wrap->last_frame_width = frame.width;
+	wrap->last_frame_height = frame.height;
 	wrap->last_overlay_count = static_cast<uint32_t>(regions.count);
+	wrap->frame_index++;
 	return static_cast<jint>(wrap->last_overlay_count);
+}
+
+extern "C" JNIEXPORT jfloatArray JNICALL
+Java_com_irlsafety_plus_IRLSafetyNative_nativeGetOverlayRects(JNIEnv *env, jclass, jlong handle)
+{
+	auto *wrap = pipeline_from_handle(handle);
+	if (!wrap || !wrap->core)
+		return nullptr;
+
+	const size_t count = wrap->last_regions.count;
+	const jsize length = static_cast<jsize>(3 + count * 4);
+	jfloatArray out = env->NewFloatArray(length);
+	if (!out)
+		return nullptr;
+
+	std::vector<jfloat> packed(static_cast<size_t>(length));
+	packed[0] = static_cast<jfloat>(wrap->last_frame_width);
+	packed[1] = static_cast<jfloat>(wrap->last_frame_height);
+	packed[2] = static_cast<jfloat>(count);
+
+	for (size_t i = 0; i < count; i++) {
+		const size_t base = 3 + i * 4;
+		const irlsafety_rect &rect = wrap->last_regions.regions[i];
+		packed[base] = rect.x;
+		packed[base + 1] = rect.y;
+		packed[base + 2] = rect.width;
+		packed[base + 3] = rect.height;
+	}
+
+	env->SetFloatArrayRegion(out, 0, length, packed.data());
+	return out;
 }
 
 extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM *, void *)
