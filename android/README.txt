@@ -27,9 +27,8 @@ BUILD (developers)
 
 PUBLISH TO GITHUB
 -----------------
-  git tag android-v0.9.5-dev
-  git push origin android-v0.9.5-dev
-  (runs .github/workflows/android-apk.yaml)
+  Actions → Android APK Release → Run workflow
+  See docs/GITHUB.md
 
 OPEN IN ANDROID STUDIO
 ----------------------

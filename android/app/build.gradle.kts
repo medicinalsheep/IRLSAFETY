@@ -6,6 +6,7 @@ plugins {
 
 val irlsafetyRepoRoot = file("../../").absolutePath
 val detectionModelSrc = file("$irlsafetyRepoRoot/data/models/irlsafety-detect.onnx")
+val ortPrefabDir = file("ort-prefab")
 
 android {
     namespace = "com.irlsafety.plus"
@@ -26,11 +27,14 @@ android {
         externalNativeBuild {
             cmake {
                 cppFlags += listOf("-std=c++20", "-frtti", "-fexceptions")
-                arguments += listOf(
-                    "-DANDROID_STL=c++_shared",
-                    "-DIRLSAFETY_ENABLE_ONNX=ON",
-                    "-DIRLSAFETY_OCR_BACKEND=stub"
-                )
+                arguments += buildList {
+                    add("-DANDROID_STL=c++_shared")
+                    add("-DIRLSAFETY_ENABLE_ONNX=ON")
+                    add("-DIRLSAFETY_OCR_BACKEND=stub")
+                    if (ortPrefabDir.exists()) {
+                        add("-DIRLSAFETY_ONNX_ANDROID_ROOT=${ortPrefabDir.absolutePath}")
+                    }
+                }
             }
         }
     }

@@ -9,15 +9,18 @@
 
 1. Open **Releases** on the repo:  
    https://github.com/medicinalsheep/IRLSAFETY/releases
-2. Find the latest **`IRLSAFETY+ Android 0.9.5-dev`** prerelease (tag `android-v0.9.5-dev`).
+2. Find **`IRLSAFETY+ 0.9.5-dev (Android)`** prerelease (tag `v0.9.5-dev`).
 3. Under **Assets**, download **`IRLSAFETY+-0.9.5-dev-android.apk`**.
 
-If no release is listed yet:
+### APK not on Releases yet?
 
-1. **Actions** → **Android APK Release** → **Run workflow** (green button)
-2. When the run finishes, check **Releases** again or download from the run’s **Artifacts** tab
+Someone must run the build once:
 
-The Node.js 20 message in logs is a warning from an older action — it is not the build failure.
+1. **Actions** → **Android APK Release** → **Run workflow** → **Run**
+2. Wait for green ✓ (~10–15 min)
+3. Refresh **Releases** or use **Artifacts** on that run
+
+See **docs/GITHUB.md** for details. Node.js 20 warnings in logs are harmless.
 
 ---
 

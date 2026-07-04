@@ -21,19 +21,18 @@ Design, training summary, and full attribution: **[CREDITS.md](CREDITS.md)** · 
 
 https://github.com/medicinalsheep/IRLSAFETY/releases
 
-### Windows OBS plugin (0.9.4)
-
-1. Download **`IRLSAFETY+-v0.9.4-win64.zip`**
-2. Extract → right-click **`install-from-package.bat`** → **Run as administrator**
-3. Restart OBS → **Docks → IRLSAFETY+ Control**
+**How CI works:** [docs/GITHUB.md](docs/GITHUB.md) — Android APK is **manual Actions run**, not automatic.
 
 ### Android app (0.9.5-dev, pre-1.0)
 
-1. Download **`IRLSAFETY+-0.9.5-dev-android.apk`** from the Android prerelease
-2. On your phone: allow install from browser (see **[android/TESTER.md](android/TESTER.md)**)
-3. Install → grant **Camera** → set battery **Unrestricted** (Samsung)
+1. **Actions** → **Android APK Release** → **Run workflow** (if no APK on Releases yet)
+2. Download **`IRLSAFETY+-0.9.5-dev-android.apk`** from Releases → `v0.9.5-dev` prerelease
+3. Install on phone — **[android/TESTER.md](android/TESTER.md)** (Samsung A53 USB or browser)
 
-Full install + Samsung A53 testing: **[android/TESTER.md](android/TESTER.md)**
+### Windows OBS plugin (0.9.4)
+
+1. Download **`IRLSAFETY+-v0.9.4-win64.zip`** (older Windows release on same page)
+2. Extract → **`install-from-package.bat`** as Administrator → restart OBS
 
 Local builds:
 

@@ -56,10 +56,10 @@ irlsafety-plus-0.9.5-dev-android.apk  Android sideload
 
 iOS (future): `IRLSAFETY+ 0.9.5-dev` TestFlight build number separate from marketing version.
 
-### Android GitHub release tags
+### Android GitHub release
 
-```
-android-v0.9.5-dev   → triggers .github/workflows/android-apk.yaml
-```
+Manual: **Actions → Android APK Release → Run workflow**
 
-Asset name: `IRLSAFETY+-0.9.5-dev-android.apk`
+Publishes prerelease tag `v0.9.5-dev` with asset `IRLSAFETY+-0.9.5-dev-android.apk`
+
+See `docs/GITHUB.md`

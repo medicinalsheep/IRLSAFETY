@@ -1,7 +1,9 @@
 IRLSAFETY+ Android (pre-1.0)
 ============================
 
-Download **IRLSAFETY+-0.9.5-dev-android.apk** from the Assets section below.
+Download **IRLSAFETY+-0.9.5-dev-android.apk** from Assets below.
+
+Built by: Actions → Android APK Release → Run workflow
 
 Install and test: see android/TESTER.md in the repo
   https://github.com/medicinalsheep/IRLSAFETY/blob/main/android/TESTER.md

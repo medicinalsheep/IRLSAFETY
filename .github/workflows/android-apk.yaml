@@ -1,17 +1,21 @@
 name: Android APK Release
 
+# Manual only — go to Actions → this workflow → Run workflow.
+# Publishes/updates prerelease v0.9.5-dev with the APK asset.
+
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - 'android-v*'
 
 permissions:
   contents: write
 
+concurrency:
+  group: android-apk-release
+  cancel-in-progress: true
+
 jobs:
   build-android:
-    name: Build Android APK
+    name: Build and publish Android APK
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -42,14 +46,20 @@ jobs:
             "ndk;26.1.10909125" \
             "cmake;3.22.1"
 
+      - name: Extract ONNX Runtime prefab
+        working-directory: android/app
+        run: |
+          chmod +x ../scripts/extract-ort-prefab.sh
+          ../scripts/extract-ort-prefab.sh ort-prefab
+
       - name: Configure local.properties
         run: echo "sdk.dir=${ANDROID_HOME}" > android/local.properties
 
       - name: Build debug APK
-        working-directory: android
         run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          chmod +x android/gradlew
+          cd android
+          ./gradlew assembleDebug --stacktrace --no-daemon
 
       - name: Package APK
         id: apk
@@ -68,14 +78,13 @@ jobs:
           path: ${{ steps.apk.outputs.apk_name }}
           retention-days: 90
 
-      - name: Publish GitHub prerelease
-        if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/android-v')
+      - name: Publish prerelease on Releases page
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('android-v{0}', steps.apk.outputs.version) }}
-          name: IRLSAFETY+ Android ${{ steps.apk.outputs.version }}
+          tag_name: v${{ steps.apk.outputs.version }}
+          name: IRLSAFETY+ ${{ steps.apk.outputs.version }} (Android)
           prerelease: true
-          make_latest: false
+          make_latest: true
           overwrite_files: true
           files: ${{ steps.apk.outputs.apk_name }}
           body_path: android/RELEASE_NOTES.txt
