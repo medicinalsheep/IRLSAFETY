@@ -14,9 +14,12 @@ object SettingsStore {
             shippingLabels = prefs.getBoolean("cat_shipping_labels", true),
             idDocuments = prefs.getBoolean("cat_id_documents", true),
             confidenceThreshold = prefs.getFloat("confidence_threshold", 0.35f),
-            frameSkip = prefs.getInt("frame_skip", 6).coerceIn(1, 20),
+            frameSkip = prefs.getInt("frame_skip", 8).coerceIn(1, 20),
             preferGpu = prefs.getBoolean("prefer_gpu", true),
-            useFrontCamera = prefs.getBoolean("use_front_camera", false)
+            useFrontCamera = prefs.getBoolean("use_front_camera", false),
+            analysisResolution = AnalysisResolution.fromHeight(
+                prefs.getInt("analysis_height", AnalysisResolution.P720.height)
+            )
         )
     }
 
@@ -32,6 +35,7 @@ object SettingsStore {
             .putInt("frame_skip", settings.frameSkip.coerceIn(1, 20))
             .putBoolean("prefer_gpu", settings.preferGpu)
             .putBoolean("use_front_camera", settings.useFrontCamera)
+            .putInt("analysis_height", settings.analysisResolution.height)
             .apply()
     }
 }

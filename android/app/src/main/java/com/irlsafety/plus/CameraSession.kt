@@ -1,10 +1,13 @@
 package com.irlsafety.plus
 
 import android.content.Context
+import android.util.Size
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
@@ -18,6 +21,7 @@ class CameraSession(
     private val previewView: PreviewView,
     private val pipelineHandle: Long,
     private val useFrontCamera: Boolean,
+    private val analysisResolution: AnalysisResolution,
     private val analysisExecutor: Executor,
     private val onFrameProcessed: (overlayCount: Int, overlayData: FloatArray?) -> Unit
 ) {
@@ -43,7 +47,18 @@ class CameraSession(
             it.surfaceProvider = previewView.surfaceProvider
         }
 
+        val target = Size(
+            (analysisResolution.height * 16) / 9,
+            analysisResolution.height
+        )
+        val resolutionSelector = ResolutionSelector.Builder()
+            .setResolutionStrategy(
+                ResolutionStrategy(target, ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER)
+            )
+            .build()
+
         val analysis = ImageAnalysis.Builder()
+            .setResolutionSelector(resolutionSelector)
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .build()
 

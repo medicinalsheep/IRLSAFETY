@@ -3,10 +3,10 @@
 #
 # Usage:
 #   .\scripts\cleanup-github-releases.ps1
-#   .\scripts\cleanup-github-releases.ps1 -KeepTags v0.9.4,v0.9.5-dev -WhatIf
+#   .\scripts\cleanup-github-releases.ps1 -KeepTags v0.9.5,v0.9.6-dev -WhatIf
 
 param(
-    [string[]]$KeepTags = @('v0.9.5-dev', 'v0.9.4', '0.9.4', 'v0.7.1'),
+    [string[]]$KeepTags = @('v0.9.6-dev', 'v0.9.5', 'v0.9.4', '0.9.4', 'v0.9.5-dev', 'v0.7.1'),
     [switch]$WhatIf
 )
 

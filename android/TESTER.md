@@ -1,7 +1,8 @@
 # IRLSAFETY+ Android — Install & Test Guide
 
-**Version:** 0.9.5-dev (pre-1.0)  
-**Test phone:** Samsung Galaxy A53 · One UI 8.0 · Android 16
+**Version:** 0.9.6-dev (pre-1.0)  
+**Test phone:** Samsung Galaxy A53 · One UI 8.0 · Android 16  
+**Checklist:** `docs/ANDROID_ALPHA_REVIEW.md` (sign off before promoting to 0.9.6)
 
 ---
 
@@ -9,14 +10,14 @@
 
 1. Open **Releases** on the repo:  
    https://github.com/medicinalsheep/IRLSAFETY/releases
-2. Find **`IRLSAFETY+ 0.9.5-dev (Android)`** prerelease (tag `v0.9.5-dev`).
-3. Under **Assets**, download **`IRLSAFETY+-0.9.5-dev-android.apk`**.
+2. Find **`IRLSAFETY+ 0.9.6-dev (Android)`** prerelease (tag `v0.9.6-dev`), or the latest Android prerelease.
+3. Under **Assets**, download **`IRLSAFETY+-0.9.6-dev-android.apk`**.
 
 ### APK not on Releases yet?
 
 Someone must run the build once:
 
-1. **Actions** → **Android APK Release** → **Run workflow** → **Run**
+1. **Actions** → **Android APK Release** → **Run workflow** → tag `v0.9.6-dev` → **Run**
 2. Wait for green ✓ (~10–15 min)
 3. Refresh **Releases** or use **Artifacts** on that run
 
@@ -34,7 +35,7 @@ You do **not** need a computer if you download the APK on the phone.
 2. Download the `.apk` file.
 3. **Settings → Security and privacy → More security settings → Install unknown apps**
 4. Select your browser → turn **Allow from this source** ON.
-5. Open **My Files** → **Downloads** → tap `IRLSAFETY+-0.9.5-dev-android.apk` → **Install**.
+5. Open **My Files** → **Downloads** → tap `IRLSAFETY+-0.9.6-dev-android.apk` → **Install**.
 
 One UI 8.0 path may also appear as:  
 **Settings → Apps → ⋮ menu → Special access → Install unknown apps**
@@ -58,7 +59,7 @@ Use this if browser install fails or you prefer `adb`.
 #### Install from PC
 
 ```bash
-adb install -r IRLSAFETY+-0.9.5-dev-android.apk
+adb install -r IRLSAFETY+-0.9.6-dev-android.apk
 ```
 
 Windows with repo checkout:
@@ -97,6 +98,8 @@ In the app, scroll to settings:
 | **Protection enabled** OFF | No boxes |
 | Confidence **85%** | Fewer detections |
 | Frame skip **10** | Smoother preview, slower updates |
+| **Front camera** | Preview switches; boxes still work |
+| Analysis **1080p** | Higher detail, more heat than 720p |
 
 Full checklist: `docs/ANDROID_ALPHA_REVIEW.md`
 
@@ -117,7 +120,7 @@ Healthy line looks like: `detector=ready · EP=... · skip=8`
 Include:
 
 - Phone model (e.g. SM-A536B), One UI + Android version
-- App version: **0.9.5-dev**
+- App version: **0.9.6-dev**
 - Steps, screenshot or short video
 - Logcat snippet if possible
 

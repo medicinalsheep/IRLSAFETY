@@ -1,13 +1,15 @@
 IRLSAFETY+ Android
 ==================
 
-VERSION: 0.9.5-dev (pre-1.0; aligns with Windows 0.9.x line)
+VERSION: 0.9.6-dev (pre-1.0; aligns with Windows 0.9.x line)
 
 FEATURES
 --------
 - CameraX live preview with on-device YOLO detection
 - GLES solid-box censorship overlay
-- Settings: four detection categories, confidence, frame skip (saved locally)
+- Settings: four detection categories, confidence, frame skip (default 8, saved locally)
+- Front / rear camera toggle
+- Analysis resolution 720p / 1080p
 
 REQUIREMENTS
 ------------
@@ -17,13 +19,13 @@ REQUIREMENTS
 DOWNLOAD (testers)
 ------------------
   https://github.com/medicinalsheep/IRLSAFETY/releases
-  Asset: IRLSAFETY+-0.9.5-dev-android.apk
+  Asset: IRLSAFETY+-0.9.6-dev-android.apk
   Install: android\TESTER.md
 
 BUILD (developers)
 ------------------
   scripts\package-android-apk.bat
-  release\IRLSAFETY+-0.9.5-dev-android.apk
+  release\IRLSAFETY+-0.9.6-dev-android.apk
 
 PUBLISH TO GITHUB
 -----------------
@@ -36,8 +38,8 @@ OPEN IN ANDROID STUDIO
 
 TESTING
 -------
-  See android\TESTER.md and docs\VERSIONING.md
+  See android\TESTER.md and docs\ANDROID_ALPHA_REVIEW.md
 
 PRIVACY
 -------
-All inference on-device. No cloud. No account.
+All inference on-device. No cloud. No account. No INTERNET permission.

@@ -1,7 +1,7 @@
 name: Android APK Release
 
 # Manual only — go to Actions → this workflow → Run workflow.
-# Publishes/updates prerelease v0.9.5-dev with the APK asset.
+# Publishes/updates prerelease from Gradle versionName (e.g. v0.9.6-dev) with the APK asset.
 
 on:
   workflow_dispatch:

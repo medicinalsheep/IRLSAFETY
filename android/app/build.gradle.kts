@@ -17,8 +17,8 @@ android {
         applicationId = "com.irlsafety.plus"
         minSdk = 26
         targetSdk = 35
-        versionCode = 905
-        versionName = "0.9.5-dev"
+        versionCode = 906
+        versionName = "0.9.6-dev"
 
         ndk {
             abiFilters += listOf("arm64-v8a")

@@ -7,11 +7,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -100,6 +103,40 @@ fun SettingsPanel(
             checked = settings.preferGpu,
             enabled = settings.enableAll,
             onCheckedChange = { onSettingsChange(settings.copy(preferGpu = it)) }
+        )
+
+        Text(
+            text = "Analysis resolution",
+            color = if (settings.enableAll) MaterialTheme.colorScheme.onSurface else Color(0xFF6B7280),
+            fontSize = 14.sp,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            AnalysisResolution.entries.forEach { res ->
+                val selected = settings.analysisResolution == res
+                TextButton(
+                    onClick = { onSettingsChange(settings.copy(analysisResolution = res)) },
+                    enabled = settings.enableAll,
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = if (selected) Color(0xFF3ECF8E) else Color(0xFF8AB4F8)
+                    )
+                ) {
+                    Text(
+                        text = if (selected) "● ${res.label}" else res.label,
+                        fontSize = 13.sp
+                    )
+                }
+            }
+        }
+        Text(
+            text = "720p is cooler on mid-range phones; 1080p for finer boxes.",
+            color = Color(0xFF6B7280),
+            fontSize = 11.sp,
+            modifier = Modifier.padding(bottom = 4.dp)
         )
 
         HorizontalDivider(color = Color(0xFF2A2D35), modifier = Modifier.padding(vertical = 6.dp))

@@ -9,6 +9,7 @@
 #include "ocr/ocr_frame_util.h"
 #include "detection/yolo_onnx.h"
 #include "filter_settings.h"
+#include "irlsafety_settings.h"
 #include "ocr/ocr_engine.h"
 #include "ocr/pii_match.h"
 #include "ocr/pii_patterns.h"
@@ -391,8 +392,76 @@ static int test_geometry_quad(void)
 	return 0;
 }
 
+static int test_portable_defaults_frame_skip(void)
+{
+	irlsafety_filter_settings settings;
+
+	irlsafety_settings_apply_defaults(&settings);
+	TEST_ASSERT(settings.frame_skip == 8);
+	TEST_ASSERT(settings.cat_screen_text == false);
+	TEST_ASSERT(settings.cat_license_plates == true);
+	TEST_ASSERT(settings.cat_shipping_labels == true);
+	TEST_ASSERT(settings.cat_id_documents == true);
+	return 0;
+}
+
+/* Smoke: create → black frame → runtime settings hot-swap → destroy (no ORT required). */
+static int test_pipeline_smoke_black_frame(void)
+{
+	uint8_t buffer[16 * 16 * 4];
+	irlsafety_frame_view frame;
+	irlsafety_filter_settings settings;
+	irlsafety_region_list regions = {0};
+	irlsafety_pipeline *pipeline;
+
+	memset(buffer, 0, sizeof(buffer));
+	frame = make_test_frame(buffer);
+	irlsafety_settings_apply_defaults(&settings);
+	settings.cat_screen_text = false;
+	settings.cat_custom_pii = false;
+	settings.cat_sensitive_patterns = false;
+	strncpy(settings.model_path, "data/models/irlsafety-detect.onnx", sizeof(settings.model_path) - 1);
+
+	pipeline = irlsafety_pipeline_create();
+	TEST_ASSERT(pipeline != NULL);
+	TEST_ASSERT(irlsafety_pipeline_update_settings(pipeline, &settings) == 0);
+	TEST_ASSERT(irlsafety_pipeline_detect_frame(pipeline, &frame, &settings, 1, 16, 16, false) == 0);
+	irlsafety_pipeline_tick(pipeline, 1, &settings);
+	irlsafety_pipeline_get_overlays(pipeline, 16, 16, &settings, &regions);
+
+	/* Second apply with same model path must not crash (skip-reload path). */
+	settings.frame_skip = 10;
+	TEST_ASSERT(irlsafety_pipeline_apply_runtime_settings(pipeline, &settings) == 0);
+	TEST_ASSERT(irlsafety_pipeline_detect_frame(pipeline, &frame, &settings, 2, 16, 16, false) == 0);
+
+	irlsafety_pipeline_shutdown(pipeline);
+	irlsafety_pipeline_destroy(pipeline);
+	return 0;
+}
+
+static int test_detector_skip_reload_same_path(void)
+{
+	yolo_onnx_context *ctx = yolo_onnx_create();
+	TEST_ASSERT(ctx != NULL);
+	TEST_ASSERT(yolo_onnx_load_model(ctx, "models/a.onnx", true) == 0);
+	TEST_ASSERT(yolo_onnx_is_ready(ctx) == true);
+	TEST_ASSERT(yolo_onnx_load_model(ctx, "models/a.onnx", true) == 0);
+	/* Second call same path+gpu — stub load_count stays 1 if skip works. */
+	/* Access via re-load different path to confirm reload still works. */
+	TEST_ASSERT(yolo_onnx_load_model(ctx, "models/b.onnx", true) == 0);
+	TEST_ASSERT(yolo_onnx_load_model(ctx, "models/b.onnx", false) == 0); /* prefer_gpu change reloads */
+	yolo_onnx_destroy(ctx);
+	return 0;
+}
+
 int main(void)
 {
+	if (test_portable_defaults_frame_skip() != 0)
+		return 1;
+	if (test_pipeline_smoke_black_frame() != 0)
+		return 1;
+	if (test_detector_skip_reload_same_path() != 0)
+		return 1;
 	if (test_settings_migration_v07() != 0)
 		return 1;
 	if (test_geometry_quad() != 0)

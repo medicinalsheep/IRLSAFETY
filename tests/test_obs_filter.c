@@ -50,7 +50,8 @@ static int test_filter_defaults_and_properties(void)
 	info->get_defaults(settings);
 	TEST_ASSERT(obs_data_get_bool(settings, IRLSAFETY_SET_ENABLE_ALL) == true);
 	TEST_ASSERT(obs_data_get_double(settings, IRLSAFETY_SET_BLUR_STRENGTH) == 24.0);
-	TEST_ASSERT(obs_data_get_int(settings, IRLSAFETY_SET_FRAME_SKIP) == 6);
+	/* v0.9.4+ low-end default: every 8 frames (~3–4 Hz at 30 fps). */
+	TEST_ASSERT(obs_data_get_int(settings, IRLSAFETY_SET_FRAME_SKIP) == 8);
 	TEST_ASSERT(obs_data_get_bool(settings, IRLSAFETY_SET_CAT_SCREEN_TEXT) == false);
 	TEST_ASSERT(obs_data_get_bool(settings, IRLSAFETY_SET_CAT_STREET_SIGNS) == true);
 	TEST_ASSERT(obs_data_get_bool(settings, IRLSAFETY_SET_CAT_LICENSE_PLATES) == true);

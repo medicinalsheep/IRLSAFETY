@@ -1,0 +1,98 @@
+name: Windows Package
+
+# Manual Windows-only OBS plugin build + zip artifact (no local VS deps required).
+# Actions → Windows Package → Run workflow → download artifact when green.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-package
+  cancel-in-progress: true
+
+jobs:
+  windows-build:
+    name: Build Windows OBS package
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read buildspec
+        id: setup
+        run: |
+          $BuildSpec = Get-Content -Path buildspec.json -Raw | ConvertFrom-Json
+          "pluginName=$($BuildSpec.name)" >> $env:GITHUB_OUTPUT
+          "pluginVersion=$($BuildSpec.version)" >> $env:GITHUB_OUTPUT
+          "commitHash=$($env:GITHUB_SHA.Substring(0,9))" >> $env:GITHUB_OUTPUT
+
+      - name: Build Plugin
+        uses: ./.github/actions/build-plugin
+        with:
+          target: x64
+          config: RelWithDebInfo
+
+      - name: Package Plugin
+        uses: ./.github/actions/package-plugin
+        with:
+          target: x64
+          config: RelWithDebInfo
+          package: 'true'
+
+      - name: Locate package zip
+        id: zip
+        run: |
+          $zip = Get-ChildItem -Path release -Filter "$($env:PLUGIN)-$($env:VERSION)-windows-x64*.zip" -ErrorAction SilentlyContinue |
+            Select-Object -First 1
+          if (-not $zip) {
+            Get-ChildItem -Path release -Recurse | Select-Object FullName
+            throw "Windows package zip not found under release/"
+          }
+          "zip_path=$($zip.FullName)" >> $env:GITHUB_OUTPUT
+          "zip_name=$($zip.Name)" >> $env:GITHUB_OUTPUT
+          Write-Host "Package: $($zip.FullName) ($([math]::Round($zip.Length/1MB,1)) MB)"
+        env:
+          PLUGIN: ${{ steps.setup.outputs.pluginName }}
+          VERSION: ${{ steps.setup.outputs.pluginVersion }}
+
+      - name: Upload Windows zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.setup.outputs.pluginName }}-${{ steps.setup.outputs.pluginVersion }}-windows-x64-${{ steps.setup.outputs.commitHash }}
+          path: ${{ steps.zip.outputs.zip_path }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.setup.outputs.pluginVersion }}
+          name: IRLSAFETY+ v${{ steps.setup.outputs.pluginVersion }} (Windows)
+          prerelease: false
+          make_latest: true
+          generate_release_notes: true
+          files: ${{ steps.zip.outputs.zip_path }}
+          fail_on_unmatched_files: true
+          body: |
+            ## IRLSAFETY+ v${{ steps.setup.outputs.pluginVersion }} (Windows)
+
+            Built by **Actions → Windows Package** (no local OBS toolchain required).
+
+            ### Install
+            1. Download **`${{ steps.zip.outputs.zip_name }}`** below
+            2. Extract the zip
+            3. Merge into your OBS install (usually `C:\Program Files\obs-studio\`):
+               - `obs-plugins\64bit\` → OBS `obs-plugins\64bit\`
+               - `data\obs-plugins\irlsafety-plus\` → OBS `data\obs-plugins\irlsafety-plus\`
+            4. Restart OBS → source Filters → **IRLSAFETY+ PII Blur** (keep filter at top)
+
+            Also available as a workflow **Artifact** if you prefer not to use Releases.
+
+            Tuning: `release/INSTALL-windows.txt` in the repo.

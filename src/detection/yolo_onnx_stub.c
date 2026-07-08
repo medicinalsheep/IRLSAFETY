@@ -10,6 +10,10 @@
 
 struct yolo_onnx_context {
 	char status[256];
+	char model_path[1024];
+	bool prefer_gpu;
+	bool loaded;
+	int load_count;
 };
 
 yolo_onnx_context *yolo_onnx_create(void)
@@ -24,24 +28,36 @@ void yolo_onnx_destroy(yolo_onnx_context *ctx)
 
 int yolo_onnx_load_model(yolo_onnx_context *ctx, const char *model_path, bool prefer_gpu)
 {
-	(void)prefer_gpu;
-
 	if (!ctx)
 		return -1;
 
+	/* Mirror production skip: same path + prefer_gpu → no-op. */
+	if (ctx->loaded && model_path && model_path[0] != '\0' && ctx->model_path[0] != '\0' &&
+	    strcmp(ctx->model_path, model_path) == 0 && ctx->prefer_gpu == prefer_gpu) {
+		return 0;
+	}
+
+	ctx->prefer_gpu = prefer_gpu;
+	ctx->load_count++;
+
 	if (!model_path || model_path[0] == '\0') {
+		ctx->model_path[0] = '\0';
+		ctx->loaded = false;
 		strncpy(ctx->status, "No ONNX model configured", sizeof(ctx->status) - 1);
 		return 0;
 	}
 
-	strncpy(ctx->status, "ONNX detection not compiled in this build", sizeof(ctx->status) - 1);
-	return -1;
+	/* Stub cannot run ORT; record path so skip-reload tests work. */
+	strncpy(ctx->model_path, model_path, sizeof(ctx->model_path) - 1);
+	ctx->model_path[sizeof(ctx->model_path) - 1] = '\0';
+	ctx->loaded = true;
+	strncpy(ctx->status, "ONNX detection stub (no Runtime in test build)", sizeof(ctx->status) - 1);
+	return 0;
 }
 
 bool yolo_onnx_is_ready(const yolo_onnx_context *ctx)
 {
-	(void)ctx;
-	return false;
+	return ctx && ctx->loaded;
 }
 
 const char *yolo_onnx_status_message(const yolo_onnx_context *ctx)

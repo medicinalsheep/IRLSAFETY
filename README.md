@@ -4,9 +4,10 @@
 
 | | |
 |---|---|
-| **Windows** | **v0.9.4** (OBS plugin) |
-| **Android** | **v0.9.5-dev** (alpha APK) |
-| **Next aligned** | **v0.9.6** — consistent version across platforms + refreshed model |
+| **Windows** | **v0.9.5** (OBS plugin) |
+| **Android** | **v0.9.6-dev** (alpha APK) |
+| **iOS** | **I1 scaffold** (`ios/`) |
+| **Next aligned** | **v0.9.6** — A53 sign-off + refreshed model |
 | **Author** | [medicinalsheep](https://github.com/medicinalsheep) |
 | **Contact** | jfkyt@icloud.com |
 | **License** | MIT ([LICENSE](LICENSE)) |
@@ -24,14 +25,14 @@ CI overview: **[docs/GITHUB.md](docs/GITHUB.md)**
 
 | Platform | File | Install |
 |----------|------|---------|
-| **Windows** | `IRLSAFETY+-v0.9.4-win64.zip` | Extract → **install-from-package.bat** (admin) → restart OBS |
-| **Android** | `IRLSAFETY+-0.9.5-dev-android.apk` | Sideload — **[android/TESTER.md](android/TESTER.md)** (Samsung A53) |
+| **Windows** | `IRLSAFETY+-v0.9.5-win64.zip` | Extract → **install-from-package.bat** (admin) → restart OBS |
+| **Android** | `IRLSAFETY+-0.9.6-dev-android.apk` | Sideload — **[android/TESTER.md](android/TESTER.md)** (Samsung A53) |
 
 Local builds:
 
 ```bat
 scripts\build-windows.bat
-scripts\package-v0.1.bat
+scripts\package-windows.bat
 scripts\package-android-apk.bat
 ```
 
@@ -41,12 +42,12 @@ scripts\package-android-apk.bat
 
 | Area | Status |
 |------|--------|
-| **Windows v0.9.4** | Shipped — 4-class YOLO, tray panel, virtual cam, **low-end defaults** (frame skip 8, 4–6 GB VRAM) |
-| **Android v0.9.5-dev** | Alpha APK on GitHub — CameraX, GLES boxes, settings, front/rear camera toggle (P16) |
-| **`libirlsafety`** | Shared core — Windows OBS + Android NDK; macOS/iOS CMake path next |
+| **Windows v0.9.5** | Package rename + model skip-reload; low-end defaults (frame skip 8, 4–6 GB VRAM) |
+| **Android v0.9.6-dev** | P16: front camera, 720p/1080p analysis, frame skip 8, settings hot-swap |
+| **`libirlsafety`** | Shared core — Windows OBS + Android NDK; iOS CMake I1 |
 | **Training** | `irlsafety_v07` model bundled; **v08 session** planned on JWCOM2 + JWCOM4 |
 | **macOS** | OBS plugin — after v0.9.6 version alignment |
-| **iOS** | Camera app scaffold — after Android alpha sign-off ([design](docs/DESIGN-ios-v1.md)) |
+| **iOS** | **I1** scaffold in `ios/` — [design](docs/DESIGN-ios-v1.md) |
 
 ---
 
@@ -54,10 +55,10 @@ scripts\package-android-apk.bat
 
 **v0.9.6** is the next milestone where versions line up across shipped platforms (still pre-1.0):
 
-1. **Android** — A53 alpha checklist complete → promote `0.9.5-dev` to **0.9.6**
+1. **Android** — A53 alpha checklist complete → promote `0.9.6-dev` to **0.9.6**
 2. **Windows** — ship **v0.9.6** with the new `irlsafety_v08` ONNX from JWCOM training
 3. **macOS** — OBS plugin build from the same `libirlsafety` + bundled model
-4. **iOS** — start **I1** (Xcode + static lib) in parallel; TestFlight is later
+4. **iOS** — **I2–I5** (preview, bridge, ORT, overlay) in parallel; TestFlight is I7
 
 **1.0.0** remains a deliberate launch (installer / stores), not an automatic bump. Policy: `docs/VERSIONING.md`.
 
@@ -72,15 +73,17 @@ scripts\package-android-apk.bat
 
 **Verify:** Test Effect ON → red center box · hold a shipping label or ID prop → black boxes appear.
 
-**Existing filters:** remove and re-add the filter to pick up v0.9.4 defaults.
+**Existing filters:** remove and re-add the filter to pick up current defaults.
+
+**Limits:** Detection is best-effort — missed mail/IDs can still leak until v08 data improves coverage. See `release/INSTALL-windows.txt`.
 
 ---
 
 ## Quick setup (Android alpha)
 
-1. Install APK from Releases (`v0.9.5-dev`)
+1. Install APK from Releases (`v0.9.6-dev`)
 2. Grant camera · Battery → **Unrestricted** (Samsung One UI)
-3. Toggle detection categories · try **Front camera** in settings
+3. Toggle detection categories · try **Front camera** and **720p/1080p** analysis
 4. See **[android/TESTER.md](android/TESTER.md)** and **[docs/ANDROID_ALPHA_REVIEW.md](docs/ANDROID_ALPHA_REVIEW.md)**
 
 ---
@@ -93,8 +96,9 @@ scripts\package-android-apk.bat
 | **Performance** | Screen Text OFF by default; frame skip 8 on fresh installs (4–6 GB VRAM) |
 | **Censor** | Solid box default; angled quad cover for tilted packages |
 | **OBS** | Hybrid delay, secure mode, control dock, dark tray panel |
-| **Portable core** | `libirlsafety` — same pipeline on Windows JNI and Android NDK |
+| **Portable core** | `libirlsafety` — same pipeline on Windows and Android NDK |
 | **Android** | On-device YOLO + GLES overlay; no network permission |
+| **Reload** | YOLO model reload skipped when path + GPU preference unchanged |
 
 ---
 
@@ -149,12 +153,12 @@ scripts\install-to-obs.bat
 **Windows:**
 
 ```bat
-scripts\package-v0.1.bat
+scripts\package-windows.bat
 scripts\zip-release.ps1
 scripts\publish-release.ps1
 ```
 
-**Android:** Actions → **Android APK Release** → Run workflow → `v0.9.5-dev` (or `v0.9.6` when bumped)
+**Android:** Actions → **Android APK Release** → Run workflow (reads `versionName` from Gradle)
 
 ---
 
@@ -163,7 +167,8 @@ scripts\publish-release.ps1
 ```
 src/              libirlsafety core, OBS plugin, pipeline, ONNX, OCR
 android/          Kotlin app + JNI (CameraX, GLES overlay)
-cmake/            libirlsafety + platform backends (Windows, Android, …)
+ios/              I1 scaffold — CMake lib + SwiftUI shell
+cmake/            libirlsafety + platform backends (Windows, Android, iOS, …)
 data/models/      bundled ONNX, training guides, TRAINING_SESSION.txt
 data/training/    YOLO scripts, props, class lists
 docs/             Android/iOS design, versioning, alpha review
@@ -179,5 +184,6 @@ tests/            unit tests
 |-----|----------|
 | [CREDITS.md](CREDITS.md) | Attribution, model history, roadmap |
 | [docs/DESIGN-android-v1.md](docs/DESIGN-android-v1.md) | Android phases P10–P16 |
-| [docs/DESIGN-ios-v1.md](docs/DESIGN-ios-v1.md) | iOS plan (post-Android alpha) |
+| [docs/DESIGN-ios-v1.md](docs/DESIGN-ios-v1.md) | iOS plan (I1–I7) |
 | [docs/VERSIONING.md](docs/VERSIONING.md) | Pre-1.0 version policy |
+| [docs/ANDROID_ALPHA_REVIEW.md](docs/ANDROID_ALPHA_REVIEW.md) | A53 checklist for 0.9.6 |

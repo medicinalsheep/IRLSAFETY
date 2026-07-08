@@ -1,9 +1,10 @@
 IRLSAFETY+ — Android
 =====================
 
-STATUS (0.9.5-dev, pre-1.0)
+STATUS (0.9.6-dev, pre-1.0)
 ----------------------------
-Standalone camera app in repo (`android/`): preview, ONNX detection, GLES boxes, settings UI.
+Standalone camera app in repo (`android/`): preview, ONNX detection, GLES boxes,
+settings UI, front camera, 720p/1080p analysis.
 
 USE YOUR PHONE WITH OBS ON A PC (works now)
 -------------------------------------------
@@ -13,12 +14,13 @@ USE YOUR PHONE WITH OBS ON A PC (works now)
 
 ANDROID APP ROADMAP (pre-1.0)
 -----------------------------
-  0.9.5-dev  Camera + detection + overlay + settings (current)
-  0.9.6+     Tester hardening, front camera, polish
+  0.9.5-dev  Camera + detection + overlay + settings
+  0.9.6-dev  P16 hardening (front cam, analysis res, skip 8) — current
+  0.9.6      Promote after A53 checklist sign-off
   1.0.0      First stable Android release (future)
 
 MVP scope:
-  - Rear camera live preview
+  - Rear/front camera live preview
   - Local YOLO (irlsafety-detect.onnx)
   - Solid-box censorship
   - 100% on-device
@@ -26,4 +28,5 @@ MVP scope:
 Samsung Galaxy: see SAMSUNG_ANDROID.txt
 
 Design: docs/DESIGN-android-v1.md
+Alpha checklist: docs/ANDROID_ALPHA_REVIEW.md
 Versions: docs/VERSIONING.md

@@ -1,7 +1,7 @@
 IRLSAFETY+ — Samsung Galaxy (Android app)
 ==========================================
 
-Applies to: IRLSAFETY+ Android 0.9.5-dev (pre-1.0)
+Applies to: IRLSAFETY+ Android 0.9.6-dev (pre-1.0)
 Primary test targets: Galaxy A53/A54/A55 (mid-range), Galaxy S21–S24 series, Galaxy Z Fold/Flip
 
 REFERENCE DEVICE (medicinalsheep)
@@ -19,7 +19,7 @@ NNAPI behavior differs between Exynos and Snapdragon variants.
 
 BEFORE YOU TEST
 ---------------
-1. Build/install 0.9.5-dev APK (scripts\package-android-apk.bat or android/README.txt)
+1. Build/install 0.9.6-dev APK (scripts\package-android-apk.bat or android/README.txt)
 2. Grant Camera permission when prompted
 3. Open logcat filter: IRLSAFETY+
 4. Expect "detector=ready" and EP=NNAPI (Snapdragon) or CPU/XNNPACK (Exynos)

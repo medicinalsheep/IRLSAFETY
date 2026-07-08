@@ -133,15 +133,15 @@ See `data/models/PLATFORMS.txt`.
 
 ### Phase 1 — iOS scaffold (after Android P15)
 
-| PR | Title | Depends |
-|----|-------|---------|
-| I1 | `ios/` Xcode project + `libirlsafety` static lib via CMake/Xcode | Android P15 |
-| I2 | SwiftUI shell + AVFoundation preview | I1 |
-| I3 | Pixel buffer → `irlsafety_frame_view` bridge | I2 |
-| I4 | ONNX Runtime iOS + bundled `irlsafety-detect.onnx` | I1, P7 |
-| I5 | Overlay compositor (Metal or CALayer boxes) | I3 |
-| I6 | Settings UI (4 categories, frame skip) | I5 |
-| I7 | TestFlight internal build + tester doc | I6 |
+| PR | Title | Depends | Status |
+|----|-------|---------|--------|
+| I1 | `ios/` + `libirlsafety` static lib via CMake + SwiftUI shell placeholders | Android P15 | **Started** (`ios/`) |
+| I2 | SwiftUI shell + AVFoundation preview | I1 | Pending |
+| I3 | Pixel buffer → `irlsafety_frame_view` bridge | I2 | Pending |
+| I4 | ONNX Runtime iOS + bundled `irlsafety-detect.onnx` | I1, P7 | Pending |
+| I5 | Overlay compositor (Metal or CALayer boxes) | I3 | Pending |
+| I6 | Settings UI (4 categories, frame skip) | I5 | Pending |
+| I7 | TestFlight internal build + tester doc | I6 | Pending |
 
 **Exit:** Tester points iPhone at license plate prop and sees live censorship.
 
@@ -217,6 +217,7 @@ Android ships first (P15 internal APK). iOS TestFlight (I7) starts after Android
 | 2026-07-03 | Reuse `irlsafety-detect.onnx`; Core ML conversion optional |
 | 2026-07-03 | iOS starts after Android MVP exit (P15) |
 | 2026-07-03 | NDI/SRT → OBS remains official iPhone path until iOS alpha |
+| 2026-07-08 | I1 scaffold landed (`ios/CMakeLists.txt`, SwiftUI placeholders) |
 
 ---
 

@@ -87,11 +87,11 @@ extern "C" JNIEXPORT jlong JNICALL Java_com_irlsafety_plus_IRLSafetyNative_nativ
 	auto *wrap = new AndroidPipeline();
 	wrap->core = irlsafety_pipeline_create();
 	irlsafety_settings_apply_defaults(&wrap->settings);
-	/* Android MVP: detection-first, no screen OCR. */
+	/* Android MVP: detection-first, no screen OCR. frame_skip matches libirlsafety (8). */
 	wrap->settings.cat_screen_text = false;
 	wrap->settings.cat_custom_pii = false;
 	wrap->settings.cat_sensitive_patterns = false;
-	wrap->settings.frame_skip = 6;
+	wrap->settings.frame_skip = 8;
 	wrap->settings.prefer_gpu = true;
 
 	copy_jstring(env, model_path, wrap->settings.model_path, sizeof(wrap->settings.model_path));

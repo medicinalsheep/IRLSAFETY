@@ -11,8 +11,10 @@
 !/tests
 !/scripts
 !/android
+!/ios
 !/release
 /release/IRLSAFETY+-*
+/release/download/
 !.clang-format
 !.gersemirc
 !.gitignore

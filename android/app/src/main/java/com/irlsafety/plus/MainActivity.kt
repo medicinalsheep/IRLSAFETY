@@ -139,7 +139,18 @@ private fun CameraShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
         }
     }
 
-    DisposableEffect(pipelineHandle, hasCameraPermission, detectionSettings.useFrontCamera) {
+    DisposableEffect(Unit) {
+        onDispose {
+            analysisExecutor.shutdown()
+        }
+    }
+
+    DisposableEffect(
+        pipelineHandle,
+        hasCameraPermission,
+        detectionSettings.useFrontCamera,
+        detectionSettings.analysisResolution
+    ) {
         val session = if (hasCameraPermission && pipelineHandle != 0L) {
             CameraSession(
                 context = context,
@@ -147,6 +158,7 @@ private fun CameraShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
                 previewView = previewView,
                 pipelineHandle = pipelineHandle,
                 useFrontCamera = detectionSettings.useFrontCamera,
+                analysisResolution = detectionSettings.analysisResolution,
                 analysisExecutor = analysisExecutor,
                 onFrameProcessed = { _, overlayData ->
                     mainHandler.post {
@@ -160,7 +172,6 @@ private fun CameraShell(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
 
         onDispose {
             session?.stop()
-            analysisExecutor.shutdown()
         }
     }
 

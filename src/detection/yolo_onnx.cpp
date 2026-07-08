@@ -172,6 +172,13 @@ int yolo_onnx_load_model(yolo_onnx_context *ctx, const char *model_path, bool pr
 		return -1;
 
 	std::lock_guard<std::mutex> lock(ctx->mutex);
+
+	/* Skip full reload when path + EP preference are unchanged (Windows + Android hot paths). */
+	if (ctx->loaded && model_path && model_path[0] != '\0' && ctx->model_path[0] != '\0' &&
+	    strcmp(ctx->model_path, model_path) == 0 && ctx->prefer_gpu == prefer_gpu) {
+		return 0;
+	}
+
 	ctx->loaded = false;
 	ctx->session.reset();
 

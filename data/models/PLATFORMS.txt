@@ -65,7 +65,7 @@ Samsung Galaxy (Android):
 
 iPhone (iOS):
   - Interim: Larix / NDI HX / SRT → OBS on PC
-  - App: planned after Android MVP — see docs/DESIGN-ios-v1.md
+  - App: ios/ I1 scaffold (CMake + SwiftUI shell); see docs/DESIGN-ios-v1.md
 
 RESOURCES IN THIS FOLDER
 ------------------------

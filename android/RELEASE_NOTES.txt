@@ -1,7 +1,7 @@
 IRLSAFETY+ Android (pre-1.0)
 ============================
 
-Download **IRLSAFETY+-0.9.5-dev-android.apk** from Assets below.
+Download **IRLSAFETY+-0.9.6-dev-android.apk** from Assets below.
 
 Built by: Actions → Android APK Release → Run workflow
 
@@ -20,8 +20,16 @@ What this build includes
 ------------------------
 - Live camera preview with on-device YOLO detection
 - Black censorship boxes over plates, signs, mail labels, IDs
-- Settings: category toggles, confidence, frame skip
+- Settings: category toggles, confidence, frame skip (default 8)
+- Front / rear camera toggle
+- Analysis resolution 720p (default) or 1080p
 
-Privacy: 100% on-device. No account. No cloud inference.
+Limits (alpha)
+--------------
+- Missed detections can still leak PII — not a guarantee
+- No screen OCR / custom PII keywords on Android yet
+- Mail/ID accuracy improves with the next training model (v08)
+
+Privacy: 100% on-device. No account. No cloud inference. No INTERNET permission.
 
 Version policy: docs/VERSIONING.md

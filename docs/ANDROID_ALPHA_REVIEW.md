@@ -1,12 +1,13 @@
 # IRLSAFETY+ — Android Alpha Logic Review & Next Phases
 
-**Status:** Living doc (post P14)  
-**Last updated:** 2026-07-03  
-**Primary tester device:** Samsung Galaxy A53 · One UI 8.0 · Android 16
+**Status:** Living doc (post P16 code complete)  
+**Last updated:** 2026-07-08  
+**Primary tester device:** Samsung Galaxy A53 · One UI 8.0 · Android 16  
+**App version:** `0.9.6-dev` (promote to `0.9.6` after checklist sign-off)
 
 ---
 
-## Alpha exit criteria (P15)
+## Alpha exit criteria (for 0.9.6)
 
 A tester on the A53 can:
 
@@ -16,20 +17,21 @@ A tester on the A53 can:
 4. Toggle categories OFF → matching objects no longer censored
 5. Raise frame skip → smoother preview under thermal load
 6. Confirm `detector=ready` in logcat; no cloud traffic
+7. Switch front/rear camera and 720p/1080p analysis without crash
 
 ---
 
 ## Logic review checklist
 
-Run through on **Galaxy A53** before sharing `0.9.5-dev` APK.
+Run through on **Galaxy A53** before promoting `0.9.6-dev` → `0.9.6`.
 
 ### Pipeline & performance
 
 | # | Check | Pass? | Notes |
 |---|-------|-------|-------|
-| L1 | Model loads once at startup (not per frame) | | Fixed P14: removed per-frame `update_settings` |
+| L1 | Model loads once at startup (not per frame) | | P14 + P16: skip reload if path/EP unchanged |
 | L2 | Settings hot-swap does not clear overlay tracker | | `irlsafety_pipeline_apply_runtime_settings` |
-| L3 | `frame_skip` changes take effect without restart | | Toggle 6 → 10, watch status line |
+| L3 | `frame_skip` changes take effect without restart | | Default **8** (aligned with Windows) |
 | L4 | Disabling all categories stops detection runs | | `enable_all` OFF → overlays clear |
 | L5 | Confidence slider filters weak detections | | 85% vs 15% on same scene |
 | L6 | Prefer GPU toggle reloads EP only when changed | | NNAPI ↔ CPU in logcat |
@@ -51,6 +53,7 @@ Run through on **Galaxy A53** before sharing `0.9.5-dev` APK.
 | S2 | Exynos EP shows in status (NNAPI or CPU) | | |
 | S3 | frame_skip 8–10 smooth on 5+ min session | | Thermal |
 | S4 | Android 16 permission flow works | | |
+| S5 | 720p analysis cooler than 1080p | | P16 selector |
 
 ### Privacy
 
@@ -62,20 +65,32 @@ Run through on **Galaxy A53** before sharing `0.9.5-dev` APK.
 
 ---
 
+## P16 status (code)
+
+| Task | Status |
+|------|--------|
+| Front / rear camera toggle | **Done** |
+| Analysis resolution 720p / 1080p | **Done** |
+| `yolo_onnx_load_model` skip if path + prefer_gpu unchanged | **Done** (Windows + Android) |
+| Default frame_skip **8** (match libirlsafety) | **Done** |
+| Overlay alignment fix if FILL_CENTER drifts | **Needs A53** |
+| Adaptive frame skip under thermal | **Deferred** (manual skip 8–15 sufficient for alpha) |
+
+---
+
 ## Known gaps (acceptable for alpha)
 
 | Gap | Target |
 |-----|--------|
-| ~~Front camera switch~~ | P16 — settings toggle |
 | Angled (OBB) box drawing | v1.1 (model path exists on Windows) |
 | Screen OCR | v1.1 (child OCR ONNX) |
-| Settings sheet / bottom nav polish | P15 tester feedback |
+| Settings sheet polish | Tester feedback |
 | Overlay color picker | v1.1 |
 | Secure mode / hybrid delay on mobile | Off by default; evaluate v1.2 |
 
 ---
 
-## Phase plan (after P14)
+## Phase plan
 
 ### P15 — Internal tester package (done)
 
@@ -86,25 +101,11 @@ Run through on **Galaxy A53** before sharing `0.9.5-dev` APK.
 | `android/TESTER.md` | Download, Samsung dev mode, sideload, tests |
 | `android/RELEASE_NOTES.txt` | Release description |
 
-**Publish:** push tag `android-v0.9.5-dev` or run **Android APK Release** workflow.
+### P16 — Alpha hardening (code done · device sign-off open)
 
-**Exit:** Download APK from GitHub Releases on A53; run checklist above.
+Fill checklist above on A53 → drop `-dev` → **0.9.6**.
 
----
-
-### P16 — Alpha hardening (optional, ~2 weeks)
-
-Based on A53 feedback:
-
-- Front / rear camera toggle
-- Analysis resolution selector (720p vs 1080p)
-- `yolo_onnx_load_model` skip if path unchanged (Windows + Android)
-- Overlay alignment fix if FILL_CENTER mapping drifts on A53
-- Adaptive frame skip under thermal (read `PowerManager` / frame time)
-
----
-
-### 0.10+ / pre-1.0 beta — Android feature parity slice (~1–2 months)
+### 0.10+ / pre-1.0 beta — Android feature parity slice
 
 | Feature | Source |
 |---------|--------|
@@ -113,29 +114,15 @@ Based on A53 feedback:
 | Censor color / blur mode | `blur_compositor.c` |
 | Optional RTMP out | New adapter |
 
----
+### iOS (I1 started)
 
-### iOS phase (after Android P15 exit)
-
-See `docs/DESIGN-ios-v1.md`. Tester hardware:
+See `docs/DESIGN-ios-v1.md` and `ios/README.md`.
 
 | Device | Role |
 |--------|------|
 | iPhone 16e | Primary — CoreML EP |
 | iPhone XS | Perf floor — frame_skip defaults higher |
 | iPad | Tablet layout QA |
-
-**I1** Xcode + `libirlsafety` static lib can start in parallel with P16 if Android alpha is stable.
-
----
-
-### Windows (ongoing)
-
-| Item | Status |
-|------|--------|
-| v0.9.4 OBS plugin | Shipped |
-| Virtual camera | v0.8 done |
-| Frame-drop tuning doc | INSTALL.txt |
 
 ---
 
@@ -147,15 +134,19 @@ See `docs/DESIGN-ios-v1.md`. Tester hardware:
 | 2026-07-03 | Settings persist via SharedPreferences |
 | 2026-07-03 | A53 is primary Android alpha device |
 | 2026-07-03 | P15 before iOS I1 scaffold |
+| 2026-07-08 | frame_skip default **8** on Android (match Windows/libirlsafety) |
+| 2026-07-08 | P16: analysis resolution + model skip-reload; iOS I1 scaffold |
+| 2026-07-08 | Version line `0.9.6-dev` until A53 checklist signed |
 
 ---
 
 ## Recommended order
 
 ```
-P14 settings (done)
-    → P15 tester APK + A53 sign-off
-    → P16 hardening from feedback (parallel: iOS I1 scaffold)
+P14–P16 code (done)
+    → A53 checklist sign-off
+    → promote 0.9.6-dev → 0.9.6 + Windows 0.9.6 with v08 model
+    → iOS I2–I5
     → pre-1.0 beta OCR
     → iOS TestFlight (I7)
 ```

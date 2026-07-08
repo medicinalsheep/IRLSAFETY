@@ -14,7 +14,7 @@ $PkgDir = Join-Path $Root "release\$PkgName"
 $ZipPath = Join-Path $Root "release\$PkgName.zip"
 
 if (-not (Test-Path $PkgDir)) {
-    Write-Error "Package folder not found: $PkgDir`nRun scripts\package-v0.1.bat first."
+    Write-Error "Package folder not found: $PkgDir`nRun scripts\package-windows.bat first."
     exit 1
 }
 

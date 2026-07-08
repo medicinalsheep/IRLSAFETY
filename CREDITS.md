@@ -35,13 +35,13 @@ Nothing is sent to the cloud for inference. Training stays on your machines and 
 
 | Platform | Shipped | Notes |
 |----------|---------|-------|
-| **Windows** | **v0.9.4** | OBS plugin; 4-class YOLO; tray panel; virtual cam hooks; defaults tuned for **4–6 GB VRAM** (frame skip 8) |
-| **Android** | **v0.9.5-dev** | CameraX + GLES overlay; settings UI; GitHub APK; primary tester: Samsung A53 |
+| **Windows** | **v0.9.5** | OBS plugin; skip-reload YOLO; tray panel; virtual cam hooks; defaults tuned for **4–6 GB VRAM** (frame skip 8) |
+| **Android** | **v0.9.6-dev** | CameraX + GLES; P16 front camera + 720p/1080p analysis; GitHub APK; primary tester: Samsung A53 |
 | **Core** | `libirlsafety` | Shared static lib — pipeline, ONNX YOLO, region tracker, portable settings API |
 | **macOS** | — | OBS plugin scaffold after v0.9.6 alignment |
-| **iOS** | — | Design draft — starts after Android alpha sign-off |
+| **iOS** | **I1 scaffold** | `ios/` CMake static lib + SwiftUI shell; I2+ next |
 
-**Engineering milestones (internal):** Android P10–P15 complete (JNI, ORT, overlay, tester APK). P16 hardening (front camera toggle, A53 feedback) in progress.
+**Engineering milestones (internal):** Android P10–P16 code complete. A53 device sign-off open for promoting `0.9.6-dev` → `0.9.6`. iOS I1 started.
 
 ---
 
@@ -53,9 +53,9 @@ Nothing is sent to the cloud for inference. Training stays on your machines and 
 |--------|------|
 | **v0.9.6** | Bump Windows + Android together when Android alpha checklist passes on A53 |
 | **Windows** | Ship refreshed `irlsafety-detect.onnx` from next JWCOM training pass; keep low-end defaults |
-| **Android** | Promote `0.9.5-dev` → `0.9.6` (drop `-dev` when stable) |
+| **Android** | Promote `0.9.6-dev` → `0.9.6` (drop `-dev` when stable) |
 | **macOS** | OBS plugin build + smoke test on Apple Silicon / Intel |
-| **iOS** | Begin **I1** scaffold (`ios/` + `libirlsafety`) in parallel with macOS; TestFlight later |
+| **iOS** | **I2–I5** (preview, pixel bridge, ORT, overlay); TestFlight at I7 |
 
 Nothing is **1.0.0** until a deliberate public launch (installer, Play Store, App Store). See `docs/VERSIONING.md`.
 

@@ -8,7 +8,7 @@ HOST CAPTURE: JWCOM4 (OBS, Z:\irlsafety-training RAM disk)
 Prep: medicinalsheep is setting up JWCOM2 and JWCOM4 before this session.
 
 
-BASELINE (v07 — shipped in v0.9.4 / Android 0.9.5-dev)
+BASELINE (v07 — shipped in Windows 0.9.5 / Android 0.9.6-dev)
 --------------------------------------------------------
   4-class irlsafety-detect.onnx bundled in releases
   Classes: license_plate, street_sign, shipping_label, id_document
