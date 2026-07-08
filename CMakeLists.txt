@@ -87,6 +87,8 @@ if(IRLSAFETY_HAS_ONNX_RUNTIME AND OS_WINDOWS)
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_ort_runtime_dlls}
             "${CMAKE_CURRENT_BINARY_DIR}/rundir/$<CONFIG>"
     COMMENT "Copy ONNX Runtime DLLs to rundir")
+  # Ship ORT next to the plugin in CI packages (install prefix layout).
+  install(FILES ${_ort_runtime_dlls} DESTINATION "${CMAKE_PROJECT_NAME}/bin/64bit")
 endif()
 
 set_target_properties_plugin(${CMAKE_PROJECT_NAME} PROPERTIES OUTPUT_NAME ${_name})
