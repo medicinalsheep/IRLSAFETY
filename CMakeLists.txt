@@ -78,10 +78,14 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE
 
 if(IRLSAFETY_HAS_ONNX_RUNTIME AND OS_WINDOWS)
   file(GLOB _ort_runtime_dlls "${IRLSAFETY_ONNXRUNTIME_DLL_DIR}/*.dll")
+  # Ensure rundir exists first — OBS template copy steps may run after this
+  # POST_BUILD, and cmake -E copy_if_different fails if the dest dir is missing.
   add_custom_command(
     TARGET ${CMAKE_PROJECT_NAME}
     POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_ort_runtime_dlls} "${CMAKE_CURRENT_BINARY_DIR}/rundir/$<CONFIG>"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/rundir/$<CONFIG>"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_ort_runtime_dlls}
+            "${CMAKE_CURRENT_BINARY_DIR}/rundir/$<CONFIG>"
     COMMENT "Copy ONNX Runtime DLLs to rundir")
 endif()
 
