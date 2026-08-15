@@ -8,10 +8,12 @@
 | **Android** | **v0.9.6-dev** (alpha APK) |
 | **iOS** | **I1 scaffold** (`ios/`) |
 | **Next aligned** | **v0.9.6** — A53 sign-off + refreshed model |
+| **Author** | [medicinalsheep](https://github.com/medicinalsheep) |
+| **Contact** | jfkyt@icloud.com |
 | **License** | MIT ([LICENSE](LICENSE)) |
 
-**Made in the USA** — built on older hardware, with care, and with **Grok Build (beta)** as a development contribution.  
-Attribution and training history: **[CREDITS.md](CREDITS.md)** · Third-party: **[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)**
+**Made in the USA** — started with **Grok Build (beta)** on older hardware, with love.  
+Full attribution: **[CREDITS.md](CREDITS.md)** · Third-party: **[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)** · Optional support: [GitHub Sponsors](https://github.com/sponsors/medicinalsheep?frequency=one-time&sponsor=medicinalsheep)
 
 ---
 

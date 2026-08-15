@@ -1,17 +1,18 @@
 # IRLSAFETY+ — Credits & Attribution
 
-**Made in the USA** — built on older hardware, with care, and with **Grok Build (beta)** as a development contribution.
+**Made in the USA** — started with **Grok Build (beta)** on older hardware, with love.
 
 ---
 
-## Project
+## Author
 
 | | |
 |---|---|
+| **Creator / maintainer** | **medicinalsheep** |
+| **Contact** | [jfkyt@icloud.com](mailto:jfkyt@icloud.com) |
 | **Repository** | [github.com/medicinalsheep/IRLSAFETY](https://github.com/medicinalsheep/IRLSAFETY) |
+| **Support development** | [GitHub Sponsors](https://github.com/sponsors/medicinalsheep?frequency=one-time&sponsor=medicinalsheep) — optional; IRLSAFETY+ stays free and 100% local |
 | **License** | [MIT](LICENSE) |
-
-IRLSAFETY+ is free and 100% local. Issues and releases live on GitHub.
 
 ---
 
@@ -123,8 +124,8 @@ Full checklist: `data/models/TRAINING_SESSION.txt` · local GPU notes: `data/mod
 
 | Contribution | Notes |
 |--------------|-------|
-| **Project authors** | Architecture, `libirlsafety`, OBS plugin, Android app, training pipeline, US models |
-| **Grok Build (beta)** | AI-assisted design, implementation, and iteration (v0.6–v0.9) |
+| **medicinalsheep** | Architecture, `libirlsafety`, OBS plugin, Android app, training pipeline, US models |
+| **Grok Build (beta)** | Where this project started — AI-assisted design, implementation, and iteration (v0.6–v0.9) |
 | **OBS Plugin Template** | CMake/build scaffold ([obs-plugintemplate](https://github.com/obsproject/obs-plugintemplate)) |
 | **Community references** | Patterns informed by [obs-detect](https://github.com/occ-ai/obs-detect) and [obs-ocr](https://github.com/occ-ai/obs-ocr) |
 

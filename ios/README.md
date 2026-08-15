@@ -53,6 +53,6 @@ ios/
 - No cloud inference; model stays on device (same promise as Android)
 - `NSCameraUsageDescription` required before any App Store submission
 
-## License
+## Contact
 
-MIT — see [LICENSE](../LICENSE).
+medicinalsheep · jfkyt@icloud.com · MIT License

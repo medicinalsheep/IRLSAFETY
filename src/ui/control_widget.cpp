@@ -683,7 +683,8 @@ void IRLSafetyControlWidget::onTrainModel()
 
 void IRLSafetyControlWidget::onSupportDevelopment()
 {
-	irlsafety_control_open_path("https://github.com/medicinalsheep/IRLSAFETY");
+	irlsafety_control_open_path(
+		"https://github.com/sponsors/medicinalsheep?frequency=one-time&sponsor=medicinalsheep");
 }
 
 void IRLSafetyControlWidget::onCaptureTrainingFrame()

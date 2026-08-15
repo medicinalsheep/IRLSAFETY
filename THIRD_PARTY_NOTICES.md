@@ -1,7 +1,7 @@
 # Third-Party Notices
 
 IRLSAFETY+ is licensed under the **MIT License** (see [LICENSE](LICENSE)).  
-Copyright (c) 2026 **IRLSAFETY+ contributors**
+Copyright (c) 2026 **medicinalsheep** — contact: jfkyt@icloud.com
 
 When built and run inside OBS Studio, **GPLv2** obligations from OBS/libobs also apply to the combined distribution.
 
@@ -21,7 +21,7 @@ When built and run inside OBS Studio, **GPLv2** obligations from OBS/libobs also
 
 | Asset | Origin | Notes |
 |-------|--------|-------|
-| `irlsafety-detect.onnx` | Trained locally | YOLOv8n export; US plates + signs |
+| `irlsafety-detect.onnx` | Trained locally (medicinalsheep) | YOLOv8n export; US plates + signs |
 | `irlsafety-ocr-*.onnx` | Optional child OCR path | PP-OCR style det/rec for future backend |
 
 Training with Ultralytics is subject to **AGPL-3.0** for the training code. Exported ONNX weights are used at runtime via ONNX Runtime (MIT). Consult Ultralytics licensing if you redistribute training scripts or derivative training services.
@@ -41,6 +41,6 @@ Training with Ultralytics is subject to **AGPL-3.0** for the training code. Expo
 
 ## IRLSAFETY+ source
 
-Copyright (c) 2026 **IRLSAFETY+ contributors** — **MIT License**
+Copyright (c) 2026 **medicinalsheep** — **MIT License**
 
 See [CREDITS.md](CREDITS.md) for design overview, training summary, and attribution.
