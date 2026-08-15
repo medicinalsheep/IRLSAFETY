@@ -1,6 +1,6 @@
 /*
  * IRLSAFETY+ — OBS filter settings (obs_data_t adapter).
- * Copyright (c) 2026 medicinalsheep. MIT License.
+ * Copyright (c) 2026 IRLSAFETY+ contributors. MIT License.
  */
 
 #include "filter_settings.h"

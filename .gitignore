@@ -34,3 +34,16 @@
 
 # Exclude CMake build number cache
 /cmake/.CMakeBuildNumber
+
+# Accidental repo-root dataset tree from older setup scripts
+/training/
+
+# Local training runtime (captures, labels, runs) — never publish
+/data/training/images/
+/data/training/labels/
+/data/training/raw/
+/data/training/runs/
+/data/models/images/
+/data/models/labels/
+/data/models/raw/
+/data/models/runs/

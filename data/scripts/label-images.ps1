@@ -11,8 +11,6 @@ if (-not $PluginRoot) {
 
 if ($env:IRLSAFETY_TRAINING_ROOT) {
     $TrainingDir = $env:IRLSAFETY_TRAINING_ROOT
-} elseif (Test-Path "Z:\irlsafety-training") {
-    $TrainingDir = "Z:\irlsafety-training"
 } else {
     $TrainingDir = Join-Path $env:APPDATA "obs-studio\plugin_config\irlsafety-plus\training"
 }

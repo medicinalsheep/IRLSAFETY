@@ -1,5 +1,5 @@
 // IRLSAFETY+ iOS — shell UI until I2 AVFoundation preview lands.
-// Copyright (c) 2026 medicinalsheep. MIT License.
+// Copyright (c) 2026 IRLSAFETY+ contributors. MIT License.
 
 import SwiftUI
 

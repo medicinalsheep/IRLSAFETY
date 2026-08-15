@@ -68,7 +68,7 @@ def main() -> int:
     parser.add_argument("--device", default="", help="cuda device id, cpu, or 0")
     parser.add_argument("--run-name", default="", help="Ultralytics run folder name")
     parser.add_argument("--runs-dir", type=Path, default=None,
-                        help="Local runs folder (e.g. SSD on JWCOM2); default: training-dir/runs")
+                        help="Local runs folder (SSD recommended); default: training-dir/runs")
     parser.add_argument("--resume", type=Path, default=None,
                         help="Resume from a specific .pt checkpoint")
     parser.add_argument("--warm-start", action="store_true",

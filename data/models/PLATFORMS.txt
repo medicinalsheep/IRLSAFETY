@@ -49,12 +49,12 @@ You do not need to stream to use IRLSAFETY.
 
 ADVANCED: FAST TRAINING DISK
 ------------------------------
-Power users can point training to a fast local or network RAM disk:
+Point training at a fast local folder (SSD recommended):
 
-  set IRLSAFETY_TRAINING_ROOT=Z:\irlsafety-training
+  setx IRLSAFETY_TRAINING_ROOT C:\irlsafety-training
   scripts\train-model.ps1
 
-(Requires a shared folder you create — e.g. ImDisk RAM disk on another PC.)
+Restart OBS after changing the env var so Capture Frame uses the new path.
 
 MOBILE STANDALONE APPS (planned)
 --------------------------------

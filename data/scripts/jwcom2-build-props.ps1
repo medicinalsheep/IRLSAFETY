@@ -1,4 +1,4 @@
-# Kit-root wrapper — copy to playground as jwcom2-build-props.ps1
+# Compatibility wrapper around build-props.ps1 (kept for existing local kits).
 param([string]$PluginRoot = "")
 $ErrorActionPreference = "Stop"
 if (-not $PluginRoot) { $PluginRoot = Split-Path $PSScriptRoot -Parent }

@@ -1,6 +1,6 @@
 # GitHub — Releases & CI (simplified)
 
-**Last updated:** 2026-07-08
+**Last updated:** 2026-08-14
 
 ---
 
@@ -37,7 +37,7 @@ scripts\zip-release.ps1
 |----------|-----------|---------|
 | **Android APK Release** | **No** — manual only | Build + publish Android APK |
 | Push (OBS) | No — manual only | OBS plugin (needs secrets) |
-| Pull Request | Disabled | Was causing failed emails |
+| Pull Request | Disabled | Avoids unused PR CI noise |
 | Dispatch | No — manual only | OBS build |
 
 **Nothing runs on ordinary pushes to `main` anymore.**

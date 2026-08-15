@@ -1,6 +1,6 @@
 /*
  * IRLSAFETY+ — shared control panel widget (dock + tray).
- * Copyright (c) 2026 medicinalsheep. MIT License.
+ * Copyright (c) 2026 IRLSAFETY+ contributors. MIT License.
  */
 
 #pragma once

@@ -4,15 +4,14 @@
 
 ---
 
-## Author
+## Project
 
 | | |
 |---|---|
-| **Creator / maintainer** | **medicinalsheep** |
-| **Contact** | [jfkyt@icloud.com](mailto:jfkyt@icloud.com) |
 | **Repository** | [github.com/medicinalsheep/IRLSAFETY](https://github.com/medicinalsheep/IRLSAFETY) |
-| **Support development** | [GitHub Sponsors](https://github.com/sponsors/medicinalsheep?frequency=one-time&sponsor=medicinalsheep) — optional; IRLSAFETY+ stays free and 100% local |
 | **License** | [MIT](LICENSE) |
+
+IRLSAFETY+ is free and 100% local. Issues and releases live on GitHub.
 
 ---
 
@@ -27,11 +26,11 @@
 | **macOS OBS plugin** | Planned next — same `libirlsafety` core |
 | **iOS app** | Planned after Android alpha — camera protection (no OBS on iOS) |
 
-Nothing is sent to the cloud for inference. Training stays on your machines and your dataset.
+Nothing is sent to the cloud for inference. Training stays on your machine and your dataset.
 
 ---
 
-## Current progress (2026-07)
+## Current progress (2026-08)
 
 | Platform | Shipped | Notes |
 |----------|---------|-------|
@@ -41,7 +40,7 @@ Nothing is sent to the cloud for inference. Training stays on your machines and 
 | **macOS** | — | OBS plugin scaffold after v0.9.6 alignment |
 | **iOS** | **I1 scaffold** | `ios/` CMake static lib + SwiftUI shell; I2+ next |
 
-**Engineering milestones (internal):** Android P10–P16 code complete. A53 device sign-off open for promoting `0.9.6-dev` → `0.9.6`. iOS I1 started.
+**Engineering milestones:** Android P10–P16 code complete. A53 device sign-off open for promoting `0.9.6-dev` → `0.9.6`. iOS I1 started.
 
 ---
 
@@ -52,7 +51,7 @@ Nothing is sent to the cloud for inference. Training stays on your machines and 
 | Target | Plan |
 |--------|------|
 | **v0.9.6** | Bump Windows + Android together when Android alpha checklist passes on A53 |
-| **Windows** | Ship refreshed `irlsafety-detect.onnx` from next JWCOM training pass; keep low-end defaults |
+| **Windows** | Ship refreshed `irlsafety-detect.onnx` from the next local training pass; keep low-end defaults |
 | **Android** | Promote `0.9.6-dev` → `0.9.6` (drop `-dev` when stable) |
 | **macOS** | OBS plugin build + smoke test on Apple Silicon / Intel |
 | **iOS** | **I2–I5** (preview, pixel bridge, ORT, overlay); TestFlight at I7 |
@@ -93,30 +92,30 @@ Android: CameraX preview + GLES censorship overlay
 | **Architecture** | YOLOv8n (Ultralytics) |
 | **Classes** | `license_plate`, `street_sign`, `shipping_label`, `id_document` |
 | **Data** | US bootstrap (plates/signs) + printed props (mail/ID) |
-| **Training** | Warm-start; 100-epoch pass; checkpoints on JWCOM-4 RAM disk; GPU train on JWCOM2 |
+| **Training** | Warm-start; 100-epoch pass; local GPU |
 | **Export** | ONNX ~12 MB via Ultralytics |
 | **Metrics** | Plates/signs mAP50 ~0.99; full 4-class bundle in v0.9.4 Windows + Android APK |
 
-### Next session: `irlsafety_v08` (planned on JWCOM2 + JWCOM4)
+### Next session: `irlsafety_v08` (local single-machine)
 
-**You are prepping JWCOM2 (GPU train/label) and JWCOM4 (OBS capture / RAM disk dataset).**
+Capture, label, and train on one Windows PC. Set `IRLSAFETY_TRAINING_ROOT` if you want a custom dataset folder; otherwise the plugin uses `%APPDATA%\obs-studio\plugin_config\irlsafety-plus\training`.
 
-| Phase | Machine | Work |
-|-------|---------|------|
-| **0 — Props** | JWCOM2 build → JWCOM4 print | `jwcom2-build-props.ps1`; tape 4×6 labels; cardstock licenses |
-| **A — Capture** | JWCOM4 | OBS Control dock → Capture Frame; angled mail, hand-held IDs, edge crops |
-| **B — Label** | JWCOM2 | `jwcom2-label.ps1` — tight boxes on labels/cards only |
-| **C — Gate** | JWCOM2 | `jwcom2-prep.ps1 -RequireV07` (50+ mail, 30+ ID boxes) |
-| **D — Train** | JWCOM2 | `jwcom2-train.ps1 -RequireV07 -WarmStart -SkipBootstrap -Device 0 -Epochs 100` |
-| **E — Deploy** | JWCOM4 + repo | Copy `best.onnx` → plugin `models/`; Reload Model; validate all four categories |
+| Phase | Work |
+|-------|------|
+| **0 — Props** | `data\scripts\build-props.ps1`; tape 4×6 labels; cardstock licenses |
+| **A — Capture** | OBS Control dock → Capture Frame; angled mail, hand-held IDs, edge crops |
+| **B — Label** | `scripts\label-images.ps1` — tight boxes on labels/cards only |
+| **C — Gate** | `scripts\train-model.ps1 -RequireV07` after ingest (50+ mail, 30+ ID boxes) |
+| **D — Train** | `scripts\train-model.ps1 -RequireV07 -WarmStart -SkipBootstrap -Device 0 -Epochs 100` |
+| **E — Deploy** | Copy `best.onnx` → plugin `models/`; Reload Model; validate all four categories |
 
 **v08 goals vs v07:**
 - More real-world mail/ID diversity (angles, glare, partial labels, hands)
 - Hard negatives (blank cardboard, desk without labels)
-- Optional **OBB** pass after axis-aligned model is solid (`-OBB` on JWCOM2)
+- Optional **OBB** pass after axis-aligned model is solid (`-OBB`)
 - Export becomes the **v0.9.6** bundled model for Windows + Android
 
-Full checklist: `data/models/TRAINING_SESSION.txt` · JWCOM kit: `data/models/LAPTOP_TRAINING.txt`
+Full checklist: `data/models/TRAINING_SESSION.txt` · local GPU notes: `data/models/LAPTOP_TRAINING.txt`
 
 ---
 
@@ -124,7 +123,7 @@ Full checklist: `data/models/TRAINING_SESSION.txt` · JWCOM kit: `data/models/LA
 
 | Contribution | Notes |
 |--------------|-------|
-| **medicinalsheep** | Architecture, `libirlsafety`, OBS plugin, Android app, training pipeline, US models |
+| **Project authors** | Architecture, `libirlsafety`, OBS plugin, Android app, training pipeline, US models |
 | **Grok Build (beta)** | AI-assisted design, implementation, and iteration (v0.6–v0.9) |
 | **OBS Plugin Template** | CMake/build scaffold ([obs-plugintemplate](https://github.com/obsproject/obs-plugintemplate)) |
 | **Community references** | Patterns informed by [obs-detect](https://github.com/occ-ai/obs-detect) and [obs-ocr](https://github.com/occ-ai/obs-ocr) |

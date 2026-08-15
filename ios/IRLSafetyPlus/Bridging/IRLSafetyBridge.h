@@ -4,7 +4,7 @@
  *
  * #import "irlsafety.h"
  *
- * Copyright (c) 2026 medicinalsheep. MIT License.
+ * Copyright (c) 2026 IRLSAFETY+ contributors. MIT License.
  */
 
 #pragma once

@@ -1,7 +1,6 @@
 # IRLSAFETY+ — Android v1 Design & Roadmap
 
 **Status:** Draft (post v0.7.0)  
-**Author:** medicinalsheep + Grok Build  
 **Last updated:** 2026-07-03
 
 ---

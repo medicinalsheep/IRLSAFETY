@@ -1,6 +1,6 @@
 # IRLSAFETY+ — Versioning & Naming
 
-**Last updated:** 2026-07-08
+**Last updated:** 2026-08-14
 
 ---
 

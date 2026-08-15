@@ -17,15 +17,21 @@ if (-not $PluginRoot) {
 if (-not $TrainingDir) {
     if ($env:IRLSAFETY_TRAINING_ROOT) {
         $TrainingDir = $env:IRLSAFETY_TRAINING_ROOT
-    } elseif (Test-Path "Z:\irlsafety-training") {
-        $TrainingDir = "Z:\irlsafety-training"
     } else {
-        $TrainingDir = "\\192.168.1.11\R\irlsafety-training"
+        $TrainingDir = Join-Path $env:APPDATA "obs-studio\plugin_config\irlsafety-plus\training"
     }
 }
 
 $env:IRLSAFETY_TRAINING_ROOT = $TrainingDir
 $PreparePy = Join-Path $PluginRoot "training\prepare_dataset.py"
+if ($env:IRLSAFETY_PYTHON -and (Test-Path $env:IRLSAFETY_PYTHON)) {
+    $PythonExe = $env:IRLSAFETY_PYTHON
+} elseif (Get-Command py -ErrorAction SilentlyContinue) {
+    $PythonExe = (py -3 -c "import sys; print(sys.executable)" 2>$null)
+} else {
+    $PythonExe = "python"
+}
+if (-not $PythonExe) { $PythonExe = "python" }
 
 Write-Host ""
 Write-Host "=== IRLSAFETY+ v0.7 Session Prep ===" -ForegroundColor Cyan
@@ -41,22 +47,22 @@ Write-Host "Staging captures (unlabeled): $stagingCount" -ForegroundColor $(if (
 
 if ($Ingest -and $stagingCount -gt 0) {
     Write-Host "Ingesting staging -> train..." -ForegroundColor Yellow
-    python $PreparePy --training-dir $TrainingDir --ingest-staging --min-labeled 1
+    & $PythonExe $PreparePy --training-dir $TrainingDir --ingest-staging --min-labeled 1
 } else {
     $prepareArgs = @("--training-dir", $TrainingDir, "--min-labeled", "1")
     if ($RequireV07) {
         $prepareArgs += @("--require-v07", "--min-shipping", $MinShipping, "--min-id", $MinId)
     }
-    python $PreparePy @prepareArgs
+    & $PythonExe $PreparePy @prepareArgs
 }
 
 if ($LASTEXITCODE -ne 0 -and $RequireV07) {
     Write-Host ""
     Write-Host "Next steps:" -ForegroundColor Yellow
-    Write-Host "  JWCOM4: Capture Frame (saves to images/staging on RAM disk if IRLSAFETY_TRAINING_ROOT is set)"
-    Write-Host "  JWCOM2: .\jwcom2-prep.ps1 -Ingest"
-    Write-Host "  JWCOM2: .\jwcom2-label.ps1"
-    Write-Host "  JWCOM2: .\jwcom2-train.ps1 -RequireV07 -WarmStart -Device 0"
+    Write-Host "  1. OBS Control dock -> Capture Frame (images/staging)"
+    Write-Host "  2. scripts\label-images.ps1"
+    Write-Host "  3. data\scripts\ingest-captures.ps1   (or this script -Ingest)"
+    Write-Host "  4. scripts\train-model.ps1 -RequireV07 -WarmStart -Device 0"
     exit $LASTEXITCODE
 }
 

@@ -11,7 +11,12 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$Repo = 'medicinalsheep/IRLSAFETY'
+$Root = Split-Path $PSScriptRoot -Parent
+$origin = git -C $Root remote get-url origin 2>$null
+if ($origin -notmatch 'github\.com[:/]([^/]+)/([^/.]+?)(?:\.git)?$') {
+    Write-Error "Could not detect GitHub owner/repo from git remote origin."
+}
+$Repo = "$($Matches[1])/$($Matches[2])"
 
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
     Write-Error @"
@@ -62,4 +67,4 @@ foreach ($release in $releases) {
 }
 
 Write-Host ''
-Write-Host 'Done. Refresh: https://github.com/medicinalsheep/IRLSAFETY/releases'
+Write-Host "Done. Refresh: https://github.com/$Repo/releases"

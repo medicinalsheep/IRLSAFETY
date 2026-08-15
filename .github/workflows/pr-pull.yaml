@@ -1,6 +1,6 @@
 name: Pull Request (disabled)
 
-# PR builds disabled to avoid failed-job email noise.
+# PR builds disabled. Re-enable when OBS CI secrets are configured.
 # Re-enable check-format or build-project here when OBS CI is configured.
 
 on:

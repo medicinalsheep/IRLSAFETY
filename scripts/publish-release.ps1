@@ -63,11 +63,17 @@ $notes = @"
 "@
 Set-Content -Path $notesFile -Value $notes -Encoding UTF8
 
+$origin = git -C $Root remote get-url origin 2>$null
+if ($origin -notmatch 'github\.com[:/]([^/]+)/([^/.]+?)(?:\.git)?$') {
+    Write-Error "Could not detect GitHub owner/repo from git remote origin."
+}
+$Repo = "$($Matches[1])/$($Matches[2])"
+
 $env:GH_TOKEN = $token
 & $gh release create $Tag `
-    --repo "medicinalsheep/IRLSAFETY" `
+    --repo $Repo `
     --title "IRLSAFETY+ $Tag" `
     --notes-file $notesFile `
     $ZipPath
 
-Write-Host "Release published: https://github.com/medicinalsheep/IRLSAFETY/releases/tag/$Tag"
+Write-Host "Release published: https://github.com/$Repo/releases/tag/$Tag"

@@ -297,12 +297,14 @@ PRINT
   Labels: 4x6\" sticker paper or tape to boxes/mailers
   Licenses: cardstock, color, 100% scale
 
-CAPTURE (JWCOM4)
-  setx IRLSAFETY_TRAINING_ROOT Z:\\irlsafety-training
+CAPTURE
+  Optional: setx IRLSAFETY_TRAINING_ROOT <local-folder>
   Restart OBS → Capture Frame → images/staging
 
 LABEL
-  jwcom2-label.ps1  →  jwcom2-prep.ps1 -Ingest  →  jwcom2-prep.ps1 -RequireV07
+  scripts\\label-images.ps1
+  data\\scripts\\ingest-captures.ps1
+  scripts\\train-model.ps1 -RequireV07
 """,
         encoding="utf-8",
     )

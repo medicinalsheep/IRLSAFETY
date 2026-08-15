@@ -8,12 +8,10 @@
 | **Android** | **v0.9.6-dev** (alpha APK) |
 | **iOS** | **I1 scaffold** (`ios/`) |
 | **Next aligned** | **v0.9.6** — A53 sign-off + refreshed model |
-| **Author** | [medicinalsheep](https://github.com/medicinalsheep) |
-| **Contact** | jfkyt@icloud.com |
 | **License** | MIT ([LICENSE](LICENSE)) |
 
 **Made in the USA** — built on older hardware, with care, and with **Grok Build (beta)** as a development contribution.  
-Full attribution and training history: **[CREDITS.md](CREDITS.md)** · Third-party: **[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)**
+Attribution and training history: **[CREDITS.md](CREDITS.md)** · Third-party: **[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)**
 
 ---
 
@@ -45,7 +43,7 @@ scripts\package-android-apk.bat
 | **Windows v0.9.5** | Package rename + model skip-reload; low-end defaults (frame skip 8, 4–6 GB VRAM) |
 | **Android v0.9.6-dev** | P16: front camera, 720p/1080p analysis, frame skip 8, settings hot-swap |
 | **`libirlsafety`** | Shared core — Windows OBS + Android NDK; iOS CMake I1 |
-| **Training** | `irlsafety_v07` model bundled; **v08 session** planned on JWCOM2 + JWCOM4 |
+| **Training** | `irlsafety_v07` model bundled; **v08** is a local-only retrain (mail/ID variety) |
 | **macOS** | OBS plugin — after v0.9.6 version alignment |
 | **iOS** | **I1** scaffold in `ios/` — [design](docs/DESIGN-ios-v1.md) |
 
@@ -56,7 +54,7 @@ scripts\package-android-apk.bat
 **v0.9.6** is the next milestone where versions line up across shipped platforms (still pre-1.0):
 
 1. **Android** — A53 alpha checklist complete → promote `0.9.6-dev` to **0.9.6**
-2. **Windows** — ship **v0.9.6** with the new `irlsafety_v08` ONNX from JWCOM training
+2. **Windows** — ship **v0.9.6** with the new `irlsafety_v08` ONNX from a local training pass
 3. **macOS** — OBS plugin build from the same `libirlsafety` + bundled model
 4. **iOS** — **I2–I5** (preview, bridge, ORT, overlay) in parallel; TestFlight is I7
 
@@ -102,38 +100,31 @@ scripts\package-android-apk.bat
 
 ---
 
-## Next training session — `irlsafety_v08`
+## Train your own model (local only)
 
-**Machines:** **JWCOM2** (GPU — label + train) · **JWCOM4** (OBS capture → RAM disk `Z:\irlsafety-training`)
+Nothing uploads. Capture, label, and train on the same Windows machine.
 
-You are prepping both machines for the next run. Nothing uploads to the cloud.
+| Step | Command / action |
+|------|------------------|
+| Setup (once) | `scripts\setup-training.ps1` |
+| Optional starter data | `scripts\fetch-us-bootstrap.ps1` |
+| Print props | `data\scripts\build-props.ps1` then print from `data\training\props\` |
+| Capture frames | OBS Control dock → **Capture Frame** (mail angles, IDs in hand, edge crops) |
+| Label | `scripts\label-images.ps1` |
+| Ingest + gate | `data\scripts\ingest-captures.ps1` then `scripts\train-model.ps1 -RequireV07` (dry audit) |
+| Train + export | `scripts\train-model.ps1 -RequireV07 -WarmStart -SkipBootstrap -Device 0 -Epochs 100` |
+| Deploy | Copy `data\models\irlsafety-detect.onnx` into the OBS plugin `models\` folder → **Reload Model** |
 
-### Workflow summary
+**Targets for a v08-quality pass:** ≥50 `shipping_label` boxes · ≥30 `id_document` boxes · more angle/glare variety than v07.
 
-| Step | Where | Command / action |
-|------|-------|------------------|
-| Build props | JWCOM2 | `.\jwcom2-build-props.ps1` |
-| Print props | JWCOM4 | Labels 4×6 + cardstock licenses from `Z:\irlsafety-training\props\` |
-| Capture frames | JWCOM4 | Control dock → Capture Frame (mail angles, IDs in hand, edge crops) |
-| Label | JWCOM2 | `.\jwcom2-label.ps1` |
-| Ingest + gate | JWCOM2 | `.\jwcom2-prep.ps1 -Ingest` then `-RequireV07` |
-| Train + export | JWCOM2 | `.\jwcom2-train.ps1 -RequireV07 -WarmStart -SkipBootstrap -Device 0 -Epochs 100` |
-| Deploy | JWCOM4 | Copy `best.onnx` → OBS `models\` → Reload Model |
+**Optional phase 2:** OBB labels + `scripts\train-model.ps1 -OBB` for angled cover accuracy.
 
-**Targets:** ≥50 `shipping_label` boxes · ≥30 `id_document` boxes · more angle/glare variety than v07.
+Shot list: **`data/models/TRAINING_SESSION.txt`**  
+Local GPU notes: **`data/models/LAPTOP_TRAINING.txt`**
 
-**Optional phase 2:** OBB labels + `.\jwcom2-train.ps1 -OBB ...` for angled cover accuracy.
+Default dataset folder (override with `IRLSAFETY_TRAINING_ROOT`):
 
-Detailed shot list: **`data/models/TRAINING_SESSION.txt`**  
-JWCOM kit guide: **`data/models/LAPTOP_TRAINING.txt`** · kit path: `X:\irlsafety-training-kit`
-
-One-liner train (JWCOM2):
-
-```bat
-cd X:\irlsafety-training-kit
-.\jwcom2-prep.ps1 -RequireV07
-.\jwcom2-train.ps1 -RequireV07 -WarmStart -SkipBootstrap -Device 0 -Epochs 100
-```
+`%APPDATA%\obs-studio\plugin_config\irlsafety-plus\training`
 
 ---
 
@@ -148,7 +139,7 @@ scripts\install-to-obs.bat
 
 ---
 
-## Maintainer: publish releases
+## Releasing
 
 **Windows:**
 
@@ -172,7 +163,7 @@ cmake/            libirlsafety + platform backends (Windows, Android, iOS, …)
 data/models/      bundled ONNX, training guides, TRAINING_SESSION.txt
 data/training/    YOLO scripts, props, class lists
 docs/             Android/iOS design, versioning, alpha review
-scripts/          build, package, JWCOM2 training helpers
+scripts/          build, package, and local training helpers
 tests/            unit tests
 ```
 

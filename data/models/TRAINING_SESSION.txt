@@ -1,11 +1,12 @@
-IRLSAFETY+ — v08 Training Session (JWCOM2 + JWCOM4)
-===================================================
+IRLSAFETY+ — v08 Training Session (single machine, local only)
+==============================================================
 
 PLANNED FOR: v0.9.6 bundled model (Windows + Android)
-HOST TRAIN:   JWCOM2 (GPU laptop, X:\irlsafety-training-kit)
-HOST CAPTURE: JWCOM4 (OBS, Z:\irlsafety-training RAM disk)
+HOST:        one Windows PC (capture in OBS + label + train)
+DATASET:     %IRLSAFETY_TRAINING_ROOT%
+             or %APPDATA%\obs-studio\plugin_config\irlsafety-plus\training
 
-Prep: medicinalsheep is setting up JWCOM2 and JWCOM4 before this session.
+Nothing uploads to the cloud.
 
 
 BASELINE (v07 — shipped in Windows 0.9.5 / Android 0.9.6-dev)
@@ -28,16 +29,15 @@ NEXT GOAL — irlsafety_v08
 WORKFLOW
 --------
 
-PHASE 0 — Props (JWCOM2 build → JWCOM4 print)
-  [ ] JWCOM2: cd X:\irlsafety-training-kit
-  [ ] JWCOM2: .\jwcom2-build-props.ps1
-  [ ] JWCOM4: print Z:\irlsafety-training\props\driver_licenses\
-  [ ] JWCOM4: print Z:\irlsafety-training\props\shipping_labels\
-  [ ] JWCOM4: tape 4x6 labels to boxes/mailers; cardstock licenses
+PHASE 0 — Props
+  [ ] From repo: data\scripts\build-props.ps1
+  [ ] Print data\training\props\driver_licenses\
+  [ ] Print data\training\props\shipping_labels\
+  [ ] Tape 4x6 labels to boxes/mailers; cardstock licenses
 
-PHASE A — Capture on JWCOM4 (OBS)
-  [ ] JWCOM4: setx IRLSAFETY_TRAINING_ROOT Z:\irlsafety-training
-  [ ] JWCOM4: restart OBS
+PHASE A — Capture (OBS on this machine)
+  [ ] Optional: setx IRLSAFETY_TRAINING_ROOT <local-folder>
+  [ ] Restart OBS if you changed the env var
   [ ] Control dock → Capture Frame (15–25 frames per batch)
 
   shipping_label:
@@ -47,40 +47,37 @@ PHASE A — Capture on JWCOM4 (OBS)
   id_document:
     [ ] Flat license, tilted ~30°, glare, in hand, on desk by keyboard
 
-PHASE B — Label on JWCOM2
-  [ ] .\jwcom2-prep.ps1
-  [ ] .\jwcom2-label.ps1
-  [ ] .\jwcom2-prep.ps1 -Ingest
+PHASE B — Label
+  [ ] scripts\label-images.ps1
+  [ ] data\scripts\ingest-captures.ps1   (after labeling staging)
 
 PHASE C — Validate
-  [ ] .\jwcom2-prep.ps1 -RequireV07
+  [ ] scripts\train-model.ps1 -RequireV07
+      (exits if mail/ID counts are below the gate)
 
-PHASE D — Train on JWCOM2
-  [ ] .\jwcom2-train.ps1 -RequireV07 -WarmStart -SkipBootstrap -Device 0 -Epochs 100
+PHASE D — Train
+  [ ] scripts\train-model.ps1 -RequireV07 -WarmStart -SkipBootstrap -Device 0 -Epochs 100
   [ ] Run name: irlsafety_v08
   [ ] Optional faster runs: -RunsLocal C:\temp\irlsafety-runs
 
   Phase 2 (after axis-aligned v08 validates):
     [ ] Re-label tilted frames as OBB
-    [ ] .\jwcom2-train.ps1 -OBB -RequireV07 -WarmStart -Device 0
+    [ ] scripts\train-model.ps1 -OBB -RequireV07 -WarmStart -Device 0
 
 PHASE E — Deploy
-  [ ] Copy best.onnx → repo data/models/irlsafety-detect.onnx
-  [ ] JWCOM4: copy to OBS plugin models\ → Reload Model
+  [ ] Copy best.onnx → repo data\models\irlsafety-detect.onnx
+  [ ] Copy to OBS plugin models\ → Reload Model
   [ ] Test all four categories + Angled Cover ON
   [ ] Rebuild Windows package + Android APK for v0.9.6 release
 
 
-QUICK COMMANDS (JWCOM2)
------------------------
-  cd X:\irlsafety-training-kit
-  .\jwcom2-setup.ps1
-  .\jwcom2-build-props.ps1
-  .\jwcom2-prep.ps1
-  .\jwcom2-label.ps1
-  .\jwcom2-prep.ps1 -Ingest
-  .\jwcom2-prep.ps1 -RequireV07
-  .\jwcom2-train.ps1 -RequireV07 -WarmStart -SkipBootstrap -Device 0 -Epochs 100
+QUICK COMMANDS
+--------------
+  scripts\setup-training.ps1
+  data\scripts\build-props.ps1
+  scripts\label-images.ps1
+  data\scripts\ingest-captures.ps1
+  scripts\train-model.ps1 -RequireV07 -WarmStart -SkipBootstrap -Device 0 -Epochs 100
 
 TIPS
 ----
@@ -89,4 +86,4 @@ TIPS
   - Angle variety beats duplicate flat shots
   - Captures → images/staging — ingest after labeling staging
 
-See also: LAPTOP_TRAINING.txt, props/PROPS_GUIDE.txt
+See also: LAPTOP_TRAINING.txt, TRAINING.txt, props/PROPS_GUIDE.txt

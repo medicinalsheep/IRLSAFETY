@@ -31,11 +31,8 @@ LOCAL TRAINING
 
 Guides:
   TRAINING.txt           — full pipeline
-  TRAINING_SESSION.txt   — mail + ID capture checklist
-  LAPTOP_TRAINING.txt    — JWCOM2 kit + JWCOM4 RAM disk workflow
-
-JWCOM2 playground kit (GPU laptop):
-  X:\irlsafety-training-kit\  — START_HERE.txt, JWCOM2-RUN.txt, jwcom2-*.ps1
+  TRAINING_SESSION.txt   — mail + ID capture checklist (v08)
+  LAPTOP_TRAINING.txt    — single-machine GPU workflow
 
 CHILD OCR MODELS (optional)
 ---------------------------

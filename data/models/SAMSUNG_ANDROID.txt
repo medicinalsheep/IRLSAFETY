@@ -4,8 +4,8 @@ IRLSAFETY+ — Samsung Galaxy (Android app)
 Applies to: IRLSAFETY+ Android 0.9.6-dev (pre-1.0)
 Primary test targets: Galaxy A53/A54/A55 (mid-range), Galaxy S21–S24 series, Galaxy Z Fold/Flip
 
-REFERENCE DEVICE (medicinalsheep)
----------------------------------
+REFERENCE DEVICE
+----------------
 Galaxy A53 · One UI 8.0 · Android 16
   - Exynos 1280 SoC (most regions) — expect NNAPI or XNNPACK/CPU EP
   - Ideal mid-range alpha tester; matches MVP performance targets

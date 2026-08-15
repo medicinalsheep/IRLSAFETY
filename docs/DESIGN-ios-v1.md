@@ -1,7 +1,6 @@
 # IRLSAFETY+ — iOS v1 Design & Roadmap
 
 **Status:** Draft (planning)  
-**Author:** medicinalsheep + Grok Build  
 **Last updated:** 2026-07-03
 
 ---

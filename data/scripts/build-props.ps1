@@ -13,8 +13,6 @@ if (-not $PluginRoot) {
 if (-not $OutDir) {
     if ($env:IRLSAFETY_TRAINING_ROOT) {
         $OutDir = Join-Path $env:IRLSAFETY_TRAINING_ROOT "props"
-    } elseif (Test-Path "Z:\irlsafety-training") {
-        $OutDir = "Z:\irlsafety-training\props"
     } else {
         $OutDir = Join-Path $PluginRoot "training\props"
     }

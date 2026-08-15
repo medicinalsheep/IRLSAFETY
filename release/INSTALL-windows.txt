@@ -1,8 +1,7 @@
 IRLSAFETY+ — Windows install & test
 ===================================
 
-Author: medicinalsheep · Contact: jfkyt@icloud.com
-MIT License
+MIT License — see LICENSE in this package.
 
 Version is printed on the release zip name (IRLSAFETY+-vX.Y.Z-win64).
 See buildspec.json / GitHub Releases for the current build.

@@ -1,6 +1,6 @@
 /*
  * IRLSAFETY+ — low-poly region geometry (angled quads from OBB detections).
- * Copyright (c) 2026 medicinalsheep. MIT License.
+ * Copyright (c) 2026 IRLSAFETY+ contributors. MIT License.
  */
 
 #pragma once

@@ -24,8 +24,6 @@ if (-not $PluginRoot) {
 if (-not $TrainingDir) {
     if ($env:IRLSAFETY_TRAINING_ROOT) {
         $TrainingDir = $env:IRLSAFETY_TRAINING_ROOT
-    } elseif (Test-Path "Z:\irlsafety-training") {
-        $TrainingDir = "Z:\irlsafety-training"
     } else {
         $TrainingDir = Join-Path $env:APPDATA "obs-studio\plugin_config\irlsafety-plus\training"
     }
@@ -35,6 +33,15 @@ $SetupPs1 = Join-Path $PSScriptRoot "setup-training.ps1"
 $FetchPs1 = Join-Path $PSScriptRoot "fetch-us-bootstrap.ps1"
 $PreparePy = Join-Path $PluginRoot "training\prepare_dataset.py"
 $TrainPy = Join-Path $PluginRoot "training\train_irlsafety.py"
+
+if ($env:IRLSAFETY_PYTHON -and (Test-Path $env:IRLSAFETY_PYTHON)) {
+    $PythonExe = $env:IRLSAFETY_PYTHON
+} elseif (Get-Command py -ErrorAction SilentlyContinue) {
+    $PythonExe = (py -3 -c "import sys; print(sys.executable)" 2>$null)
+} else {
+    $PythonExe = "python"
+}
+if (-not $PythonExe) { $PythonExe = "python" }
 
 Write-Host "=== IRLSAFETY+ Train Detection Model (v0.7 — plates, signs, mail, IDs) ===" -ForegroundColor Cyan
 Write-Host "Workspace: $TrainingDir" -ForegroundColor Yellow
@@ -59,7 +66,7 @@ if ($IngestStaging) { $prepareArgs += "--ingest-staging" }
 if ($RequireV07) {
     $prepareArgs += @("--require-v07", "--min-shipping", $MinShipping, "--min-id", $MinId)
 }
-python $PreparePy @prepareArgs
+& $PythonExe $PreparePy @prepareArgs
 if ($LASTEXITCODE -ne 0) {
     Write-Host ""
     Write-Host "Dataset not ready for training." -ForegroundColor Yellow
@@ -79,10 +86,10 @@ if ($RunsLocal) { $trainArgs += @("--runs-dir", $RunsLocal) }
 if ($OBB) {
     Write-Host "Training YOLOv8n-OBB (angled labels — labels must be OBB format)..."
     $trainArgs += @("--run-name", "irlsafety_obb")
-    python $TrainPy @trainArgs --obb
+    & $PythonExe $TrainPy @trainArgs --obb
 } else {
     Write-Host "Training YOLOv8n 4-class model (warm-start from prior run if -WarmStart)..."
-    python $TrainPy @trainArgs
+    & $PythonExe $TrainPy @trainArgs
 }
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
