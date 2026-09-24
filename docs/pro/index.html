@@ -1,0 +1,96 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IRLSAFETY+ Lite vs Pro</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <p class="eyebrow">IRLSAFETY+</p>
+    <h1>Lite vs Pro</h1>
+    <p class="lede">
+      Local-only real-time privacy for OBS on Windows (and Android alpha).
+      Frames stay on your machine. Pro adds a license key, Studio preset, and model update checks.
+      Nothing here phones home to blur video.
+    </p>
+
+    <section class="grid">
+      <article class="card">
+        <h2>Lite</h2>
+        <p class="price">Free</p>
+        <ul>
+          <li>MIT open source</li>
+          <li>GitHub Releases builds</li>
+          <li>Plates, street signs, mail labels, IDs</li>
+          <li>Local training hub</li>
+          <li>Community support via issues</li>
+        </ul>
+        <p>
+          <a class="btn primary" href="https://github.com/medicinalsheep/IRLSAFETY/releases">Download Lite</a>
+        </p>
+      </article>
+
+      <article class="card pro">
+        <h2>Pro</h2>
+        <p class="price">$12 / mo or $99 / yr</p>
+        <ul>
+          <li>Everything in Lite</li>
+          <li>Offline-verifiable license key</li>
+          <li>Studio preset (plates + mail + IDs + signs)</li>
+          <li>Model update manifest checks</li>
+          <li>Installer helpers for Windows</li>
+        </ul>
+        <p>
+          <a class="btn" href="#buy">Buy (Stripe coming)</a>
+          <a class="btn ghost" href="#have-key">I have a key</a>
+        </p>
+      </article>
+    </section>
+
+    <section id="buy" class="block">
+      <h2>Buy (coming soon)</h2>
+      <p>
+        Stripe Checkout (or Gumroad) will take payment, then issue a license key by email.
+        Until that is live, Justin can issue keys with
+        <code>pro/license/issue-license.ps1</code> for testers.
+        Pricing details: <code>pro/PRICING.md</code> in the repo.
+      </p>
+    </section>
+
+    <section id="have-key" class="block">
+      <h2>I have a key</h2>
+      <ol>
+        <li>Save the one-line key to a file (example: <code>my-pro.key</code>).</li>
+        <li>Run as admin if needed:
+          <pre>powershell -ExecutionPolicy Bypass -File scripts\install-pro-license.ps1 -KeyFile path\to\my-pro.key</pre>
+        </li>
+        <li>Confirm:
+          <pre>powershell -ExecutionPolicy Bypass -File scripts\verify-pro-features.ps1</pre>
+        </li>
+        <li>Apply Studio defaults from <code>pro/presets/APPLY_STUDIO.txt</code> (or set plates, mail, IDs, signs ON and Screen Text OFF in the OBS filter).</li>
+      </ol>
+      <p>License path: <code>%ProgramData%\IRLSAFETY+\license.key</code></p>
+    </section>
+
+    <section class="block">
+      <h2>Local-only privacy</h2>
+      <p>
+        Detection and OCR run on-device. A Pro license is an HMAC-signed string you keep locally.
+        Optional model update checks only read a small JSON manifest you choose.
+        Downloads never run silently; checksum verify is required.
+      </p>
+    </section>
+
+    <footer>
+      <p>
+        <a href="https://github.com/medicinalsheep/IRLSAFETY">GitHub</a>
+        · <a href="../../pro/README.md">Pro README</a>
+        · Contact: jfkyt@icloud.com
+      </p>
+      <p class="fine">Made in the USA. MIT Lite path stays open.</p>
+    </footer>
+  </main>
+</body>
+</html>

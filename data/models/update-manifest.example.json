@@ -1,0 +1,8 @@
+﻿{
+  "version": "0.9.5-detect",
+  "url": "https://example.com/irlsafety/models/irlsafety-detect-0.9.5.onnx",
+  "sha256": "REPLACE_WITH_REAL_SHA256_HEX_OF_THE_ONNX_FILE",
+  "released": "2026-09-24",
+  "channel": "pro",
+  "notes": "Example only. Point url at your signed CDN or GitHub Release asset. check-model-update.ps1 never downloads without -Confirm, and always verifies sha256."
+}

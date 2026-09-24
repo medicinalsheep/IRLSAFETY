@@ -1,0 +1,38 @@
+﻿Apply Studio Pro preset (no plugin rebuild required)
+====================================================
+
+OBS does not load this JSON automatically yet. Use one of:
+
+A) Manual (fastest today)
+-------------------------
+1. Add or select the IRLSAFETY+ filter on your source.
+2. Set these filter properties (keys from src/filter_settings.h):
+
+   enable_all              = ON
+   cat_license_plates      = ON
+   cat_shipping_labels     = ON
+   cat_id_documents        = ON
+   cat_street_signs        = ON   (optional but recommended for Studio)
+   cat_screen_text         = OFF
+   confidence_threshold    = 0.35
+   frame_skip              = 8
+
+3. Prefer GPU ON, hybrid delay ON, solid box censor (defaults).
+
+B) PowerShell helper (writes an OBS-compatible settings snippet)
+----------------------------------------------------------------
+  powershell -ExecutionPolicy Bypass -File pro\presets\apply-studio-snippet.ps1
+
+  That prints a JSON object you can merge into a scene collection filter
+  settings block, or keep as a checklist. It does not patch OBS while OBS
+  is running.
+
+C) Future (Phase 2)
+-------------------
+  Plugin reads %ProgramData%\IRLSAFETY+\presets\studio-pro.json when Pro
+  license verifies. Not implemented in the .dll on this branch.
+
+Preset files
+------------
+  data/presets/studio-pro.json
+  pro/presets/studio.json   (same content)

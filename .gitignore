@@ -13,6 +13,7 @@
 !/android
 !/ios
 !/release
+!/pro
 /release/IRLSAFETY+-*
 /release/download/
 !.clang-format
@@ -47,3 +48,10 @@
 /data/models/labels/
 /data/models/raw/
 /data/models/runs/
+
+# Pro SaaS local secrets and issued keys (never commit)
+/pro/license/.secret
+/pro/license/*.key
+/pro/license/dev-license.key
+!/pro/license/.secret.example
+!/pro/license/license.example.json
