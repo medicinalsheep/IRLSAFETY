@@ -38,6 +38,19 @@ scripts\package-android-apk.bat
 
 ---
 
+
+## Pro (SaaS MVP)
+
+Paid layer on top of free Lite. Still local-only. License keys, Studio preset, and model update checks live under [pro/](pro/README.md). Soft gate scripts work today; hard DLL lock is Phase 2.
+
+| | |
+|---|---|
+| Overview | [pro/README.md](pro/README.md) |
+| Pricing | [pro/PRICING.md](pro/PRICING.md) ($12/mo or $99/yr) |
+| Releases page | [docs/pro/index.html](docs/pro/index.html) |
+| Install key | `scripts\install-pro-license.ps1` |
+| Verify | `scripts\verify-pro-features.ps1` |
+
 ## Current progress
 
 | Area | Status |
@@ -165,6 +178,7 @@ cmake/            libirlsafety + platform backends (Windows, Android, iOS, …)
 data/models/      bundled ONNX, training guides, TRAINING_SESSION.txt
 data/training/    YOLO scripts, props, class lists
 docs/             Android/iOS design, versioning, alpha review
+pro/              Pro SaaS MVP (license, presets, pricing)
 scripts/          build, package, and local training helpers
 tests/            unit tests
 ```

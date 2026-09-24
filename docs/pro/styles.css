@@ -1,0 +1,117 @@
+﻿:root {
+  --bg: #0f1419;
+  --card: #1a222c;
+  --text: #e8eef5;
+  --muted: #9aa8b8;
+  --accent: #3dd6c6;
+  --accent-dim: #2aa89b;
+  --border: #2c3846;
+  --pro: #f0b429;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: radial-gradient(1200px 600px at 20% -10%, #1b2a33 0%, var(--bg) 55%);
+  color: var(--text);
+  line-height: 1.55;
+}
+
+.wrap {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 2.5rem 1.25rem 4rem;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.75rem;
+  color: var(--accent);
+  margin: 0 0 0.5rem;
+}
+
+h1 { font-size: 2.25rem; margin: 0 0 0.75rem; }
+h2 { margin-top: 0; }
+
+.lede { color: var(--muted); font-size: 1.05rem; max-width: 40rem; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem 1.35rem 1.5rem;
+}
+
+.card.pro { border-color: var(--pro); }
+
+.price {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin: 0.25rem 0 1rem;
+}
+
+.card.pro .price { color: var(--pro); }
+
+ul { padding-left: 1.1rem; margin: 0 0 1.25rem; color: var(--muted); }
+li { margin: 0.35rem 0; }
+
+.btn {
+  display: inline-block;
+  padding: 0.55rem 0.95rem;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--bg);
+  background: var(--pro);
+  font-weight: 600;
+  margin-right: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.btn.primary { background: var(--accent); color: #06241f; }
+.btn.ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.block {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem 1.35rem;
+  margin: 1rem 0;
+}
+
+.block p, .block li { color: var(--muted); }
+
+pre {
+  background: #0a0e13;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 0.9rem;
+  overflow-x: auto;
+  color: #d7e2ee;
+  font-size: 0.85rem;
+}
+
+code { font-family: Consolas, "Courier New", monospace; font-size: 0.9em; }
+
+footer {
+  margin-top: 2.5rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+footer a { color: var(--accent); }
+.fine { opacity: 0.8; }

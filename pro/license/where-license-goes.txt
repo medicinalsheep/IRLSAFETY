@@ -1,0 +1,26 @@
+﻿Pro license install path (Windows)
+==================================
+
+Primary (documented for Pro MVP):
+
+  %ProgramData%\IRLSAFETY+\license.key
+
+Expanded example:
+
+  C:\ProgramData\IRLSAFETY+\license.key
+
+How to install:
+
+  powershell -ExecutionPolicy Bypass -File scripts\install-pro-license.ps1 -KeyFile path\to\your.key
+
+Or copy manually:
+
+  1. Create folder C:\ProgramData\IRLSAFETY+\
+  2. Save the one-line key as license.key (UTF-8 or ASCII, no BOM preferred)
+  3. Run scripts\verify-pro-features.ps1
+
+Optional future path (plugin data dir, Phase 2):
+
+  %APPDATA%\obs-studio\plugin_config\irlsafety-plus\license.key
+
+The soft gate scripts look at ProgramData first, then the optional APPDATA path.

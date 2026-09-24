@@ -1,0 +1,12 @@
+﻿{
+  "product": "IRLSAFETY+",
+  "edition": "pro",
+  "seat": "you@example.com",
+  "expiry_unix": 0,
+  "payload_format": "IRLSAFE-PRO|<seat>|<expiry-unix-or-0>|<edition>",
+  "key_format": "base64url(payload).base64url(hmac-sha256)",
+  "secret_env": "IRLSAFETY_PRO_LICENSE_SECRET",
+  "secret_file": "pro/license/.secret",
+  "install_path_windows": "%ProgramData%\\IRLSAFETY+\\license.key",
+  "notes": "This JSON documents shape only. The pasteable key is a single line string, not this file."
+}
